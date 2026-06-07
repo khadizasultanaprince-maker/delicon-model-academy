@@ -1,0 +1,6 @@
+{
+  "name": "Delicon Model Academy",
+  "description": "Delicon Model Academy Comprehensive Landing Page and School Management System",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

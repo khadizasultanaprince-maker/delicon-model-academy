@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Kalpurush", "Hind Siliguri", "Noto Sans Bengali", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Kalpurush", "Hind Siliguri", sans-serif;
+}
+
+@layer utilities {
+  /* Physical A4 Print styles */
+  @media print {
+    /* Hide everything that isn't the print sheet */
+    body * {
+      visibility: hidden;
+    }
+    #print-sheet-area, #print-sheet-area * {
+      visibility: visible;
+    }
+    #print-result-card-area, #print-result-card-area * {
+      visibility: visible;
+    }
+    
+    /* Position the visible element precisely in physical paper */
+    #print-sheet-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: 1px solid #000 !important;
+      padding: 15px !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+    }
+
+    #print-result-card-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: 3px double #000 !important;
+      padding: 25px !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+    }
+  }
+}
