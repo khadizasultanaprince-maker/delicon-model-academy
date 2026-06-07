@@ -2,7 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import fallbackDb from '../db.json';
+import fallbackDb from './fallbackDb.ts';
 
 // 1. Intercept localStorage globally to automatically sync state changes and bypass client-side storage quota limits
 const originalSetItem = window.localStorage.setItem;
