@@ -773,7 +773,7 @@ export const LandingPage: React.FC<{
                 মুগ্ধতা ছড়ানো প্রগতিশীল ক্যাম্পাস গ্যালারি ও অভিভাবক অনুভূতি
               </span>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-250 tracking-tight leading-tight">
-                মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক সুনীল শিক্ষায় 🌸
+                মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায় 🌸
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
                 আমাদের প্রতিটি ছবি কেবল একটি দৃশ্য নয়, বরং স্নেহের ডোরে আবদ্ধ একেকটি আদর্শ মানুষ গড়ার জাদুকরী সচিত্র চিত্র। চোখ রাখুন স্লাইডারে, অনুভব করুন আমাদের ভালোবাসা।

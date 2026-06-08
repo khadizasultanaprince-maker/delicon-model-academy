@@ -574,6 +574,30 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('delicon_dev_projects', JSON.stringify(devProjects));
   }, [devProjects]);
 
+  // Synchronously and asynchronously align old school slogan references
+  useEffect(() => {
+    const checkAndForceSlogan = () => {
+      const defaultSlogan = 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়';
+      const storedSlogan = localStorage.getItem('delicon_school_slogan') || schoolSlogan;
+      const isOld = !storedSlogan || 
+                    storedSlogan.includes('খাতায় লিখে') || 
+                    storedSlogan.includes('জাস্টিফাইড') || 
+                    storedSlogan.includes('পরম স্নেহে ও আদর্শে');
+      if (isOld) {
+        console.log('[Slogan Migration] Actively migrating slogan to:', defaultSlogan);
+        setSchoolSlogan(defaultSlogan);
+        localStorage.setItem('delicon_school_slogan', defaultSlogan);
+      }
+    };
+
+    // Run immediately on component mount
+    checkAndForceSlogan();
+
+    // Run after a delay to ensure that the background sync server adapter is fully active and saves to db.json
+    const timer = setTimeout(checkAndForceSlogan, 5000);
+    return () => clearTimeout(timer);
+  }, [schoolSlogan]);
+
   // Lead Generation on home page
   const addLead = (leadData: Omit<Lead, 'id' | 'status' | 'subDate'>) => {
     const newLead: Lead = {
