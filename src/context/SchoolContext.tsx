@@ -32,6 +32,22 @@ import {
   initialResults, 
   initialDevProjects 
 } from '../data/mockData';
+import fallbackDb from '../fallbackDb';
+
+const getFallbackVal = (key: string, defaultValue: any) => {
+  if (fallbackDb && fallbackDb[key]) {
+    try {
+      const val = fallbackDb[key];
+      if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
+        return JSON.parse(val);
+      }
+      return val;
+    } catch (e) {
+      console.warn(`Failed to parse fallbackDb key ${key}`, e);
+    }
+  }
+  return defaultValue;
+};
 
 interface SchoolContextProps {
   students: Student[];
@@ -97,6 +113,75 @@ interface SchoolContextProps {
 const SchoolContext = createContext<SchoolContextProps | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [schoolName, setSchoolName] = useState<string>(() => {
+    const saved = localStorage.getItem('delicon_school_name');
+    return saved !== null ? saved : getFallbackVal('delicon_school_name', 'ডিলিকন মডেল একাডেমী');
+  });
+
+  const [schoolSlogan, setSchoolSlogan] = useState<string>(() => {
+    const saved = localStorage.getItem('delicon_school_slogan');
+    return saved !== null ? saved : getFallbackVal('delicon_school_slogan', 'খাতায় লিখে পাস নয়, পরম স্নেহে ও আদর্শে জাস্টিফাইড সুনাগরিক গড়ার বিশ্বস্ত আঙিনা');
+  });
+
+  const [schoolLogoType, setSchoolLogoType] = useState<'crest' | 'text' | 'image'>(() => {
+    const saved = localStorage.getItem('delicon_school_logotype');
+    return (saved as 'crest' | 'text' | 'image') || getFallbackVal('delicon_school_logotype', 'image');
+  });
+
+  const [schoolLogoVal, setSchoolLogoVal] = useState<string>(() => {
+    const saved = localStorage.getItem('delicon_school_logoval');
+    return saved !== null ? saved : getFallbackVal('delicon_school_logoval', 'https://i.postimg.cc/prHZW6n3/logo-1.png');
+  });
+
+  const updateSchoolBranding = (name: string, slogan: string, logoType: 'crest' | 'text' | 'image', logoVal: string) => {
+    setSchoolName(name);
+    setSchoolSlogan(slogan);
+    setSchoolLogoType(logoType);
+    setSchoolLogoVal(logoVal);
+    localStorage.setItem('delicon_school_name', name);
+    localStorage.setItem('delicon_school_slogan', slogan);
+    localStorage.setItem('delicon_school_logotype', logoType);
+    localStorage.setItem('delicon_school_logoval', logoVal);
+  };
+
+  const [requisitions, setRequisitions] = useState<Requisition[]>(() => {
+    const saved = localStorage.getItem('delicon_requisitions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return getFallbackVal('delicon_requisitions', [
+      {
+        id: 'req_101',
+        type: 'Admission',
+        applicantName: 'আফিফা সুলতানা',
+        phone: '01712345678',
+        email: 'afifa@gmail.com',
+        classNameOrPost: 'Class 5',
+        details: 'বিজ্ঞান বিভাগে ভর্তি হতে ইচ্ছুক, পূর্ববর্তী রোল ছিল ০২।',
+        status: 'Pending Payment',
+        paymentAmount: 0,
+        subDate: '2026-06-01'
+      },
+      {
+        id: 'req_102',
+        type: 'Job',
+        applicantName: 'জনাব আরিফুল ইসলাম',
+        phone: '01811223344',
+        email: 'arif.ict@gmail.com',
+        classNameOrPost: 'Assistant ICT Teacher',
+        details: 'বিএসসি ইন সিএসই সম্পন্ন করেছি। ২ বছরের শিক্ষাদানের অভিজ্ঞতা আছে।',
+        status: 'Paid (Pending Assistant Approval)',
+        paymentAmount: 500,
+        moneyReceiptNo: 'MR-2026-9801',
+        subDate: '2026-05-31'
+      }
+    ]);
+  });
+
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem('delicon_students');
     return saved ? JSON.parse(saved) : initialStudents;
@@ -244,39 +329,16 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     ];
   });
 
-  const [requisitions, setRequisitions] = useState<Requisition[]>(() => {
-    const saved = localStorage.getItem('delicon_requisitions');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'req_101',
-        type: 'Admission',
-        applicantName: 'আফিফা সুলতানা',
-        phone: '01712345678',
-        email: 'afifa@gmail.com',
-        classNameOrPost: 'Class 5',
-        details: 'বিজ্ঞান বিভাগে ভর্তি হতে ইচ্ছুক, পূর্ববর্তী রোল ছিল ০২।',
-        status: 'Pending Payment',
-        paymentAmount: 0,
-        subDate: '2026-06-01'
-      },
-      {
-        id: 'req_102',
-        type: 'Job',
-        applicantName: 'জনাব আরিফুল ইসলাম',
-        phone: '01811223344',
-        email: 'arif.ict@gmail.com',
-        classNameOrPost: 'Assistant ICT Teacher',
-        details: 'বিএসসি ইন সিএসই সম্পন্ন করেছি। ২ বছরের শিক্ষাদানের অভিজ্ঞতা আছে।',
-        status: 'Paid (Pending Assistant Approval)',
-        paymentAmount: 500,
-        moneyReceiptNo: 'MR-2026-9801',
-        subDate: '2026-05-31'
-      }
-    ];
-  });
-
   const [sections, setSections] = useState<LandingSection[]>(() => {
-    const defaultSecs = [
+    const saved = localStorage.getItem('delicon_sections');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return getFallbackVal('delicon_sections', [
       { id: 'sec-hero', title: 'পরিচিতি ও ব্যানার', visible: true },
       { id: 'sec-today-campus-dash', title: 'আজকের ড্যাশবোর্ড ⏰', visible: true },
       { id: 'sec-merit-students', title: 'কৃতি শিক্ষার্থী 🏆', visible: true },
@@ -294,40 +356,12 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       { id: 'sec-lead-form', title: 'ভর্তি ও তথ্যের আবেদন', visible: true },
       { id: 'sec-faq', title: 'জিজ্ঞাসিত প্রশ্ন FAQ', visible: true },
       { id: 'sec-contact', title: 'যোগাযোগ ও ম্যাপ 🗺️', visible: true }
-    ];
-    const saved = localStorage.getItem('delicon_sections');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return defaultSecs.map(def => {
-            const found = parsed.find(p => p && p.id === def.id);
-            if (found) {
-              let title = found.title;
-              let visible = found.visible;
-              if (typeof title !== 'string' || title === 'true' || title === 'false' || !title.trim()) {
-                title = def.title;
-              }
-              if (typeof visible === 'string') {
-                visible = visible === 'true' || visible !== 'false';
-              } else if (typeof visible !== 'boolean') {
-                visible = def.visible;
-              }
-              return { ...def, title, visible };
-            }
-            return def;
-          });
-        }
-      } catch (e) {
-        console.error("Failed to parse sections", e);
-      }
-    }
-    return defaultSecs;
+    ]);
   });
 
   const [examMarks, setExamMarks] = useState<ExamMark[]>(() => {
     const saved = localStorage.getItem('delicon_exammarks');
-    return saved ? JSON.parse(saved) : [
+    return saved ? JSON.parse(saved) : getFallbackVal('delicon_exammarks', [
       {
         id: 'mark_1',
         studentId: 's1',
@@ -341,7 +375,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         mcqMarks: 37,
         totalMarks: 95,
         grade: 'A+',
-        gpa: 5.0,
+        gpa: 5,
         subDate: '2026-06-01'
       },
       {
@@ -357,7 +391,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         mcqMarks: 40,
         totalMarks: 92,
         grade: 'A+',
-        gpa: 5.0,
+        gpa: 5,
         subDate: '2026-06-01'
       },
       {
@@ -373,41 +407,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         mcqMarks: 39,
         totalMarks: 89,
         grade: 'A',
-        gpa: 4.0,
+        gpa: 4,
         subDate: '2026-06-01'
       }
-    ];
+    ]);
   });
-
-  const [schoolName, setSchoolName] = useState<string>(() => {
-    return localStorage.getItem('delicon_school_name') || 'ডিলিকন মডেল একাডেমী';
-  });
-  const [schoolSlogan, setSchoolSlogan] = useState<string>(() => {
-    const stored = localStorage.getItem('delicon_school_slogan');
-    if (!stored || stored === 'D-Licon Model Academy & Research Institute' || stored === 'Research Institute') {
-      const defaultSlogan = 'খাতায় লিখে পাস নয়, পরম স্নেহে ও আদর্শে জাস্টিফাইড সুনাগরিক গড়ার বিশ্বস্ত আঙিনা';
-      localStorage.setItem('delicon_school_slogan', defaultSlogan);
-      return defaultSlogan;
-    }
-    return stored;
-  });
-  const [schoolLogoType, setSchoolLogoType] = useState<'crest' | 'text' | 'image'>(() => {
-    return (localStorage.getItem('delicon_school_logotype') as any) || 'crest';
-  });
-  const [schoolLogoVal, setSchoolLogoVal] = useState<string>(() => {
-    return localStorage.getItem('delicon_school_logoval') || 'D';
-  });
-
-  const updateSchoolBranding = (name: string, slogan: string, logoType: 'crest' | 'text' | 'image', logoVal: string) => {
-    setSchoolName(name);
-    setSchoolSlogan(slogan);
-    setSchoolLogoType(logoType);
-    setSchoolLogoVal(logoVal);
-    localStorage.setItem('delicon_school_name', name);
-    localStorage.setItem('delicon_school_slogan', slogan);
-    localStorage.setItem('delicon_school_logotype', logoType);
-    localStorage.setItem('delicon_school_logoval', logoVal);
-  };
 
   const [campusPhotos, setCampusPhotos] = useState<{ url: string; title: string; caption: string; }[]>(() => {
     const saved = localStorage.getItem('delicon_campus_photos');
@@ -418,7 +422,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // Parse error fallback
       }
     }
-    return [
+    return getFallbackVal('delicon_campus_photos', [
       {
         url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1400&q=85',
         title: 'মমতাময়ী শিক্ষিকার স্নেহের স্পন্দনময় ক্লাস রুম 🌸',
@@ -431,7 +435,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       },
       {
         url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1400&q=85',
-        title: 'কোনো ভীতি ছাড়া খেলার ছলে আনন্দময় পাঠশালা 🏫',
+        title: 'কোনോ ভীতি ছাড়া খেলার ছলে আনন্দময় পাঠশালা 🏫',
         caption: '৩। কোনো শাসন বা আতঙ্কের পরিবেশ নয়। নিয়মানুবর্তিতা আর পরম ভালোবাসার মিষ্টি সুবাসে প্রতিটি শিশু হয়ে ওঠে প্রফুল্ল এবং আত্মবিশ্বাসী।'
       },
       {
@@ -444,12 +448,16 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         title: 'সবুজ ছায়ায় সহশিক্ষামূলক ও আনন্দঘন ক্রীড়া চর্চা ⚽',
         caption: '৫। প্রতিটি আলাদা মেধার সুষম মূল্যায়ন। পিছিয়ে থাকা বা কোনো দুর্বল শিক্ষার্থীকে বিশেষ এক্সট্রা কেয়ার দিয়ে প্রস্ফুটিত করার সার্থক অঙ্গীকার।'
       }
-    ];
+    ]);
   });
 
   const updateCampusPhotos = (photos: { url: string; title: string; caption: string; }[]) => {
     setCampusPhotos(photos);
-    localStorage.setItem('delicon_campus_photos', JSON.stringify(photos));
+    try {
+      localStorage.setItem('delicon_campus_photos', JSON.stringify(photos));
+    } catch (e) {
+      console.error("Local storage quota exceeded inside updateCampusPhotos", e);
+    }
   };
 
   const [meritStudents, setMeritStudents] = useState<MeritStudent[]>(() => {
@@ -461,13 +469,13 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // Parse error fallback
       }
     }
-    return [
+    return getFallbackVal('delicon_merit_students', [
       { 
         name: 'আফরিন জাহান স্মৃতি', 
         className: 'শ্রেণী: ১০ম', 
         achievement: 'এস.এস.সি বোর্ডে জিপিএ ৫.০০ (গোল্ডেন)', 
         quote: 'ডিলিকন স্কুলের সার্বক্ষণিক আরএফআইডি ট্র্যাকিং এবং লাইব্রেরি সুবিধা আমার গণিত ভিত মজবুত করেছে।', 
-        award: 'বোর্ড মেরিট স্কলারশিপ ২০২৫',
+        award: 'বোর্ড মেরิต স্কলারশিপ ২০২৫',
         photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80'
       },
       { 
@@ -486,7 +494,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         award: 'ট্যালেন্টপুল স্কলারশিপ',
         photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80'
       }
-    ];
+    ]);
   });
 
   const updateMeritStudents = (students: MeritStudent[]) => {

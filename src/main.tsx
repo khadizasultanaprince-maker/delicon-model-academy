@@ -97,78 +97,79 @@ const initApp = async () => {
     clearTimeout(timeoutId);
     clearTimeout(statusTimer);
 
-    if (response.ok) {
-      const serverDb = await response.json();
-      if (serverDb && Object.keys(serverDb).length > 0) {
-        console.log('[Sync] Pulling latest state from server:', Object.keys(serverDb));
-        
-        // Save to global in-memory cache to bypass local storage quota limits
-        (window as any).__serverDbCache = { ...(window as any).__serverDbCache, ...serverDb };
+    if (!response.ok) {
+      throw new Error(`Server returned HTTP ${response.status}`);
+    }
+    const serverDb = await response.json();
+    if (serverDb && Object.keys(serverDb).length > 0) {
+      console.log('[Sync] Pulling latest state from server:', Object.keys(serverDb));
+      
+      // Save to global in-memory cache to bypass local storage quota limits
+      (window as any).__serverDbCache = { ...(window as any).__serverDbCache, ...serverDb };
 
-        // Also try writing to local storage so they remain as offline/reload fallbacks
-        for (const [key, value] of Object.entries(serverDb)) {
-          if (key.startsWith('delicon_')) {
-            try {
-              originalSetItem.apply(window.localStorage, [key, value as string]);
-            } catch (err) {
-              // Ignore disk quota exceeded warnings since memory cache has it
-            }
+      // Also try writing to local storage so they remain as offline/reload fallbacks
+      for (const [key, value] of Object.entries(serverDb)) {
+        if (key.startsWith('delicon_')) {
+          try {
+            originalSetItem.apply(window.localStorage, [key, value as string]);
+          } catch (err) {
+            // Ignore disk quota exceeded warnings since memory cache has it
           }
         }
+      }
 
-        // CRITICAL & REVOLUTIONARY: Check if there are keys in the client's localStorage that aren't on the server yet.
-        // This handles cases like when the user uploaded campus photos on their Home PC, but they didn't sync yet.
-        // Opening the Home PC now will detect the local-only key and instantly sync/seed/save it to the server!
-        const localOnlyKeysToBackSync: Record<string, string> = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('delicon_')) {
-            if (!(key in serverDb)) {
-              const val = localStorage.getItem(key);
-              if (val) {
-                localOnlyKeysToBackSync[key] = val;
-                // Also cache it in the memory db
-                (window as any).__serverDbCache[key] = val;
-                console.log(`[Sync] Automatically back-syncing local-only key "${key}" to server...`);
-              }
-            }
-          }
-        }
-
-        if (Object.keys(localOnlyKeysToBackSync).length > 0) {
-          fetch('/api/db/init', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(localOnlyKeysToBackSync)
-          }).catch(err => {
-            console.warn('[Sync] Auto-sync of local-only keys failed:', err);
-          });
-        }
-      } else {
-        // Server database is empty. Let's upload whatever is currently in the local browser cache to seed the server.
-        console.log('[Sync] Server database is empty. Seeding with current localStorage...');
-        const localDataToSeed: Record<string, string> = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('delicon_')) {
+      // CRITICAL & REVOLUTIONARY: Check if there are keys in the client's localStorage that aren't on the server yet.
+      // This handles cases like when the user uploaded campus photos on their Home PC, but they didn't sync yet.
+      // Opening the Home PC now will detect the local-only key and instantly sync/seed/save it to the server!
+      const localOnlyKeysToBackSync: Record<string, string> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('delicon_')) {
+          if (!(key in serverDb)) {
             const val = localStorage.getItem(key);
             if (val) {
-              localDataToSeed[key] = val;
+              localOnlyKeysToBackSync[key] = val;
+              // Also cache it in the memory db
               (window as any).__serverDbCache[key] = val;
+              console.log(`[Sync] Automatically back-syncing local-only key "${key}" to server...`);
             }
           }
         }
-        if (Object.keys(localDataToSeed).length > 0) {
-          await fetch('/api/db/init', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(localDataToSeed)
-          });
+      }
+
+      if (Object.keys(localOnlyKeysToBackSync).length > 0) {
+        fetch('/api/db/init', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(localOnlyKeysToBackSync)
+        }).catch(err => {
+          console.warn('[Sync] Auto-sync of local-only keys failed:', err);
+        });
+      }
+    } else {
+      // Server database is empty. Let's upload whatever is currently in the local browser cache to seed the server.
+      console.log('[Sync] Server database is empty. Seeding with current localStorage...');
+      const localDataToSeed: Record<string, string> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('delicon_')) {
+          const val = localStorage.getItem(key);
+          if (val) {
+            localDataToSeed[key] = val;
+            (window as any).__serverDbCache[key] = val;
+          }
         }
+      }
+      if (Object.keys(localDataToSeed).length > 0) {
+        await fetch('/api/db/init', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(localDataToSeed)
+        });
       }
     }
   } catch (err) {
