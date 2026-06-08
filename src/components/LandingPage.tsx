@@ -1286,7 +1286,7 @@ export const LandingPage: React.FC<{
                 <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full inline-block mb-2 uppercase tracking-wide animate-pulse">
                   🎖️ আমাদের আসল হিরো প্যানেল
                 </span>
-                <h2 className="text-2xl md:text-3.5xl font-black text-slate-900">আমাদের "যুদ্ধ জয়ী বীর বিক্রম" প্রথিতযশা শিক্ষকমণ্ডলী</h2>
+                <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-snug">শাসন নয়, ভালোবাসার জাদুতে শিশুর সুপ্ত প্রতিভাকে সত্যের আলোয় বিকশিত করার একনিষ্ঠ কারিগর আমাদের শিক্ষকমণ্ডলী।</h2>
                 <p className="text-slate-650 text-xs mt-1.5 max-w-xl">
                   ডিলিকন মডেল একাডেমীর আসল চালিকাশক্তি ও আমাদের গর্ব। আধুনিক বিজ্ঞান মনস্ক শিক্ষা ও উন্নত সুনাগরিক গড়ে তোলার মহৎ সংগ্রামে নিয়োজিত বিজয়ী বীরসৈনিকবৃন্দ।
                 </p>
