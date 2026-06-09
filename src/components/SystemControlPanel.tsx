@@ -3779,12 +3779,165 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
           {/* 14. DEVELOPER SYSTEM STATS */}
           {activeTab === 'db' && (
             <div>
-              <div className="border-b pb-3 mb-4">
-                <h3 className="font-bold text-slate-800 text-sm">Local Storage Low-Level Raw Database Engine (Dev Mode)</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">ডেভেলপার প্যানেল থেকে এই রি-অ্যাক্ট ও লোকালস্টোরেজ ইন্টিগ্রেটেড ডাটাবেজগুলোর র-অবস্থা পর্যবেক্ষণ করতে পারেন।</p>
+              <div className="border-b pb-3 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                    <Database className="h-5 w-5 text-amber-500" />
+                    ১। ডেটাবেজ ব্যাকআপ, গিট পুশ এবং ভার্সেল (Vercel) সিঙ্ক গাইড
+                  </h3>
+                  <p className="text-[10.5px] text-slate-500 mt-0.5">র-লোকালস্টোরেজ ডাম্প ম্যানেজমেন্ট এবং গিটহাব সিঙ্ক্রোনাইজেশন টুলস।</p>
+                </div>
               </div>
 
-              <div className="space-y-4 font-mono text-[11px] text-slate-700 font-sans text-left">
+              {/* Informative Error & Concept Clarification Box (Extremely Helpful and Empathetic to User Situation) */}
+              <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl text-left font-sans mb-6">
+                <div className="flex gap-3">
+                  <span className="text-2xl mt-0.5">⚠️</span>
+                  <div>
+                    <h4 className="font-black text-amber-900 text-xs">আপনার ডাটা গিট পুশ (Git Push) বা ভার্সেলে (Vercel) কেন যাচ্ছে না?</h4>
+                    <p className="text-[11px] text-amber-800 leading-relaxed mt-2 font-medium">
+                      আপনি যখন এই রানিং লাইভ সাইটের কন্ট্রোল প্যানেলে তথ্য যোগ করেন বা কৃতি শিক্ষার্থী যোগ করে সেভ করেন, তখন সেই সমস্ত ডাটা এবং আপলোড করা ছবির ব্যাকগ্রাউন্ডে আমাদের ক্লাউড ডেভেলপমেন্ট কনটেইনারের <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9.5px]">db.json</code> ফাইলে এবং আপনার ব্রাউজার মেমরিতে সুরক্ষিতভাবে সেভ হয়। 
+                    </p>
+                    <p className="text-[11px] text-amber-800 leading-relaxed mt-1.5 font-medium">
+                      কিন্তু আপনার কম্পিউটার তো ওই ডাটাগুলো সরাসরি জানে না! আপনার কম্পিউটারে থাকা লোকাল ফোল্ডারে পুরাতন বা ফাঁকা ডাটাবেজ ফাইলটিই রয়ে গেছে। ফলস্বরূপ, আপনার কম্পিউটার থেকে যখন সরাসরি <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9.5px]">git push</code> করা হয়, তখন পূর্বের ফাঁকা বা ব্যাকগ্রাউন্ড ডাটাটাই গিটহাবে আপলোড হয়ে যায় এবং আপনার ভার্সেল (Vercel) সাইটটিও ফাঁকা হয়ে যায়।
+                    </p>
+                    <div className="mt-3.5 pt-3 border-t border-amber-200/50">
+                      <p className="text-[11px] font-black text-slate-800 uppercase tracking-wider">💡 চিরস্থায়ী সমাধানের অতি সহজ ৩টি ধাপ:</p>
+                      <ul className="list-decimal list-inside text-[11px] text-slate-700 mt-2 space-y-1.5 leading-relaxed pl-1 font-semibold">
+                        <li>নিচে দেয়া <span className="text-amber-800">"১. ডাউনলোড করুন db.json"</span> বাটনে ক্লিক করে লেটেস্ট ফাইলটি ডাউনলোড করুন এবং আপনার কম্পিউটারের প্রোজেক্টের প্রধান রুট ডিরেক্টরিতে (root folder) পুরাতন ফাইলটির জায়গায় পেস্ট করে দিন।</li>
+                        <li>এরপর <span className="text-amber-800">"২. ডাউনলোড করুন fallbackDb.ts"</span> বাটনে ক্লিক করে ফাইলটি ডাউনলোড করে আপনার প্রোজেক্টের <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/src/fallbackDb.ts</code> ফাইলের সব কোড কপি-পেস্ট করে প্রতিস্থাপন (Replace) করে দিন।</li>
+                        <li>এখন আপনার কম্পিউটার থেকে গিট কমিট এবং পুশ করুন! এবার ভার্সেল সাইটে আপনার নতুন ছবি ও কৃতি শিক্ষার্থী চিরস্থায়ীভাবে দৃশ্যমান হয়ে যাবে!</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dbData: Record<string, string> = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && key.startsWith('delicon_')) {
+                        const val = localStorage.getItem(key);
+                        if (val) dbData[key] = val;
+                      }
+                    }
+                    if ((window as any).__serverDbCache) {
+                      for (const [key, val] of Object.entries((window as any).__serverDbCache)) {
+                        if (key.startsWith('delicon_') && val) {
+                          dbData[key] = val as string;
+                        }
+                      }
+                    }
+                    const jsonString = JSON.stringify(dbData, null, 2);
+                    const blob = new Blob([jsonString], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'db.json';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="bg-slate-800 hover:bg-slate-900 text-white p-4 rounded-xl flex flex-col justify-between items-start text-left shrink-0 transition-all cursor-pointer shadow-sm group hover:scale-[1.01]"
+                >
+                  <div className="bg-amber-500/10 p-2 rounded-lg text-amber-500 mb-4 group-hover:bg-amber-500/20 transition-all">
+                    <Database className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-[12px] text-white">১. ডাউনলোড করুন db.json</h5>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-normal font-sans">কম্পিউটারের রুট ফোল্ডারে এই ফাইলটি দিয়ে পুরাতন db.json রিপ্লেস করুন।</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dbData: Record<string, string> = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && key.startsWith('delicon_')) {
+                        const val = localStorage.getItem(key);
+                        if (val) dbData[key] = val;
+                      }
+                    }
+                    if ((window as any).__serverDbCache) {
+                      for (const [key, val] of Object.entries((window as any).__serverDbCache)) {
+                        if (key.startsWith('delicon_') && val) {
+                          dbData[key] = val as string;
+                        }
+                      }
+                    }
+                    const fileContent = `/**
+ * Statically Bundled Fallback Database for Delicon Model Academy
+ * This file acts as a client-side hardcoded fallback if backend APIs are offline or when deploying to Vercel/Static hosting.
+ */
+
+const fallbackDb: Record<string, string> = ${JSON.stringify(dbData, null, 2)};
+
+export default fallbackDb;
+`;
+                    const blob = new Blob([fileContent], { type: 'text/typescript' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'fallbackDb.ts';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="bg-blue-950 hover:bg-blue-900 border border-blue-900 text-white p-4 rounded-xl flex flex-col justify-between items-start text-left shrink-0 transition-all cursor-pointer shadow-sm group hover:scale-[1.01]"
+                >
+                  <div className="bg-blue-400/10 p-2 rounded-lg text-blue-400 mb-4 group-hover:bg-blue-400/20 transition-all">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-[12px] text-white font-sans">২. ডাউনলোড করুন fallbackDb.ts</h5>
+                    <p className="text-[10px] text-blue-200 mt-1 leading-normal font-sans">ডাউনলোড করে src/fallbackDb.ts ফাইলের সমস্ত কোড রিপ্লেস করুন।</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dbData: Record<string, string> = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && key.startsWith('delicon_')) {
+                        const val = localStorage.getItem(key);
+                        if (val) dbData[key] = val;
+                      }
+                    }
+                    if ((window as any).__serverDbCache) {
+                      for (const [key, val] of Object.entries((window as any).__serverDbCache)) {
+                        if (key.startsWith('delicon_') && val) {
+                          dbData[key] = val as string;
+                        }
+                      }
+                    }
+                    navigator.clipboard.writeText(JSON.stringify(dbData, null, 2));
+                    alert("সম্পূর্ণ ডাটা সফলভাবে ক্লিপবোর্ডে কপি হয়েছে! আপনি চাইলে এটি আপনার কম্পিউটারে যেকোনো জায়গায় পেস্ট করতে পারেন।");
+                  }}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 p-4 rounded-xl flex flex-col justify-between items-start text-left shrink-0 transition-all cursor-pointer shadow-sm group hover:scale-[1.01] border border-slate-250"
+                >
+                  <div className="bg-slate-300 p-2 rounded-lg text-slate-650 mb-4">
+                    <Copy className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-[12px] text-slate-900 font-sans">৩. সম্পূর্ণ ডাটা র-কপি করুন</h5>
+                    <p className="text-[10px] text-slate-505 mt-1 leading-normal font-sans">সম্পূর্ণ ডাটাবেজ অবজেক্ট টেক্সট আকারে আপনার ক্লিপবোর্ডে কপি করুন।</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Original Raw metadata dump */}
+              <div className="space-y-4 font-mono text-[11px] text-slate-700 text-left">
                 <div className="p-4 bg-slate-900 border border-slate-950 text-emerald-400 rounded-xl space-y-2 font-mono">
                   <p className="font-bold text-amber-400 border-b border-slate-800 pb-1.5 font-sans">CLIENT DATABASE METADATA</p>
                   <p>Students Count: {students.length}</p>
