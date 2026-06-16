@@ -10,8 +10,9 @@ import { UserRole } from '../types';
 import { 
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
-  Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw
+  Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video
 } from 'lucide-react';
+import { AttendanceSimulator } from './AttendanceSimulator';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -109,7 +110,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db'>('admissions');
+  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube'>('admissions');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -207,6 +208,130 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   const [editMeritStudents, setEditMeritStudents] = useState(() => meritStudents || []);
   const [meritStudentsSuccess, setMeritStudentsSuccess] = useState(false);
   const [photoSourceTab, setPhotoSourceTab] = useState<Record<number, 'url' | 'upload'>>({});
+
+  // DTube hub states inside SystemControlPanel
+  const [dtubeManageList, setDcubeManageList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('delicon_dtube_playlist');
+    return saved ? JSON.parse(saved) : [
+      { id: 'v1', title: 'শতকরা অধ্যায়ের চমৎকার সমাধান 📐', category: 'full', url: 'https://www.youtube.com/watch?v=pAnu7S8U_wI', views: 320, author: 'মিস ফারহানা চৌধুরী', duration: '১৫:০০ মিনিট', classLabel: 'Class 5 Mathematics' },
+      { id: 'v2', title: 'টেন্স এবং পার্টস অভ স্পিচ সহজে সমাধান 📝', category: 'full', url: 'https://www.youtube.com/watch?v=eG_QshOve4E', views: 145, author: 'জনাব মো: রেজওয়ানুর', duration: '১২:৩০ মিনিট', classLabel: 'Class 8 English' },
+      { id: 'v3', title: 'গতি ও বলবিদ্যার বেসিক সূত্রাবলি ⚡', category: 'full', url: 'https://www.youtube.com/watch?v=Aof_Zg05qYk', views: 88, author: 'জনাব আশরাফুল আমিন', duration: '১৮:১৫ মিনিট', classLabel: 'Class 10 Physics' },
+      { id: 'v4', title: 'ডিলিকন মডেল একাডেমী ক্যাম্পাসের এক ঝলক 🎬', category: 'reel', url: 'https://www.youtube.com/shorts/5e_2Iitid0Y', views: 512, author: 'ডি লিকন মিডিয়া সেল', duration: '০:৫৯ মিনিট', classLabel: 'Reel / Short' },
+      { id: 'v5', title: 'ছোট্ট বন্ধুদের সৃজনশীল চিত্রাংকন প্রতিযোগীতা 🎨', category: 'reel', url: 'https://www.youtube.com/shorts/XN6-M6bC8k4', views: 390, author: 'তাহমিনা সুলতানা', duration: '০:৪৫ মিনিট', classLabel: 'Reel / Short' },
+    ];
+  });
+
+  const [culturalManageList, setCulturalManageList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('delicon_cultural_playlist');
+    return saved ? JSON.parse(saved) : [
+      { id: 'cp1', title: 'রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸', url: 'https://www.youtube.com/watch?v=XN6-M6bC8k4', views: 420 },
+      { id: 'cp2', title: 'কবিতা আবৃত্তি ও বার্ষিক নাটক মঞ্চায়ন 🎭', url: 'https://www.youtube.com/watch?v=8XUvMOnu8cE', views: 280 },
+      { id: 'cp3', title: 'স্বাধীনতা দিবসের বিতর্ক প্রতিযোগিতা 🎤', url: 'https://www.youtube.com/watch?v=Fq2CvmgoO7I', views: 195 }
+    ];
+  });
+
+  // For adding a new D-Tube video
+  const [newDtitle, setNewDtitle] = useState('');
+  const [newDurl, setNewDurl] = useState('');
+  const [newDcategory, setNewDcategory] = useState<'full' | 'reel'>('full');
+  const [newDauthor, setNewDauthor] = useState('');
+  const [newDduration, setNewDduration] = useState('');
+  const [newDclassLabel, setNewDclassLabel] = useState('');
+  const [dtubeError, setDtubeError] = useState('');
+  const [dtubeSuccess, setDtubeSuccess] = useState(false);
+
+  // For adding a new Cultural video
+  const [newCtitle, setNewCtitle] = useState('');
+  const [newCurl, setNewCurl] = useState('');
+  const [newCviews, setNewCviews] = useState('');
+  const [cultError, setCultError] = useState('');
+  const [cultSuccess, setCultSuccess] = useState(false);
+
+  const getYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
+  const handleAddDtubeVideo = () => {
+    if (!newDtitle.trim() || !newDurl.trim()) {
+      setDtubeError('অনুগ্রহ করে টাইটেল ও ইউটিউব লিংক দিন।');
+      return;
+    }
+    const extractedId = getYouTubeId(newDurl);
+    if (!extractedId || extractedId.length !== 11) {
+      setDtubeError('সঠিক ইউটিউব ভিডিওর লিংক বা আইডি ইনপুট দিন।');
+      return;
+    }
+
+    const newVideo = {
+      id: 'dt_' + Date.now(),
+      title: newDtitle.trim(),
+      category: newDcategory,
+      url: newDurl.trim(),
+      views: Math.floor(Math.random() * 200) + 15,
+      author: newDauthor.trim() || 'ডি লিকন মিডিয়া সেল',
+      duration: newDduration.trim() || (newDcategory === 'reel' ? '০:৫৯ মিনিট' : '১০:০০ মিনিট'),
+      classLabel: newDclassLabel.trim() || (newDcategory === 'reel' ? 'Reel / Short' : 'Class Video')
+    };
+
+    const updated = [newVideo, ...dtubeManageList];
+    setDcubeManageList(updated);
+    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(updated));
+    setNewDtitle('');
+    setNewDurl('');
+    setNewDauthor('');
+    setNewDduration('');
+    setNewDclassLabel('');
+    setDtubeError('');
+    setDtubeSuccess(true);
+    setTimeout(() => setDtubeSuccess(false), 3000);
+  };
+
+  const handleDeleteDtubeVideo = (id: string) => {
+    if (confirm('আপনি কি নিশ্চিত যে এই ভিডিওটি মুছে ফেলতে চান?')) {
+      const updated = dtubeManageList.filter(v => v.id !== id);
+      setDcubeManageList(updated);
+      localStorage.setItem('delicon_dtube_playlist', JSON.stringify(updated));
+    }
+  };
+
+  const handleAddCulturalVideo = () => {
+    if (!newCtitle.trim() || !newCurl.trim()) {
+      setCultError('অনুগ্রহ করে টাইটেল ও ইউটিউব লিংকটি দিন।');
+      return;
+    }
+    const extractedId = getYouTubeId(newCurl);
+    if (!extractedId || extractedId.length !== 11) {
+      setCultError('সঠিক ইউটিউব ভিডিওর লিংক বা আইডি ইনপুট দিন।');
+      return;
+    }
+
+    const newVideo = {
+      id: 'cp_' + Date.now(),
+      title: newCtitle.trim(),
+      url: newCurl.trim(),
+      views: parseInt(newCviews) || Math.floor(Math.random() * 300) + 50
+    };
+
+    const updated = [newVideo, ...culturalManageList];
+    setCulturalManageList(updated);
+    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(updated));
+    setNewCtitle('');
+    setNewCurl('');
+    setNewCviews('');
+    setCultError('');
+    setCultSuccess(true);
+    setTimeout(() => setCultSuccess(false), 3000);
+  };
+
+  const handleDeleteCulturalVideo = (id: string) => {
+    if (confirm('আপনি কি নিশ্চিত যে এই কালচারাল ইভেন্ট ভিডিওটি মুছে ফেলতে চান?')) {
+      const updated = culturalManageList.filter(v => v.id !== id);
+      setCulturalManageList(updated);
+      localStorage.setItem('delicon_cultural_playlist', JSON.stringify(updated));
+    }
+  };
   const [slidePhotoSourceTab, setSlidePhotoSourceTab] = useState<Record<number, 'url' | 'upload'>>({});
   const [sectionsSubTab, setSectionsSubTab] = useState<'visibility' | 'branding' | 'slider' | 'merit'>('merit');
 
@@ -828,6 +953,8 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'transport', label: '১০। স্কুল বাস পরিবহন রুট', icon: Bus },
             { id: 'planning', label: '১১। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
             { id: 'notices', label: '১২। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
+            { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
+            { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল হাব 📺', icon: Video },
             { id: 'settings', label: '১৩। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
             { id: 'db', label: '১৪। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
@@ -3949,6 +4076,311 @@ export default fallbackDb;
                 <div className="p-4 bg-slate-950 border text-slate-200 rounded-xl max-h-56 overflow-y-auto font-mono">
                   <p className="font-bold text-amber-400 border-b pb-1.5 mb-2 border-slate-800">RAW LOCALSTORAGE STATE DUMP</p>
                   <pre>{JSON.stringify({ studentsCount: students.length, noticesCount: notices.length, leadsCount: leads.length }, null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'scanner' && (
+            <div className="space-y-6">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-indigo-600" />
+                  ১৫। ডিজিটাল আরএফআইডি / কিউআর গেটলাইন ট্র্যাকার সিমুলেটর
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">ডিজিটাল এটেনডেন্স মেশিন, রিয়েল-টাইম এসএমএস ট্র্যাকিং এবং লাইভ কার্ড কুইক পাঞ্চ সিমুলেশন ল্যাব।</p>
+              </div>
+              <AttendanceSimulator />
+            </div>
+          )}
+
+          {activeTab === 'dtube' && (
+            <div className="space-y-6">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Video className="h-5 w-5 text-red-600 animate-pulse" />
+                  ১৬। ডি-টিউব ও কালচারাল ভিডিও Hub কাস্টমাইজার
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">
+                  স্কুলের ওয়েবসাইট ও হোমপেইজের ভিডিও গ্যালারি ও ডি-টিউব প্লে-লিস্ট সরাসরি এডিট ও ম্যানেজ করার কন্ট্রোল ডেক।
+                </p>
+              </div>
+
+              {/* D-Tube Section */}
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-6 shadow-sm">
+                <div className="flex items-center gap-2 border-b border-dashed border-slate-200 pb-3">
+                  <div className="bg-red-100 text-red-600 p-1.5 rounded-lg">
+                    <Video className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-800">১। ডি-টিউব (ভিডিও এবং রিলস/শর্টস প্লে-লিস্ট)</h4>
+                    <p className="text-[10px] text-slate-400">এখান থেকে নতুন ভিডিও যোগ করতে পারেন এবং অপ্রয়োজনীয় ভিডিও ফেলে দিতে পারেন।</p>
+                  </div>
+                </div>
+
+                {/* Form to Add D-Tube Video */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                  <h5 className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+                    <Plus className="h-4 w-4 text-emerald-600" /> নতুন ডি-টিউব ভিডিও লিঙ্ক এড করুন
+                  </h5>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিওর চমৎকার টাইটেলঃ <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: শতকরা অধ্যায়ের চমৎকার সমাধান 📐"
+                        value={newDtitle}
+                        onChange={(e) => setNewDtitle(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও / শর্টস URL লিংকঃ <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="https://www.youtube.com/watch?v=... বা শর্টস লিংক"
+                        value={newDurl}
+                        onChange={(e) => {
+                          setNewDurl(e.target.value);
+                          setDtubeError('');
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ক্যাটাগরি নির্ধারণ করুনঃ</label>
+                      <select
+                        value={newDcategory}
+                        onChange={(e) => setNewDcategory(e.target.value as 'full' | 'reel')}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
+                      >
+                        <option value="full">বড় একাডেমিক ভিডিও 📹</option>
+                        <option value="reel">রিলস / শর্টস স্পেস 📱</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">শ্রেণী / শ্রেণীবিভাগঃ</label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: Class 5 Mathematics বা Reel / Short"
+                        value={newDclassLabel}
+                        onChange={(e) => setNewDclassLabel(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">শিক্ষক অথবা প্রেজেন্টার নামঃ</label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: মিস ফারহানা চৌধুরী"
+                        value={newDauthor}
+                        onChange={(e) => setNewDauthor(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিও ব্যাপ্তিকালঃ (ঐচ্ছিক)</label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: ১৫:০০ মিনিট বা ০:৫৯ মিনিট"
+                        value={newDduration}
+                        onChange={(e) => setNewDduration(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
+                      />
+                    </div>
+                  </div>
+
+                  {dtubeError && (
+                    <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+                      ⚠ {dtubeError}
+                    </p>
+                  )}
+
+                  {dtubeSuccess && (
+                    <p className="text-[10px] font-bold text-emerald-750 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250">
+                      🎉 ভিডিওটি সফলভাবে আপনার ডি-টিউব প্লে-লিস্টে যোগ করা হয়েছে! হোমপেজে গিয়ে চেক করতে পারেন।
+                    </p>
+                  )}
+
+                  <button
+                    onClick={handleAddDtubeVideo}
+                    className="bg-blue-950 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-blue-900 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center"
+                  >
+                    <Plus className="h-4 w-4" /> প্লে-লিস্টে লিঙ্ক যুক্ত করুন
+                  </button>
+                </div>
+
+                {/* Inline Playlist Grid */}
+                <div className="space-y-3">
+                  <h5 className="font-bold text-xs text-slate-700">বর্তমান ডি-টিউব প্লে-লিস্ট তালিকা ({dtubeManageList.length} টি)</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                    {dtubeManageList.map((item) => {
+                      const yId = getYouTubeId(item.url);
+                      return (
+                        <div key={item.id} className="bg-white border border-slate-150 rounded-xl p-3 flex gap-3 relative shadow-xs hover:border-blue-100 transition-all">
+                          <div className="w-24 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-100">
+                            {yId ? (
+                              <img 
+                                src={`https://img.youtube.com/vi/${yId}/mqdefault.jpg`} 
+                                alt={item.title} 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-slate-200 flex items-center justify-center">
+                                <Video className="h-5 w-5 text-slate-400" />
+                              </div>
+                            )}
+                            <span className="absolute bottom-1 right-1 bg-black/75 px-1 py-0.5 rounded text-[8px] font-mono text-white font-bold leading-none">
+                              {item.category === 'reel' ? 'রিল' : 'পূর্ণ ক্লাস'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex-1 min-w-0 pr-6 flex flex-col justify-between">
+                            <h6 className="font-bold text-[11px] text-slate-800 leading-snug truncate" title={item.title}>
+                              {item.title}
+                            </h6>
+                            <p className="text-[9px] text-slate-500 font-bold mt-auto">শ্রেণীঃ {item.classLabel}</p>
+                            <p className="text-[9px] text-slate-400 font-medium">প্রেজেন্টারঃ {item.author}</p>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteDtubeVideo(item.id)}
+                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
+                            title="ভিডিওটি বাদ দিন"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cultural Station Section */}
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-6 shadow-sm mt-6">
+                <div className="flex items-center gap-2 border-b border-dashed border-slate-200 pb-3">
+                  <div className="bg-amber-100 text-amber-950 p-1.5 rounded-lg">
+                    <Layers className="h-4.5 w-4.5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-800">২। কালচারাল ইভেন্ট ভিডিও স্টেশন (হোমপেজ কালচারাল কর্নার)</h4>
+                    <p className="text-[10px] text-slate-400">বার্ষিক নাটক, বিতর্ক প্রতিযোগিতা, রবীন্দ্র জয়ন্তী সহ সাংস্কৃতিক উৎসবের আকর্ষণীয় ইউটিউব ভিডিও এন্ট্রি বুক।</p>
+                  </div>
+                </div>
+
+                {/* Form to Add Cultural Video */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                  <h5 className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+                    <Plus className="h-4 w-4 text-amber-600" /> নতুন কালচারাল ভিডিও যুক্ত করুন
+                  </h5>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">সাংস্কৃতিক অনুষ্ঠানের আকর্ষণীয় টাইটেলঃ <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸"
+                        value={newCtitle}
+                        onChange={(e) => setNewCtitle(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও URL লিংকঃ <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={newCurl}
+                        onChange={(e) => {
+                          setNewCurl(e.target.value);
+                          setCultError('');
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিউস কাউন্ট সংখ্যাঃ (ঐচ্ছিক)</label>
+                      <input
+                        type="number"
+                        placeholder="যেমন: ৩৫০"
+                        value={newCviews}
+                        onChange={(e) => setNewCviews(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
+                      />
+                    </div>
+                  </div>
+
+                  {cultError && (
+                    <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+                      ⚠ {cultError}
+                    </p>
+                  )}
+
+                  {cultSuccess && (
+                    <p className="text-[10px] font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250">
+                      🎉 কালচারাল ভিডিওটি সফলভাবে যোগ করা হয়েছে! হোমপেজে এটি প্রদর্শিত হবে।
+                    </p>
+                  )}
+
+                  <button
+                    onClick={handleAddCulturalVideo}
+                    className="bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-amber-700 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center"
+                  >
+                    <Plus className="h-4 w-4" /> সাংস্কৃতিক ভিডিও যুক্ত করুন
+                  </button>
+                </div>
+
+                {/* Cultural Inline List */}
+                <div className="space-y-3">
+                  <h5 className="font-bold text-xs text-slate-700">বর্তমান কালচারাল ভিডিও তালিকা ({culturalManageList.length} টি)</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                    {culturalManageList.map((item) => {
+                      const yId = getYouTubeId(item.url);
+                      return (
+                        <div key={item.id} className="bg-white border border-slate-150 rounded-xl p-3 flex gap-3 relative shadow-xs hover:border-amber-100 transition-all">
+                          <div className="w-24 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-100">
+                            {yId ? (
+                              <img 
+                                src={`https://img.youtube.com/vi/${yId}/mqdefault.jpg`} 
+                                alt={item.title} 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-slate-200 flex items-center justify-center">
+                                <Video className="h-5 w-5 text-slate-400" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0 pr-6 flex flex-col justify-between">
+                            <h6 className="font-bold text-[11px] text-slate-800 leading-snug truncate" title={item.title}>
+                              {item.title}
+                            </h6>
+                            <p className="text-[9px] text-slate-500 font-bold mt-auto">ভিউ সংখ্যাঃ {item.views || 0} জন</p>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteCulturalVideo(item.id)}
+                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
+                            title="ভিডিওটি বাদ দিন"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

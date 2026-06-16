@@ -32,6 +32,9 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'portal', label: '৩। ডিজিটাল পোর্টাল ও ERP', icon: KeyRound }
   ];
 
+  const showAdminTabs = loggedInRole === 'Admin' || loggedInRole === 'Developer' || loggedInRole === 'Partner';
+  const visibleNavItems = showAdminTabs ? navItems : [];
+
   const handleNavClick = (viewId: any) => {
     setActiveView(viewId);
     setMobileMenuOpen(false);
@@ -77,7 +80,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id as any)}
@@ -143,7 +146,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden shrink-0 border-t border-blue-950 bg-blue-950 px-4 py-4 space-y-2 animate-fade-in">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id as any)}

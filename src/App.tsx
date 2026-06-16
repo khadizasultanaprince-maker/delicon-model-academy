@@ -15,15 +15,24 @@ import { UserRole } from './types';
 import { Shield, Sparkles, KeyRound, Monitor, ScanLine, CreditCard, ChevronRight } from 'lucide-react';
 
 function AppContent() {
-  const [activeView, setActiveView] = useState<'home' | 'scanner' | 'portal'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'scanner' | 'portal'>(() => {
+    const savedRole = localStorage.getItem('delicon_logged_in_role');
+    return savedRole ? 'portal' : 'home';
+  });
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [loggedInRole, setLoggedInRole] = useState<UserRole | null>(null);
+  const [loggedInRole, setLoggedInRole] = useState<UserRole | null>(() => {
+    const saved = localStorage.getItem('delicon_logged_in_role');
+    return (saved as UserRole) || null;
+  });
   const [prospectData, setProspectData] = useState<{
     studentName: string;
     parentName: string;
     phone: string;
     className: string;
-  } | null>(null);
+  } | null>(() => {
+    const saved = localStorage.getItem('delicon_prospect_data');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,12 +44,15 @@ function AppContent() {
 
   const handleLoginSuccess = (role: UserRole) => {
     setLoggedInRole(role);
+    localStorage.setItem('delicon_logged_in_role', role);
     setActiveView('portal'); // instantly jump to portal dashboard on logon!
   };
 
   const handleLogout = () => {
     setLoggedInRole(null);
     setProspectData(null);
+    localStorage.removeItem('delicon_logged_in_role');
+    localStorage.removeItem('delicon_prospect_data');
     setActiveView('home');
   };
 
@@ -63,8 +75,11 @@ function AppContent() {
             onOpenAuth={() => setAuthModalOpen(true)} 
             loggedInRole={loggedInRole}
             onLeadAutoLogin={(stName, guardName, ph, cl) => {
-              setProspectData({ studentName: stName, parentName: guardName, phone: ph, className: cl });
+              const data = { studentName: stName, parentName: guardName, phone: ph, className: cl };
+              setProspectData(data);
+              localStorage.setItem('delicon_prospect_data', JSON.stringify(data));
               setLoggedInRole('Prospect');
+              localStorage.setItem('delicon_logged_in_role', 'Prospect');
               setActiveView('portal');
             }}
           />
@@ -87,6 +102,7 @@ function AppContent() {
                   prospectData={prospectData}
                   onUpgradeToGuardian={() => {
                     setLoggedInRole('Guardian');
+                    localStorage.setItem('delicon_logged_in_role', 'Guardian');
                   }}
                 />
               )
