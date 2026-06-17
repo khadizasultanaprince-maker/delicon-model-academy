@@ -11,6 +11,8 @@ import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 import { StudentFeeManagement } from './StudentFeeManagement';
 import { AcademicEventCalendar } from './AcademicEventCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
+import { AcademicAiAssistant } from './AcademicAiAssistant';
+import { StudentProgressTracker } from './StudentProgressTracker';
 import { UserRole, Student } from '../types';
 import { 
   Plus, Trash2, Check, BookOpen, Clock, AlertTriangle, 
@@ -997,6 +999,11 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               <DigitalStudentIdCard student={targetStudent} />
             )}
 
+            {/* Visual Progress Tracker & Academic Milestones */}
+            {targetStudent && (
+              <StudentProgressTracker student={targetStudent} />
+            )}
+
             {/* Student Attendance and Grades Analytics Visualization */}
             {targetStudent && (
               <GuardianPerformanceCharts 
@@ -1078,6 +1085,11 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
 
             {/* Digital Academic Library Component */}
             <DigitalLibrary role={role} />
+
+            {/* Academic AI Assistant for Guardians */}
+            {targetStudent && (
+              <AcademicAiAssistant student={targetStudent} examMarks={examMarks} />
+            )}
 
           </div>
 

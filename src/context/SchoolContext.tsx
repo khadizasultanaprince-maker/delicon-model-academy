@@ -82,6 +82,7 @@ interface SchoolContextProps {
   simulateAttendanceScan: (targetId: string, targetType: 'student' | 'employee', scanType: 'Check-In' | 'Check-Out') => { success: boolean; message: string };
   addNotice: (notice: Omit<Notice, 'id'>) => void;
   deleteNotice: (id: string) => void;
+  editNotice: (id: string, noticeData: Partial<Notice>) => void;
   addStudent: (student: Omit<Student, 'id' | 'attendancePct' | 'homeworkStatus'>) => void;
   addEmployee: (employee: Omit<Employee, 'id' | 'paymentStatus'>) => void;
   updateStudentHomework: (id: string, status: 'Completed' | 'Pending' | 'Needs-Motivation') => void;
@@ -829,6 +830,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setNotices(prev => prev.filter(n => n.id !== id));
   };
 
+  const editNotice = (id: string, noticeData: Partial<Notice>) => {
+    setNotices(prev => prev.map(n => n.id === id ? { ...n, ...noticeData } : n));
+  };
+
   const addAcademicEvent = (eventData: Omit<AcademicEvent, 'id'>) => {
     const newEvent: AcademicEvent = {
       ...eventData,
@@ -1170,6 +1175,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       simulateAttendanceScan,
       addNotice,
       deleteNotice,
+      editNotice,
       addStudent,
       addEmployee,
       updateStudentHomework,

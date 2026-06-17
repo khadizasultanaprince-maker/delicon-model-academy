@@ -2,9 +2,30 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const app = express();
 const PORT = 3000;
+
+// Lazy client setup to prevent crash if key is missing on start
+let aiClient: GoogleGenAI | null = null;
+const getAiClient = () => {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiClient;
+};
 
 // Set high limit for JSON because user can upload base64 images
 app.use(express.json({ limit: '50mb' }));
@@ -69,6 +90,69 @@ app.post('/api/db/init', (req, res) => {
     saveDatabase(db);
   }
   res.json({ success: true });
+});
+
+// API endpoint for Student Performance AI Summarization
+app.post('/api/gemini/summarize', async (req, res) => {
+  try {
+    const { student, examMarks, lang } = req.body;
+    if (!student) {
+      return res.status(400).json({ error: 'Missing student data' });
+    }
+
+    const ai = getAiClient();
+    
+    // Construct descriptive profile of student
+    const languageLabel = lang === 'en' ? 'English' : 'Bangla (Bengali)';
+    
+    const subjectMarksText = examMarks && examMarks.length > 0
+      ? examMarks.map((m: any) => `- ${m.subject} (Exam: ${m.examName || 'Exam'}): Written: ${m.writtenMarks}, MCQ: ${m.mcqMarks}, Total: ${m.totalMarks}, Grade: ${m.grade}, GPA: ${m.gpa}`).join('\n')
+      : 'No detailed subject-wise marks uploaded yet.';
+
+    const prompt = `
+You are Al-Hijra AI Academic Counselor, an elite expert system that helps guardians in Bangladesh understand their children's progress.
+Analyze this student's grade/performance profile and attendance. Provide an intelligent, encouraging, objective, and highly actionable digital summary report in ${languageLabel}.
+
+STUDENT PROFILE:
+- Name: ${student.name} (Bangla: ${student.banglaName})
+- Class: ${student.className}
+- Roll: ${student.roll}
+- Attendance Percentage: ${student.attendancePct}%
+- Homework Completion Status: ${student.homeworkStatus}
+
+SUBJECT-WISE ACADEMIC PERFORMANCE (RECENT MARKS):
+${subjectMarksText}
+
+Provide your analysis structured as a JSON object of Type: Object.
+The advice should speak directly to the guardian (parents) in a warm, welcoming, and constructive tone. 
+Keep language native, polite, and completely constructive. Avoid clinical or harsh words.
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            summary: { type: Type.STRING, description: "A paragraph summary in the specified language reviewing the child's academic and behavioral standing based on indicators." },
+            strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "2-3 bullets summarizing visible strengths." },
+            improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "2-3 bullets showing where student can boost results." },
+            attendanceComment: { type: Type.STRING, description: "Comments on punctuality and presence context." },
+            actionPlan: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 actionable tasks parents can monitor at home." }
+          },
+          required: ["summary", "strengths", "improvements", "attendanceComment", "actionPlan"]
+        }
+      }
+    });
+
+    const resultText = response.text || "{}";
+    res.json(JSON.parse(resultText));
+  } catch (err: any) {
+    console.error('Error in AI Summarize endpoint:', err);
+    res.status(500).json({ error: err?.message || 'Failed to generate academic summary report' });
+  }
 });
 
 // API health check

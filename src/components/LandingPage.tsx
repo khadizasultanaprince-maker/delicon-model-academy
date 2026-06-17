@@ -12,6 +12,7 @@ import {
   MessageSquare, Briefcase, Mail, Send, Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { LatestCampusNews } from './LatestCampusNews';
 
 interface MeritStudent {
   name: string;
@@ -2522,31 +2523,13 @@ export const LandingPage: React.FC<{
         </section>
 
         {/* SECTION 15: GENERAL NOTICES */}
-        <section id="sec-notice" className="bg-amber-50 py-16 px-6 lg:px-16 border-b border-amber-200/60">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1">
-                  <Bell className="h-3.5 w-3.5" />
-                  ঘোষণা বোর্ড
-                </span>
-                <h2 className="text-2xl font-bold text-amber-950 mt-1">সর্বশেষ ডিলিকন নোটিশবোর্ড</h2>
-              </div>
+        {isSecVisible('sec-notice') && (
+          <section id="sec-notice" className="bg-slate-50/50 py-16 px-6 lg:px-16 border-b border-slate-200/60 font-sans">
+            <div className="max-w-4xl mx-auto">
+              <LatestCampusNews loggedInRole={loggedInRole} />
             </div>
-            <div className="space-y-4">
-              {notices.map((n, idx) => (
-                <div key={idx} className="p-5 bg-white border border-amber-200 rounded-xl hover:shadow-md transition-all shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2 mb-2">
-                    <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">{n.category}</span>
-                    <span className="text-xs text-slate-500 font-mono">{n.date}</span>
-                  </div>
-                  <h4 className="font-bold text-slate-900 text-base mb-1">{n.banglaTitle}</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">{n.content}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* SECTION 16: EVENT CALENDAR */}
         <section id="sec-events" className="bg-white py-16 px-6 lg:px-16 border-b border-slate-100">
