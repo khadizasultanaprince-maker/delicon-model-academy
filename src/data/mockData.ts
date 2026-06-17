@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject, AcademicEvent } from '../types';
+import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject, AcademicEvent, LibraryResource } from '../types';
 
 export const initialStudents: Student[] = [
   {
@@ -307,4 +307,68 @@ export const initialAcademicEvents: AcademicEvent[] = [
     isHoliday: false
   }
 ];
+
+export const initialLibraryResources: LibraryResource[] = [
+  {
+    id: 'lib_1',
+    title: 'Class 5 Mathematics Half-Yearly Past Paper',
+    banglaTitle: 'শ্রেণী ৫ - গণিত অর্ধবার্ষিক নমুনা প্রশ্নাবলি',
+    category: 'Question Paper',
+    className: 'Class 5',
+    subject: 'Mathematics',
+    banglaSubject: 'গণিত',
+    uploadedBy: 'জনাব কামরুল হাসান (গণিত বিভাগ প্রধান)',
+    publishDate: '2026-05-12',
+    fileSize: '1.4 MB',
+    downloadCount: 42,
+    content: '১। সংক্ষেপে উত্তর দাও (যেকোনো ১০টি):\nক) ১/৩ ও ২/৫ এর মধ্যে কোনটি বড়?\nখ) গুণক = গুণফল ÷ ?\n\n২। সৃজনশীল কাঠামোবদ্ধ প্রশ্নাবলি:\nক) একটি হোস্টেলে ২০ জন ছাত্রের ৩০ দিনের খাবার আছে। ৫ দিন পর ১০ জন নতুন ছাত্র আসলে বাকি খাদ্য কতদিন চলবে?\nখ) লসাগু ও গসাগু এর পূর্ণরূপ লিখুন।',
+    banglaContent: '১। সংক্ষেপে উত্তর দাও (যেকোনো ১০টি):\nক) ১/৩ ও ২/৫ এর মধ্যে কোনটি বড়?\nখ) গুণক = গুণফল ÷ ?\n\n২। সৃজনশীল কাঠামোবদ্ধ প্রশ্নাবলি:\nক) একটি হোস্টেলে ২০ জন ছাত্রের ৩০ দিনের খাবার আছে। ৫ দিন পর ১০ জন নতুন ছাত্র আসলে বাকি খাদ্য কতদিন চলবে?\nখ) লসাগু ও গসাগু এর পূর্ণরূপ লিখুন।'
+  },
+  {
+    id: 'lib_2',
+    title: 'Quranic Arabic Vocabulary Lecture Note',
+    banglaTitle: 'কুরআনিক আরবি ব্যাকরণ ও শব্দভাণ্ডার লেকচার শিট',
+    category: 'Lecture Note',
+    className: 'Class 8',
+    subject: 'Arabic',
+    banglaSubject: 'আরবি সাহিত্য',
+    uploadedBy: 'হাফেজ মাওলানা ওবায়দুল্লাহ',
+    publishDate: '2026-06-02',
+    fileSize: '2.1 MB',
+    downloadCount: 89,
+    content: 'Quranic vocabulary root sheets for Verb and Noun identifiers. Highlights standard patterns of thulathi mujarrad (ثلاثي مجرد) verbs.\n1. فَعَلَ - يَفْعَلُ (He did)\n2. نَصَرَ - يَنْصُرُ (He helped)\n3. ضَرَبَ - يَضْرِبُ (He hit)\nThis guide provides essential translation formulas for class homework preparation.',
+    banglaContent: 'কুরআনিক শব্দভাণ্ডারের মূল রূপ ও ক্রিয়াপদের প্রকারভেদ। বাবে সুলাসি মুজাররদ (ثلاثي مجرد) এর প্রধান গঠনসমূহ:\n১। فَعَلَ - يَفْعَلُ (কাজ করা)\n২। نَصَرَ - يَنْصُرُ (সাহায্য করা)\n৩। ضَرَبَ - يَضْرِبُ (আঘাত করা)\nএই নির্দেশিকাটি শিক্ষার্থীদের হোমওয়ার্ক ও পরীক্ষার প্রস্তুতির জন্য গুরুত্বপূর্ণ।'
+  },
+  {
+    id: 'lib_3',
+    title: 'English Grammar Tense Masterclass Syllabus',
+    banglaTitle: 'ইংরেজি গ্রামার - টেন্স ও ভয়েস পরিবর্তনের সিলেবাস',
+    category: 'Syllabus',
+    className: 'Class 6',
+    subject: 'English',
+    banglaSubject: 'ইংরেজি',
+    uploadedBy: 'মিস নুসরাত জেরিন',
+    publishDate: '2026-04-18',
+    fileSize: '780 KB',
+    downloadCount: 125,
+    content: 'Academic English Syllabus outlining second semester tense and voice structure conversions.\n- Indefinite & Continuous structures (Present, Past, Future)\n- Perfect structures and passive voice transformations.\nContains 20 exercises with solutions.',
+    banglaContent: 'দ্বিতীয় সেমিস্টারের ইংরেজি ব্যাকরণ সিলেবাস রূপরেখা:\n- ইনডেফিনিট ও কন্টিনিউয়াস টেন্সের গঠন\n- পারফেক্ট টেন্স এবং প্যাসিভ ভয়েস রূপান্তর নিয়মাবলী।\nশিক্ষার্থীদের অনুশীলনের জন্য ২০টি নমুনা প্রশ্ন ও সমাধান সংবলিত।'
+  },
+  {
+    id: 'lib_4',
+    title: 'Interactive Natural Science Ebook for Juniors',
+    banglaTitle: 'প্রাথমিক বিজ্ঞান পাঠ্য বই - প্রথম অধ্যায় (সচিত্র সংস্করণ)',
+    category: 'E-Book',
+    className: 'Class 5',
+    subject: 'Science',
+    banglaSubject: 'বিজ্ঞান',
+    uploadedBy: 'ড. মো. আসাদুজ্জামান',
+    publishDate: '2026-03-10',
+    fileSize: '4.8 MB',
+    downloadCount: 156,
+    content: 'Full interactive PDF guide to Chapter 1: Ecosystems, Living Organisms, and Food Chains.\n- Producer, Consumer, Decomposer loop.\n- Environmental balances and safe resource consumption practices.',
+    banglaContent: 'সচিত্র প্রাথমিক বিজ্ঞান পাঠ্যপুস্তক - প্রথম অধ্যায়: পরিবেশের উপাদান, খাদ্য শৃঙ্খল ও ভারসাম্য।\n- উৎপাদক, খাদক ও বিয়োজক চক্রের চিত্রসহ বিবরণ।\n- প্রাকৃতিক ভারসাম্য অক্ষুণ্ণ রাখার উপায় আলোচনা করা হয়েছে।'
+  }
+];
+
 

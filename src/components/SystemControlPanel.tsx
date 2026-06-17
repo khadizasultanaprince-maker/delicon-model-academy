@@ -11,10 +11,11 @@ import {
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
   Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
-  Camera, CameraOff, Calendar
+  Camera, CameraOff, Calendar, Book
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
 import { AcademicEventCalendar } from './AcademicEventCalendar';
+import { DigitalLibrary } from './DigitalLibrary';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -116,7 +117,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar'>('admissions');
+  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library'>('admissions');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -1047,6 +1048,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
             { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল হাব 📺', icon: Video },
             { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
+            { id: 'library', label: '১৮। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
             { id: 'settings', label: '১৩। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
             { id: 'db', label: '১৪। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
@@ -4374,6 +4376,22 @@ export default fallbackDb;
               </div>
 
               <AcademicEventCalendar role={role} />
+            </div>
+          )}
+
+          {activeTab === 'library' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Book className="h-5 w-5 text-indigo-950" />
+                  ১৮। ডিজিটাল লাইব্রেরি এডিটোরিয়াল ও সামগ্রী সেন্টার 📚
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">
+                  শিক্ষার্থীদের জন্য সিলেবাস, লেকচার শিট, পূর্ববর্তী পরীক্ষা প্রশ্নপত্রসমূহ এবং ই-বুক পাবলিশ করুন। এখানে যেকোনো পরিবর্তন রিয়েলটাইমে শিক্ষার্থী ও অভিভাবক ডিজিটাল পোর্টালে সিঙ্ক হবে।
+                </p>
+              </div>
+
+              <DigitalLibrary role={role} />
             </div>
           )}
 

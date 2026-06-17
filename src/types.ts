@@ -197,5 +197,22 @@ export interface AcademicEvent {
   isHoliday: boolean;
 }
 
+export interface LibraryResource {
+  id: string;
+  title: string;
+  banglaTitle: string;
+  category: 'Syllabus' | 'Lecture Note' | 'Question Paper' | 'E-Book';
+  className: string; // e.g. "Class 5", "Class 8", "All Classes"
+  subject: string; // e.g. "Mathematics", "English", "Arabic"
+  banglaSubject: string;
+  uploadedBy: string;
+  publishDate: string; // YYYY-MM-DD
+  fileSize: string; // e.g. "1.2 MB"
+  downloadCount: number;
+  content: string; // Text outline / contents of the material
+  banglaContent?: string;
+}
+
+
 
 

@@ -10,6 +10,7 @@ import { GuardianPerformanceCharts } from './GuardianPerformanceCharts';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 import { StudentFeeManagement } from './StudentFeeManagement';
 import { AcademicEventCalendar } from './AcademicEventCalendar';
+import { DigitalLibrary } from './DigitalLibrary';
 import { UserRole, Student } from '../types';
 import { 
   Plus, Trash2, Check, BookOpen, Clock, AlertTriangle, 
@@ -1074,6 +1075,9 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
 
             {/* Academic Event Calendar & Holidays Component */}
             <AcademicEventCalendar role={role} />
+
+            {/* Digital Academic Library Component */}
+            <DigitalLibrary role={role} />
 
           </div>
 

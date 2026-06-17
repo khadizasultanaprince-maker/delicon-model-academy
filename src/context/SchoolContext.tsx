@@ -22,7 +22,8 @@ import {
   LandingSection,
   ExamMark,
   MeritStudent,
-  AcademicEvent
+  AcademicEvent,
+  LibraryResource
 } from '../types';
 import { 
   initialStudents, 
@@ -32,7 +33,8 @@ import {
   initialRoutes, 
   initialResults, 
   initialDevProjects,
-  initialAcademicEvents
+  initialAcademicEvents,
+  initialLibraryResources
 } from '../data/mockData';
 import fallbackDb from '../fallbackDb';
 
@@ -121,6 +123,12 @@ interface SchoolContextProps {
   addAcademicEvent: (event: Omit<AcademicEvent, 'id'>) => void;
   editAcademicEvent: (id: string, event: Partial<AcademicEvent>) => void;
   deleteAcademicEvent: (id: string) => void;
+
+  libraryResources: LibraryResource[];
+  addLibraryResource: (resource: Omit<LibraryResource, 'id' | 'downloadCount' | 'publishDate'>) => void;
+  editLibraryResource: (id: string, resource: Partial<LibraryResource>) => void;
+  deleteLibraryResource: (id: string) => void;
+  incrementDownloadCount: (id: string) => void;
 }
 
 const SchoolContext = createContext<SchoolContextProps | undefined>(undefined);
@@ -274,6 +282,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [academicEvents, setAcademicEvents] = useState<AcademicEvent[]>(() => {
     const saved = localStorage.getItem('delicon_academic_events');
     return saved ? JSON.parse(saved) : initialAcademicEvents;
+  });
+
+  const [libraryResources, setLibraryResources] = useState<LibraryResource[]>(() => {
+    const saved = localStorage.getItem('delicon_library_resources');
+    return saved ? JSON.parse(saved) : initialLibraryResources;
   });
 
   const [portalCredentials, setPortalCredentials] = useState<PortalCredential[]>(() => {
@@ -635,6 +648,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('delicon_academic_events', JSON.stringify(academicEvents));
   }, [academicEvents]);
 
+  useEffect(() => {
+    localStorage.setItem('delicon_library_resources', JSON.stringify(libraryResources));
+  }, [libraryResources]);
+
   // Synchronously and asynchronously align old school slogan references
   useEffect(() => {
     const checkAndForceSlogan = () => {
@@ -826,6 +843,28 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteAcademicEvent = (id: string) => {
     setAcademicEvents(prev => prev.filter(evt => evt.id !== id));
+  };
+
+  const addLibraryResource = (resData: Omit<LibraryResource, 'id' | 'downloadCount' | 'publishDate'>) => {
+    const newRes: LibraryResource = {
+      ...resData,
+      id: 'lib_' + Date.now(),
+      publishDate: new Date().toISOString().split('T')[0],
+      downloadCount: 0
+    };
+    setLibraryResources(prev => [newRes, ...prev]);
+  };
+
+  const editLibraryResource = (id: string, updatedFields: Partial<LibraryResource>) => {
+    setLibraryResources(prev => prev.map(res => res.id === id ? { ...res, ...updatedFields } : res));
+  };
+
+  const deleteLibraryResource = (id: string) => {
+    setLibraryResources(prev => prev.filter(res => res.id !== id));
+  };
+
+  const incrementDownloadCount = (id: string) => {
+    setLibraryResources(prev => prev.map(res => res.id === id ? { ...res, downloadCount: res.downloadCount + 1 } : res));
   };
 
   const addStudent = (stData: Omit<Student, 'id' | 'attendancePct' | 'homeworkStatus'>) => {
@@ -1159,7 +1198,13 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       academicEvents,
       addAcademicEvent,
       editAcademicEvent,
-      deleteAcademicEvent
+      deleteAcademicEvent,
+
+      libraryResources,
+      addLibraryResource,
+      editLibraryResource,
+      deleteLibraryResource,
+      incrementDownloadCount
     }}>
       {children}
     </SchoolContext.Provider>
