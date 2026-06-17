@@ -21,7 +21,8 @@ import {
   Requisition,
   LandingSection,
   ExamMark,
-  MeritStudent
+  MeritStudent,
+  AcademicEvent
 } from '../types';
 import { 
   initialStudents, 
@@ -30,7 +31,8 @@ import {
   initialStationery, 
   initialRoutes, 
   initialResults, 
-  initialDevProjects 
+  initialDevProjects,
+  initialAcademicEvents
 } from '../data/mockData';
 import fallbackDb from '../fallbackDb';
 
@@ -65,6 +67,12 @@ interface SchoolContextProps {
   requisitions: Requisition[];
   sections: LandingSection[];
   examMarks: ExamMark[];
+  
+  // Video Customizer Arrays and Actions
+  dtubePlaylist: any[];
+  culturalPlaylist: any[];
+  updateDtubePlaylist: (playlist: any[]) => void;
+  updateCulturalPlaylist: (playlist: any[]) => void;
   
   // Actions
   addLead: (lead: Omit<Lead, 'id' | 'status' | 'subDate'>) => void;
@@ -108,6 +116,11 @@ interface SchoolContextProps {
   updateCampusPhotos: (photos: { url: string; title: string; caption: string; }[]) => void;
   meritStudents: MeritStudent[];
   updateMeritStudents: (students: MeritStudent[]) => void;
+
+  academicEvents: AcademicEvent[];
+  addAcademicEvent: (event: Omit<AcademicEvent, 'id'>) => void;
+  editAcademicEvent: (id: string, event: Partial<AcademicEvent>) => void;
+  deleteAcademicEvent: (id: string) => void;
 }
 
 const SchoolContext = createContext<SchoolContextProps | undefined>(undefined);
@@ -256,6 +269,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [devProjects, setDevProjects] = useState<DevProject[]>(() => {
     const saved = localStorage.getItem('delicon_dev_projects');
     return saved ? JSON.parse(saved) : initialDevProjects;
+  });
+
+  const [academicEvents, setAcademicEvents] = useState<AcademicEvent[]>(() => {
+    const saved = localStorage.getItem('delicon_academic_events');
+    return saved ? JSON.parse(saved) : initialAcademicEvents;
   });
 
   const [portalCredentials, setPortalCredentials] = useState<PortalCredential[]>(() => {
@@ -512,6 +530,45 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // State management for D-Tube and Cultural Playlist
+  const [dtubePlaylist, setDtubePlaylist] = useState<any[]>(() => {
+    const saved = localStorage.getItem('delicon_dtube_playlist');
+    return saved ? JSON.parse(saved) : getFallbackVal('delicon_dtube_playlist', [
+      { id: 'v1', title: 'শতকরা অধ্যায়ের চমৎকার সমাধান 📐', category: 'full', url: 'https://www.youtube.com/watch?v=pAnu7S8U_wI', views: 320, author: 'মিস ফারহানা চৌধুরী', duration: '১৫:০০ মিনিট', classLabel: 'Class 5 Mathematics' },
+      { id: 'v2', title: 'টেন্স এবং পার্টস অভ স্পিচ সহজে সমাধান 📝', category: 'full', url: 'https://www.youtube.com/watch?v=eG_QshOve4E', views: 145, author: 'জনাব মো: রেজওয়ানুর', duration: '১২:৩০ মিনিট', classLabel: 'Class 8 English' },
+      { id: 'v3', title: 'গতি ও বলবিদ্যার বেসিক সূত্রাবলি ⚡', category: 'full', url: 'https://www.youtube.com/watch?v=Aof_Zg05qYk', views: 88, author: 'জনাব আশরাফুল আমিন', duration: '১৮:১৫ মিনিট', classLabel: 'Class 10 Physics' },
+      { id: 'v4', title: 'ডিলিকন মডেল একাডেমী ক্যাম্পাসের এক ঝলক 🎬', category: 'reel', url: 'https://www.youtube.com/shorts/5e_2Iitid0Y', views: 512, author: 'ডি লিকন মিডিয়া সেল', duration: '০:৫৯ মিনিট', classLabel: 'Reel / Short' },
+      { id: 'v5', title: 'ছোট্ট বন্ধুদের সৃজনশীল চিত্রাংকন প্রতিযোগীতা 🎨', category: 'reel', url: 'https://www.youtube.com/shorts/XN6-M6bC8k4', views: 390, author: 'তাহমিনা সুলতানা', duration: '০:৪৫ মিনিট', classLabel: 'Reel / Short' },
+    ]);
+  });
+
+  const [culturalPlaylist, setCulturalPlaylist] = useState<any[]>(() => {
+    const saved = localStorage.getItem('delicon_cultural_playlist');
+    return saved ? JSON.parse(saved) : getFallbackVal('delicon_cultural_playlist', [
+      { id: 'cp1', title: 'রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸', url: 'https://www.youtube.com/watch?v=XN6-M6bC8k4', views: 420 },
+      { id: 'cp2', title: 'কবিতা আবৃত্তি ও বার্ষিক নাটক মঞ্চায়ন 🎭', url: 'https://www.youtube.com/watch?v=8XUvMOnu8cE', views: 280 },
+      { id: 'cp3', title: 'স্বাধীনতা দিবসের বিতর্ক প্রতিযোগিতা 🎤', url: 'https://www.youtube.com/watch?v=Fq2CvmgoO7I', views: 195 }
+    ]);
+  });
+
+  const updateDtubePlaylist = (playlist: any[]) => {
+    setDtubePlaylist(playlist);
+    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(playlist));
+  };
+
+  const updateCulturalPlaylist = (playlist: any[]) => {
+    setCulturalPlaylist(playlist);
+    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(playlist));
+  };
+
+  useEffect(() => {
+    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(dtubePlaylist));
+  }, [dtubePlaylist]);
+
+  useEffect(() => {
+    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(culturalPlaylist));
+  }, [culturalPlaylist]);
+
 
   // Sync to localstorage
   useEffect(() => {
@@ -573,6 +630,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('delicon_dev_projects', JSON.stringify(devProjects));
   }, [devProjects]);
+
+  useEffect(() => {
+    localStorage.setItem('delicon_academic_events', JSON.stringify(academicEvents));
+  }, [academicEvents]);
 
   // Synchronously and asynchronously align old school slogan references
   useEffect(() => {
@@ -749,6 +810,22 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteNotice = (id: string) => {
     setNotices(prev => prev.filter(n => n.id !== id));
+  };
+
+  const addAcademicEvent = (eventData: Omit<AcademicEvent, 'id'>) => {
+    const newEvent: AcademicEvent = {
+      ...eventData,
+      id: 'e_' + Date.now(),
+    };
+    setAcademicEvents(prev => [...prev, newEvent]);
+  };
+
+  const editAcademicEvent = (id: string, updatedFields: Partial<AcademicEvent>) => {
+    setAcademicEvents(prev => prev.map(evt => evt.id === id ? { ...evt, ...updatedFields } : evt));
+  };
+
+  const deleteAcademicEvent = (id: string) => {
+    setAcademicEvents(prev => prev.filter(evt => evt.id !== id));
   };
 
   const addStudent = (stData: Omit<Student, 'id' | 'attendancePct' | 'homeworkStatus'>) => {
@@ -1044,6 +1121,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updateCampusPhotos,
       meritStudents,
       updateMeritStudents,
+      dtubePlaylist,
+      culturalPlaylist,
+      updateDtubePlaylist,
+      updateCulturalPlaylist,
       
       addLead,
       updateLeadStatus,
@@ -1073,7 +1154,12 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       resetSections,
       addExamMark,
       saveExamMarksBulk,
-      updateStudentId
+      updateStudentId,
+
+      academicEvents,
+      addAcademicEvent,
+      editAcademicEvent,
+      deleteAcademicEvent
     }}>
       {children}
     </SchoolContext.Provider>

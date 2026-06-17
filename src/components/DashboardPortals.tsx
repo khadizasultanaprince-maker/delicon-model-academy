@@ -6,6 +6,10 @@
 import React, { useState } from 'react';
 import { useSchool } from '../context/SchoolContext';
 import { MarksController } from './MarksController';
+import { GuardianPerformanceCharts } from './GuardianPerformanceCharts';
+import { DigitalStudentIdCard } from './DigitalStudentIdCard';
+import { StudentFeeManagement } from './StudentFeeManagement';
+import { AcademicEventCalendar } from './AcademicEventCalendar';
 import { UserRole, Student } from '../types';
 import { 
   Plus, Trash2, Check, BookOpen, Clock, AlertTriangle, 
@@ -53,7 +57,8 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
     requisitions,
     approveRequisitionByAssistant,
     rejectRequisition,
-    meritStudents
+    meritStudents,
+    examMarks
   } = useSchool();
 
   // Selected student for Guardian/Teacher actions
@@ -937,7 +942,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
       {/* ========================================================
           3. GUARDIAN PORTAL (অভিভাবক গেটওয়ে)
          ======================================================== */}
-      {role === 'Guardian' && (
+      {(role === 'Guardian' || role === 'Student') && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             
@@ -986,6 +991,20 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               </div>
             </div>
 
+            {/* Digital Student ID Card Component */}
+            {targetStudent && (
+              <DigitalStudentIdCard student={targetStudent} />
+            )}
+
+            {/* Student Attendance and Grades Analytics Visualization */}
+            {targetStudent && (
+              <GuardianPerformanceCharts 
+                student={targetStudent} 
+                examMarks={examMarks} 
+                attendanceLogs={attendanceLogs} 
+              />
+            )}
+
             {/* Parent Entry Tracker & Live SMS Log Feed */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
@@ -1020,7 +1039,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
 
             {/* Monthly Invoices & Billing */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h3 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 mb-4">স্কুল গেটওয়ে ফি পেমেন্ট ও ইনভয়েস</h3>
+              <h3 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3 mb-4">স্কুল গেটওয়ে ফি পেমেন্ট ও কুইক এন্ট্রি</h3>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-xl mb-4 border border-slate-150">
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase font-mono block">ইনভয়েস ব্যালেন্স</span>
@@ -1047,6 +1066,14 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
                 )}
               </div>
             </div>
+
+            {/* Dynamic Monthly Student Fee Management Dashboard */}
+            {targetStudent && (
+              <StudentFeeManagement student={targetStudent} />
+            )}
+
+            {/* Academic Event Calendar & Holidays Component */}
+            <AcademicEventCalendar role={role} />
 
           </div>
 

@@ -184,4 +184,18 @@ export interface MeritStudent {
   photoUrl?: string;
 }
 
+export interface AcademicEvent {
+  id: string;
+  title: string;
+  banglaTitle: string;
+  date: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD optional
+  category: 'Holiday' | 'Exam' | 'Event' | 'Other';
+  description: string;
+  banglaDescription: string;
+  className?: string; // e.g. "All Classes" or "Class 5"
+  isHoliday: boolean;
+}
+
+
 

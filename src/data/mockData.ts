@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject } from '../types';
+import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject, AcademicEvent } from '../types';
 
 export const initialStudents: Student[] = [
   {
@@ -246,3 +246,65 @@ export const initialDevProjects: DevProject[] = [
     status: 'Completed',
   },
 ];
+
+export const initialAcademicEvents: AcademicEvent[] = [
+  {
+    id: 'evt_1',
+    title: 'Midterm Examination 2026',
+    banglaTitle: 'অর্ধবার্ষিক / সাময়িক পরীক্ষা ২০২৬',
+    date: '2026-06-15',
+    endDate: '2026-06-22',
+    category: 'Exam',
+    description: 'First terminal and midterm evaluation of the school year. All subjects covered.',
+    banglaDescription: 'বছরের প্রথম সাময়িক মূল্যায়ন পরীক্ষা। সকল বিষয়ের লিখিত ও মৌখিক মূল্যায়ন অনুষ্ঠিত হবে।',
+    className: 'All Classes',
+    isHoliday: false
+  },
+  {
+    id: 'evt_2',
+    title: 'Eid al-Adha Vacation',
+    banglaTitle: 'পবিত্র ঈদুল আজহা উপলক্ষে ছুটি',
+    date: '2026-06-16',
+    endDate: '2026-06-20',
+    category: 'Holiday',
+    description: 'School closed on the auspicious occasion of Eid al-Adha celebrations.',
+    banglaDescription: 'পবিত্র ঈদুল আজহার কুরবানি ও সরকারি বন্ধের নিমিত্তে মাদরাসার সমস্ত সাধারণ ক্লাস বন্ধ থাকবে।',
+    className: 'All Classes',
+    isHoliday: true
+  },
+  {
+    id: 'evt_3',
+    title: 'Summer Annual Vacation',
+    banglaTitle: 'গ্রীষ্মকালীন বার্ষিক অবকাশকালীন ছুটি',
+    date: '2026-07-01',
+    endDate: '2026-07-10',
+    category: 'Holiday',
+    description: 'Ten days summer holidays for all junior and senior levels.',
+    banglaDescription: 'তীব্র গরম ও গ্রীষ্মের ছুটি উপলক্ষে ১০ দিন সাধারণ কার্যক্রম বন্ধ থাকবে।',
+    className: 'All Classes',
+    isHoliday: true
+  },
+  {
+    id: 'evt_4',
+    title: 'Annual Sports & Athletic League',
+    banglaTitle: 'বার্ষিক ক্রীড়া ও অ্যাথলেটিকস প্রতিযোগিতা',
+    date: '2026-07-25',
+    category: 'Event',
+    description: 'Track sports and athletic challenges for senior levels.',
+    banglaDescription: 'মাদরাসা প্রাঙ্গণে বার্ষিক দৌড়, ফুটবল ও অন্যান্য ক্রীড়া প্রতিযোগিতা অনুষ্ঠিত হবে।',
+    className: 'Class 5 to 9',
+    isHoliday: false
+  },
+  {
+    id: 'evt_5',
+    title: 'Science Fair & Exhibition 2026',
+    banglaTitle: 'বিজ্ঞান মেলা ও সৃজনশীল প্রজেক্ট প্রদর্শনী',
+    date: '2026-08-12',
+    category: 'Event',
+    description: 'Exhibition of innovative technology models and experiments.',
+    banglaDescription: 'মাদরাসা অডিটোরিয়ামে শিক্ষার্থীদের তৈরি বিভিন্ন রোবোটিক্স ও সায়েন্স প্রজেক্টের লাইভ প্রদর্শনী।',
+    className: 'Class 6 to 9',
+    isHoliday: false
+  }
+];
+

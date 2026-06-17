@@ -10,9 +10,11 @@ import { UserRole } from '../types';
 import { 
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
-  Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video
+  Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
+  Camera, CameraOff, Calendar
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
+import { AcademicEventCalendar } from './AcademicEventCalendar';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -106,11 +108,15 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
     approveRequisitionByAssistant,
     approveRequisitionByPrincipal,
     rejectRequisition,
-    receiveRequisitionPayment
+    receiveRequisitionPayment,
+    dtubePlaylist,
+    culturalPlaylist,
+    updateDtubePlaylist,
+    updateCulturalPlaylist
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube'>('admissions');
+  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar'>('admissions');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -172,6 +178,135 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
       });
   }, [selectedRecipientId]);
 
+  // Camera capture states and handlers
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const [idCardPhotoTab, setIdCardPhotoTab] = useState<'upload' | 'camera' | 'url'>('upload');
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream, isCameraActive]);
+
+  React.useEffect(() => {
+    // If recipient ID or activeTab changes, shut down the camera stream immediately
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+      setIsCameraActive(false);
+    }
+  }, [selectedRecipientId, activeTab]);
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: cameraFacingMode },
+        audio: false
+      });
+      setCameraStream(stream);
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error('Camera capture error:', err);
+      setCameraError('ক্যামেরা চালু করতে ব্যর্থ হয়েছে। অনুগ্রহ করে ব্রাউজার ক্যামেরা অনুমতি দিন ও পুনরায় চালু চেষ্টা করুন।');
+      setIsCameraActive(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      
+      // Strict crop and high-quality downsampling to fit optimal profile bounds
+      const targetWidth = 150;
+      const targetHeight = 180;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const vWidth = video.videoWidth;
+        const vHeight = video.videoHeight;
+        
+        const targetAspect = targetWidth / targetHeight;
+        const videoAspect = vWidth / vHeight;
+        
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceWidth = vWidth;
+        let sourceHeight = vHeight;
+        
+        if (videoAspect > targetAspect) {
+          sourceWidth = vHeight * targetAspect;
+          sourceX = (vWidth - sourceWidth) / 2;
+        } else {
+          sourceHeight = vWidth / targetAspect;
+          sourceY = (vHeight - sourceHeight) / 2;
+        }
+        
+        ctx.drawImage(
+          video,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, targetWidth, targetHeight
+        );
+        
+        const base64String = canvas.toDataURL('image/jpeg', 0.85);
+        if (base64String && selectedRecipientId) {
+          const updated = { ...customPhotos, [selectedRecipientId]: base64String };
+          setCustomPhotos(updated);
+          try {
+            localStorage.setItem('delicon_custom_photos', JSON.stringify(updated));
+          } catch (ex) {
+            console.error("Storage limit exceeded inside capturePhoto", ex);
+          }
+          // Tear down tracks
+          if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+          }
+          setIsCameraActive(false);
+        }
+      }
+    }
+  };
+
+  const handleStopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const toggleFacingMode = async () => {
+    const nextMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+    setCameraFacingMode(nextMode);
+    if (isCameraActive) {
+      try {
+        if (cameraStream) {
+          cameraStream.getTracks().forEach(track => track.stop());
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: nextMode },
+          audio: false
+        });
+        setCameraStream(stream);
+        setIsCameraActive(true);
+      } catch (err) {
+        console.error('Failed to toggle camera facing mode:', err);
+      }
+    }
+  };
+
   // Exam Mark Entry control states
   const [selectedStudentForExam, setSelectedStudentForExam] = useState('');
   const [examType, setExamType] = useState<'Terminal' | 'Midterm'>('Terminal');
@@ -209,43 +344,19 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   const [meritStudentsSuccess, setMeritStudentsSuccess] = useState(false);
   const [photoSourceTab, setPhotoSourceTab] = useState<Record<number, 'url' | 'upload'>>({});
 
-  // DTube hub states inside SystemControlPanel
-  const [dtubeManageList, setDcubeManageList] = useState<any[]>(() => {
-    const saved = localStorage.getItem('delicon_dtube_playlist');
-    return saved ? JSON.parse(saved) : [
-      { id: 'v1', title: 'শতকরা অধ্যায়ের চমৎকার সমাধান 📐', category: 'full', url: 'https://www.youtube.com/watch?v=pAnu7S8U_wI', views: 320, author: 'মিস ফারহানা চৌধুরী', duration: '১৫:০০ মিনিট', classLabel: 'Class 5 Mathematics' },
-      { id: 'v2', title: 'টেন্স এবং পার্টস অভ স্পিচ সহজে সমাধান 📝', category: 'full', url: 'https://www.youtube.com/watch?v=eG_QshOve4E', views: 145, author: 'জনাব মো: রেজওয়ানুর', duration: '১২:৩০ মিনিট', classLabel: 'Class 8 English' },
-      { id: 'v3', title: 'গতি ও বলবিদ্যার বেসিক সূত্রাবলি ⚡', category: 'full', url: 'https://www.youtube.com/watch?v=Aof_Zg05qYk', views: 88, author: 'জনাব আশরাফুল আমিন', duration: '১৮:১৫ মিনিট', classLabel: 'Class 10 Physics' },
-      { id: 'v4', title: 'ডিলিকন মডেল একাডেমী ক্যাম্পাসের এক ঝলক 🎬', category: 'reel', url: 'https://www.youtube.com/shorts/5e_2Iitid0Y', views: 512, author: 'ডি লিকন মিডিয়া সেল', duration: '০:৫৯ মিনিট', classLabel: 'Reel / Short' },
-      { id: 'v5', title: 'ছোট্ট বন্ধুদের সৃজনশীল চিত্রাংকন প্রতিযোগীতা 🎨', category: 'reel', url: 'https://www.youtube.com/shorts/XN6-M6bC8k4', views: 390, author: 'তাহমিনা সুলতানা', duration: '০:৪৫ মিনিট', classLabel: 'Reel / Short' },
-    ];
-  });
+  // DTube hub state parameters inside SystemControlPanel
 
-  const [culturalManageList, setCulturalManageList] = useState<any[]>(() => {
-    const saved = localStorage.getItem('delicon_cultural_playlist');
-    return saved ? JSON.parse(saved) : [
-      { id: 'cp1', title: 'রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸', url: 'https://www.youtube.com/watch?v=XN6-M6bC8k4', views: 420 },
-      { id: 'cp2', title: 'কবিতা আবৃত্তি ও বার্ষিক নাটক মঞ্চায়ন 🎭', url: 'https://www.youtube.com/watch?v=8XUvMOnu8cE', views: 280 },
-      { id: 'cp3', title: 'স্বাধীনতা দিবসের বিতর্ক প্রতিযোগিতা 🎤', url: 'https://www.youtube.com/watch?v=Fq2CvmgoO7I', views: 195 }
-    ];
-  });
-
-  // For adding a new D-Tube video
-  const [newDtitle, setNewDtitle] = useState('');
-  const [newDurl, setNewDurl] = useState('');
-  const [newDcategory, setNewDcategory] = useState<'full' | 'reel'>('full');
-  const [newDauthor, setNewDauthor] = useState('');
-  const [newDduration, setNewDduration] = useState('');
-  const [newDclassLabel, setNewDclassLabel] = useState('');
-  const [dtubeError, setDtubeError] = useState('');
-  const [dtubeSuccess, setDtubeSuccess] = useState(false);
-
-  // For adding a new Cultural video
-  const [newCtitle, setNewCtitle] = useState('');
-  const [newCurl, setNewCurl] = useState('');
-  const [newCviews, setNewCviews] = useState('');
-  const [cultError, setCultError] = useState('');
-  const [cultSuccess, setCultSuccess] = useState(false);
+  // For unified video uploading - support 3 players with dynamic dropdown selection
+  const [videoTargetPlayer, setVideoTargetPlayer] = useState<'dtube_full' | 'dtube_reel' | 'cultural'>('dtube_full');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoAuthor, setVideoAuthor] = useState('');
+  const [videoClassLabel, setVideoClassLabel] = useState('');
+  const [videoDuration, setVideoDuration] = useState('');
+  const [videoViewsInput, setVideoViewsInput] = useState('');
+  
+  const [videoUploadError, setVideoUploadError] = useState('');
+  const [videoUploadSuccess, setVideoUploadSuccess] = useState(false);
 
   const getYouTubeId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
@@ -253,83 +364,63 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
     return match && match[2].length === 11 ? match[2] : null;
   };
 
-  const handleAddDtubeVideo = () => {
-    if (!newDtitle.trim() || !newDurl.trim()) {
-      setDtubeError('অনুগ্রহ করে টাইটেল ও ইউটিউব লিংক দিন।');
+  const handleUnifiedVideoUpload = () => {
+    if (!videoTitle.trim() || !videoUrl.trim()) {
+      setVideoUploadError('ভিডিওর টাইটেল ও সঠিক ইউটিউব ভিডিও লিংক প্রদান করা আবশ্যক।');
       return;
     }
-    const extractedId = getYouTubeId(newDurl);
+
+    const extractedId = getYouTubeId(videoUrl);
     if (!extractedId || extractedId.length !== 11) {
-      setDtubeError('সঠিক ইউটিউব ভিডিওর লিংক বা আইডি ইনপুট দিন।');
+      setVideoUploadError('আপনার দেয়া ইনপুট থেকে কোনো সঠিক ইউটিউব আইডি পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিংক প্রদান করুন (যেমন: https://www.youtube.com/watch?v=dQw4w9WgXcQ)।');
       return;
     }
 
-    const newVideo = {
-      id: 'dt_' + Date.now(),
-      title: newDtitle.trim(),
-      category: newDcategory,
-      url: newDurl.trim(),
-      views: Math.floor(Math.random() * 200) + 15,
-      author: newDauthor.trim() || 'ডি লিকন মিডিয়া সেল',
-      duration: newDduration.trim() || (newDcategory === 'reel' ? '০:৫৯ মিনিট' : '১০:০০ মিনিট'),
-      classLabel: newDclassLabel.trim() || (newDcategory === 'reel' ? 'Reel / Short' : 'Class Video')
-    };
+    if (videoTargetPlayer === 'dtube_full' || videoTargetPlayer === 'dtube_reel') {
+      const newDtubeVideo = {
+        id: 'clock_dt_' + Date.now(),
+        title: videoTitle.trim(),
+        category: videoTargetPlayer === 'dtube_full' ? 'full' : 'reel',
+        url: videoUrl.trim(),
+        views: Math.floor(Math.random() * 200) + 15,
+        author: videoAuthor.trim() || 'ডি লিকন মিডিয়া সেল',
+        duration: videoDuration.trim() || (videoTargetPlayer === 'dtube_reel' ? '০:৫৯ মিনিট' : '১০:০০ মিনিট'),
+        classLabel: videoClassLabel.trim() || (videoTargetPlayer === 'dtube_reel' ? 'Reel / Short' : 'Class Video')
+      };
 
-    const updated = [newVideo, ...dtubeManageList];
-    setDcubeManageList(updated);
-    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(updated));
-    setNewDtitle('');
-    setNewDurl('');
-    setNewDauthor('');
-    setNewDduration('');
-    setNewDclassLabel('');
-    setDtubeError('');
-    setDtubeSuccess(true);
-    setTimeout(() => setDtubeSuccess(false), 3000);
+      updateDtubePlaylist([newDtubeVideo, ...dtubePlaylist]);
+    } else {
+      const newCulturalVideo = {
+        id: 'clock_cp_' + Date.now(),
+        title: videoTitle.trim() + ' 🌟',
+        url: videoUrl.trim(),
+        views: parseInt(videoViewsInput) || Math.floor(Math.random() * 300) + 50
+      };
+
+      updateCulturalPlaylist([newCulturalVideo, ...culturalPlaylist]);
+    }
+
+    // Success reset
+    setVideoTitle('');
+    setVideoUrl('');
+    setVideoAuthor('');
+    setVideoClassLabel('');
+    setVideoDuration('');
+    setVideoViewsInput('');
+    setVideoUploadError('');
+    setVideoUploadSuccess(true);
+    setTimeout(() => setVideoUploadSuccess(false), 3000);
   };
 
   const handleDeleteDtubeVideo = (id: string) => {
-    if (confirm('আপনি কি নিশ্চিত যে এই ভিডিওটি মুছে ফেলতে চান?')) {
-      const updated = dtubeManageList.filter(v => v.id !== id);
-      setDcubeManageList(updated);
-      localStorage.setItem('delicon_dtube_playlist', JSON.stringify(updated));
+    if (confirm('আপনি কি নিশ্চিত যে এই ভিডিওটি উচ্ছেদ করতে চান?')) {
+      updateDtubePlaylist(dtubePlaylist.filter(v => v.id !== id));
     }
-  };
-
-  const handleAddCulturalVideo = () => {
-    if (!newCtitle.trim() || !newCurl.trim()) {
-      setCultError('অনুগ্রহ করে টাইটেল ও ইউটিউব লিংকটি দিন।');
-      return;
-    }
-    const extractedId = getYouTubeId(newCurl);
-    if (!extractedId || extractedId.length !== 11) {
-      setCultError('সঠিক ইউটিউব ভিডিওর লিংক বা আইডি ইনপুট দিন।');
-      return;
-    }
-
-    const newVideo = {
-      id: 'cp_' + Date.now(),
-      title: newCtitle.trim(),
-      url: newCurl.trim(),
-      views: parseInt(newCviews) || Math.floor(Math.random() * 300) + 50
-    };
-
-    const updated = [newVideo, ...culturalManageList];
-    setCulturalManageList(updated);
-    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(updated));
-    setNewCtitle('');
-    setNewCurl('');
-    setNewCviews('');
-    setCultError('');
-    setCultSuccess(true);
-    setTimeout(() => setCultSuccess(false), 3000);
   };
 
   const handleDeleteCulturalVideo = (id: string) => {
     if (confirm('আপনি কি নিশ্চিত যে এই কালচারাল ইভেন্ট ভিডিওটি মুছে ফেলতে চান?')) {
-      const updated = culturalManageList.filter(v => v.id !== id);
-      setCulturalManageList(updated);
-      localStorage.setItem('delicon_cultural_playlist', JSON.stringify(updated));
+      updateCulturalPlaylist(culturalPlaylist.filter(v => v.id !== id));
     }
   };
   const [slidePhotoSourceTab, setSlidePhotoSourceTab] = useState<Record<number, 'url' | 'upload'>>({});
@@ -955,6 +1046,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'notices', label: '১২। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
             { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
             { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল হাব 📺', icon: Video },
+            { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
             { id: 'settings', label: '১৩। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
             { id: 'db', label: '১৪। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
@@ -1602,50 +1694,140 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                           </div>
                         )}
 
-                        <div className="relative border-2 border-dashed border-slate-200 hover:border-indigo-950 rounded-xl p-3 bg-white text-center cursor-pointer transition-all">
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => handlePhotoChange(e, selectedRecipientId)}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                          <div className="flex flex-col items-center gap-1">
-                            <Upload className="h-5 w-5 text-slate-400 group-hover:text-indigo-950" />
-                            <span className="text-[10px] font-extrabold text-slate-600">কম্পিউটার থেকে ছবি আপলোড করুন</span>
-                            <span className="text-[8px] text-slate-400">PNG / JPG (অটো-রিসাইজ ও কম্প্রেশন)</span>
+                        <div className="flex bg-slate-100 p-0.5 rounded-lg gap-0.5 border border-slate-200 text-[9px] font-black select-none font-sans mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setIdCardPhotoTab('upload')}
+                            className={`flex-1 py-1 rounded text-center transition-all cursor-pointer ${idCardPhotoTab === 'upload' ? 'bg-white text-slate-800 shadow-xs border border-slate-200' : 'text-slate-500 hover:text-slate-850'}`}
+                          >
+                            📂 ফাইল আপলোড
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIdCardPhotoTab('camera')}
+                            className={`flex-1 py-1 rounded text-center transition-all cursor-pointer ${idCardPhotoTab === 'camera' ? 'bg-white text-slate-800 shadow-xs border border-slate-200' : 'text-slate-500 hover:text-slate-850'}`}
+                          >
+                            📷 ডিভাইস ক্যামেরা
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIdCardPhotoTab('url')}
+                            className={`flex-1 py-1 rounded text-center transition-all cursor-pointer ${idCardPhotoTab === 'url' ? 'bg-white text-slate-800 shadow-xs border border-slate-200' : 'text-slate-500 hover:text-slate-850'}`}
+                          >
+                            🌐 অনলাইন লিংক
+                          </button>
+                        </div>
+
+                        {idCardPhotoTab === 'upload' && (
+                          <div className="relative border-2 border-dashed border-slate-200 hover:border-indigo-950 rounded-xl p-3 bg-white text-center cursor-pointer transition-all">
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={(e) => handlePhotoChange(e, selectedRecipientId)}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="flex flex-col items-center gap-1">
+                              <Upload className="h-5 w-5 text-slate-400 group-hover:text-indigo-950" />
+                              <span className="text-[10px] font-extrabold text-slate-600">কম্পিউটার থেকে ছবি আপলোড করুন</span>
+                              <span className="text-[8px] text-slate-400">PNG / JPG (অটো-রিসাইজ ও কম্প্রেশন)</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
-                        <div className="flex items-center gap-2 my-2 select-none">
-                          <div className="flex-1 h-px bg-slate-100"></div>
-                          <span className="text-[8.5px] font-black text-slate-400 uppercase font-sans">অথবা</span>
-                          <div className="flex-1 h-px bg-slate-100"></div>
-                        </div>
+                        {idCardPhotoTab === 'camera' && (
+                          <div className="bg-slate-100/50 rounded-xl p-3 border border-slate-200 space-y-3">
+                            {isCameraActive ? (
+                              <div className="space-y-2.5">
+                                <div className="relative aspect-[5/6] max-w-[170px] mx-auto rounded-lg overflow-hidden bg-black border border-slate-300 shadow-sm">
+                                  <video 
+                                    ref={videoRef}
+                                    autoPlay 
+                                    playsInline 
+                                    muted 
+                                    className="w-full h-full object-cover transform scale-x-[-1]"
+                                  />
+                                  <div className="absolute top-1.5 right-1.5 flex gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={toggleFacingMode}
+                                      className="p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all cursor-pointer flex items-center justify-center"
+                                      title="ক্যামেরা ফ্লিপ করুন"
+                                    >
+                                      <RefreshCw className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={capturePhoto}
+                                    className="px-3 py-1.5 bg-indigo-950 text-white hover:bg-indigo-900 border border-indigo-950 text-[10px] font-black rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+                                  >
+                                    <Camera className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                                    ক্যাপচার করুন (Take Shot)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleStopCamera}
+                                    className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-250 text-[10px] font-black rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+                                  >
+                                    <CameraOff className="h-3.5 w-3.5" />
+                                    বন্ধ করুন
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-300 rounded-lg bg-white space-y-2 text-center">
+                                <Camera className="h-8 w-8 text-slate-400 animate-bounce" />
+                                <div className="space-y-0.5">
+                                  <p className="text-[10px] font-extrabold text-slate-700">ডিভাইস ক্যামেরা এক্টিভেশন</p>
+                                  <p className="text-[8px] text-slate-400">সরাসরি ক্যামেরা থেকে ছবি তুলে স্টুডেন্ট প্রোফাইল সেট করুন</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={startCamera}
+                                  className="mt-1 bg-indigo-950 hover:bg-indigo-900 text-white font-extrabold text-[9px] px-3 py-1.5 rounded-md flex items-center gap-1 cursor-pointer transition-all"
+                                >
+                                  <Camera className="h-3 w-3 text-amber-300" />
+                                  লাইভ ক্যামেরা চালু করুন
+                                </button>
+                              </div>
+                            )}
 
-                        <div className="space-y-1">
-                          <label className="text-[9.5px] font-black text-slate-600 block leading-none font-sans">
-                            সরাসরি অনলাইন ছবির ডিরেক্ট ইউআরএল লিংক (Image Link URL):
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="যেমন: https://website.com/photo.jpg বা যেকোনো ইমেজ লিংক"
-                            value={customPhotos[selectedRecipientId] || ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const updated = { ...customPhotos, [selectedRecipientId]: val };
-                              setCustomPhotos(updated);
-                              try {
-                                localStorage.setItem('delicon_custom_photos', JSON.stringify(updated));
-                              } catch (ex) {
-                                console.error("Storage limit exceeded inside manual photo URL set item", ex);
-                              }
-                            }}
-                            className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-semibold focus:border-indigo-500 focus:outline-none transition-all placeholder-slate-400 tracking-wide font-sans text-slate-800"
-                          />
-                          <p className="text-[8.5px] text-slate-400 font-sans leading-relaxed">
-                            আপনি ফেসবুক, হোয়াটসঅ্যাপ বা অন্য কোনো ছবির ডিরেক্ট লিংক পেস্ট করে দিতে পারেন। এটি ব্রাউজার মেমোরি বাঁচাবে।
-                          </p>
-                        </div>
+                            {cameraError && (
+                              <div className="p-2 bg-rose-50 border border-rose-200 rounded text-[9px] text-rose-600 font-bold text-center leading-relaxed">
+                                ⚠ {cameraError}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {idCardPhotoTab === 'url' && (
+                          <div className="space-y-1">
+                            <label className="text-[9.5px] font-black text-slate-600 block leading-none font-sans">
+                              সরাসরি অনলাইন ছবির ডিরেক্ট ইউআরএল লিংক (Image Link URL):
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="যেমন: https://website.com/photo.jpg বা যেকোনো ইমেজ লিংক"
+                              value={customPhotos[selectedRecipientId] || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = { ...customPhotos, [selectedRecipientId]: val };
+                                setCustomPhotos(updated);
+                                try {
+                                  localStorage.setItem('delicon_custom_photos', JSON.stringify(updated));
+                                } catch (ex) {
+                                  console.error("Storage limit exceeded inside manual photo URL set item", ex);
+                                }
+                              }}
+                              className="w-full rounded-lg border border-slate-205 bg-white p-2 text-xs font-semibold focus:border-indigo-500 focus:outline-none transition-all placeholder-slate-400 tracking-wide font-sans text-slate-800"
+                            />
+                            <p className="text-[8.5px] text-slate-400 font-sans leading-relaxed">
+                              আপনি ফেসবুক, হোয়াটসঅ্যাপ বা অন্য কোনো ছবির ডিরেক্ট লিংক পেস্ট করে দিতে পারেন। এটি ব্রাউজার মেমোরি বাঁচাবে।
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {recipientType === 'student' && (
@@ -2808,14 +2990,14 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                   {sections.map((sec) => (
                     <div key={sec.id} className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div className="max-w-md text-left">
-                        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest leading-none">SECTION MODULE = {sec.id}</span>
-                        <h5 className="font-extrabold text-slate-800 text-xs mt-2">বর্তমান শিরোনাম: {sec.title}</h5>
-                        <p className="text-[10px] text-slate-500 mt-0.5">আইডি কোড: <span className="font-mono bg-slate-50 px-1 py-0.5 border rounded">{sec.id}</span></p>
+                        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest leading-none font-sans">SECTION MODULE = {sec.id}</span>
+                        <h5 className="font-extrabold text-slate-800 text-xs mt-2 font-sans">বর্তমান শিরোনাম: {sec.title}</h5>
+                        <p className="text-[10px] text-slate-500 mt-0.5 font-sans">আইডি কোড: <span className="font-mono bg-slate-50 px-1 py-0.5 border rounded">{sec.id}</span></p>
                       </div>
 
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                         {/* Title Editor */}
-                        <div className="flex flex-col text-left">
+                        <div className="flex flex-col text-left font-sans">
                           <label className="text-[9px] font-bold text-slate-600 block mb-1">শিরোনাম এডিট করুন</label>
                           <input 
                             type="text"
@@ -2829,7 +3011,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                         </div>
 
                         {/* Visibility toggles */}
-                        <div className="flex flex-col text-left">
+                        <div className="flex flex-col text-left font-sans">
                           <label className="text-[9px] font-bold text-slate-600 block mb-1">ভিজিবিলিটি</label>
                           <div className="flex gap-1 h-[34px] items-center">
                             <button
@@ -2864,8 +3046,8 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
               {sectionsSubTab === 'branding' && (
                 <div className="mt-4 font-sans animate-fadeIn">
                   {/* 1. BRANDING EDITOR CARD */}
-                  <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center select-none font-bold">
+                  <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm font-sans animate-fadeIn">
+                    <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center select-none font-bold">
                     <div>
                       <h4 className="font-extrabold text-xs text-slate-800">১। স্কুল নাম, স্লোগান ও লোগো কাস্টমাইজেশন এডিটর 🏫</h4>
                       <p className="text-[9px] text-slate-400 mt-1">লোগো পরিবর্তনের ক্ষেত্রে টেক্সট, ক্রিস্ট ইমোজি অথবা ইমেজ লিঙ্ক ব্যবহার করা যাবে</p>
@@ -3121,7 +3303,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                                 <div className="space-y-1">
                                   <input
                                     type="text"
-                                    value={isBase64 ? '' : (slide.url || '')}
+                                    value={slide.url?.startsWith('data:') ? '' : (slide.url || '')}
                                     onChange={(e) => {
                                       const updated = [...editPhotos];
                                       updated[sIdx] = { ...updated[sIdx], url: e.target.value };
@@ -3129,7 +3311,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                                       setPhotosSuccess(false);
                                     }}
                                     placeholder="এখানে সরাসরি ছবির ওয়েব URL লিংক পেস্ট করুন..."
-                                    className="w-full rounded shadow-xs border border-slate-200 bg-white p-1 text-[11px] focus:border-blue-900 focus:outline-none placeholder:text-slate-450"
+                                    className="w-full rounded shadow-xs border border-slate-200 bg-white p-1 text-[11px] focus:border-blue-900 focus:outline-none placeholder:text-slate-450 text-slate-850"
                                   />
                                 </div>
                               ) : (
@@ -3392,51 +3574,48 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                                        </div>
                                        
                                        {currentTab === 'url' ? (
-                                         <div className="space-y-1">
-                                           <input
-                                             type="text"
-                                             value={isBase64 ? '' : (stud.photoUrl || '')}
-                                             onChange={(e) => {
-                                               const updated = [...editMeritStudents];
-                                               updated[idx] = { ...updated[idx], photoUrl: e.target.value };
-                                               setEditMeritStudents(updated);
-                                               setMeritStudentsSuccess(false);
-                                             }}
-                                             placeholder="এখানে সরাসরি ছবির ডিরেক্ট ওয়েব URL লিংক পেস্ট করুন..."
-                                             className="w-full rounded-md border border-slate-200 bg-white p-1.5 text-[11px] font-semibold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-400 font-sans text-slate-800"
-                                           />
-                                           <p className="text-[8.5px] text-slate-400 leading-tight font-sans">
-                                             💡 <span className="font-extrabold text-blue-900"> postimages.org</span> বা যেকোনো ওয়েব সোর্স থেকে ডিরেক্ট इमेज লিংক এনে বসিয়ে দিতে পারেন। এটি স্কুল সার্ভারের কোনো লিমিট নষ্ট করবে না।
-                                           </p>
-                                         </div>
-                                       ) : (
-                                         <div className="space-y-1">
-                                           <div className="relative border border-dashed border-slate-350 rounded-lg hover:border-slate-500 transition-colors p-2 bg-slate-50/50 flex flex-col items-center justify-center cursor-pointer">
-                                             <Upload className="h-4 w-4 text-slate-500 mb-0.5" />
-                                             <span className="text-[8.5px] font-black text-slate-700 font-sans">ডিভাইস থেকে ছবি নির্বাচন করুন</span>
-                                             <span className="text-[7px] text-slate-400 font-sans leading-none">অটো ৩KB-তে রি-কম্প্রেসড হবে</span>
-                                             <input 
-                                               id={`file-upload-merit-${idx}`}
-                                               type="file"
-                                               accept="image/*"
-                                               onChange={async (e) => {
-                                                 const file = e.target.files?.[0];
-                                                 if (file) {
-                                                   // Use strict dimensions and high jpeg compression ratio to save space (max size ~1KB to 2.5KB)
-                                                   const base64 = await compressImage(file, 120, 150, 0.4);
-                                                   if (base64) {
-                                                     const updated = [...editMeritStudents];
-                                                     updated[idx] = { ...updated[idx], photoUrl: base64 };
-                                                     setEditMeritStudents(updated);
-                                                     setMeritStudentsSuccess(false);
-                                                   }
-                                                 }
-                                               }}
-                                               className="absolute inset-0 opacity-0 cursor-pointer"
-                                             />
-                                           </div>
-                                         </div>
-                                       )}
+                                          <div className="space-y-1">
+                                            <input
+                                              type="text"
+                                              value={isBase64 ? '' : (stud.photoUrl || '')}
+                                              onChange={(e) => {
+                                                const updated = [...editMeritStudents];
+                                                updated[idx] = { ...updated[idx], photoUrl: e.target.value };
+                                                setEditMeritStudents(updated);
+                                                setMeritStudentsSuccess(false);
+                                              }}
+                                              placeholder="এখানে সরাসরি ছবির ওয়েব URL লিংক পেস্ট করুন..."
+                                              className="w-full rounded shadow-xs border border-slate-205 bg-white p-1 text-[11px] focus:outline-blue-900 focus:border-blue-900 text-slate-850 font-sans"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="space-y-1">
+                                            <div className="relative border border-dashed border-slate-350 rounded-lg hover:border-slate-500 transition-colors p-2 bg-slate-50/50 flex flex-col items-center justify-center cursor-pointer">
+                                              <Upload className="h-4 w-4 text-slate-500 mb-0.5" />
+                                              <span className="text-[8.5px] font-black text-slate-700 font-sans">ডিভাইস থেকে ছবি নির্বাচন করুন</span>
+                                              <span className="text-[7px] text-slate-400 font-sans leading-none font-bold">অটো ৩KB-তে রি-কম্প্রেসড হবে</span>
+                                              <input 
+                                                id={`file-upload-merit-${idx}`}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                  const file = e.target.files?.[0];
+                                                  if (file) {
+                                                    // Use strict dimensions and high jpeg compression ratio to save space (max size ~1KB to 2.5KB)
+                                                    const base64 = await compressImage(file, 120, 150, 0.4);
+                                                    if (base64) {
+                                                      const updated = [...editMeritStudents];
+                                                      updated[idx] = { ...updated[idx], photoUrl: base64 };
+                                                      setEditMeritStudents(updated);
+                                                      setMeritStudentsSuccess(false);
+                                                    }
+                                                  }
+                                                }}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
                                      </div>
                                    );
                                  })()}
@@ -3763,179 +3942,34 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             </div>
           )}
 
-          {/* 12. ANNOUNCEMENT DISPATCH BOARD */}
-          {activeTab === 'notices' && (
-            <div>
-              <div className="border-b pb-3 mb-6 font-sans">
-                <h3 className="font-bold text-slate-800 text-sm">১২। ডিজিটাল নোটিশবোর্ড ও প্রকাশনা মনিটর</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">ল্যান্ডিং পেজের সচল নোটিশবোর্ডে নতুন বিজ্ঞপ্তি প্রকাশ বা পরীক্ষা সংক্রান্ত জরুরি অ্যালার্ট তৈরি করুন।</p>
-              </div>
-
-              {/* Notice Creation panel */}
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
-                  const title = fd.get('title') as string;
-                  const bTitle = fd.get('banglaTitle') as string;
-                  const cat = fd.get('category') as any;
-                  const body = fd.get('content') as string;
-                  if (!title || !bTitle || !body) return;
-                  addNotice({
-                    title,
-                    banglaTitle: bTitle,
-                    category: cat,
-                    content: body,
-                    date: new Date().toISOString().split('T')[0]
-                  });
-                  e.currentTarget.reset();
-                }}
-                className="mb-8 p-5 rounded-2xl border bg-slate-50/50 space-y-4 font-sans text-left"
-              >
-                <h4 className="font-bold text-xs text-slate-800 text-left">নতুন ডিজিটাল নোটিশ সম্প্রচার করুন</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="sm:col-span-1">
-                    <label className="text-[9.5px] font-bold text-slate-600 block mb-1">বিজ্ঞপ্তির ধরন</label>
-                    <select name="category" className="w-full text-xs font-semibold p-2 border rounded bg-white focus:outline-blue-900">
-                      <option value="General">সাধারণ নোটিশ (General)</option>
-                      <option value="Exam">পরীক্ষার সময়সূচী (Exam)</option>
-                      <option value="Holiday">ছুটির বিজ্ঞপ্তি (Holiday)</option>
-                      <option value="Event">উৎসব ও প্রোগ্রাম (Event)</option>
-                    </select>
-                  </div>
-                  <div className="sm:col-span-1">
-                    <label className="text-[9.5px] font-bold text-slate-600 block mb-1">শিরোনাম (English)</label>
-                    <input required name="title" type="text" placeholder="e.g. Midterm Results Released" className="w-full text-xs font-semibold p-2 border rounded bg-white focus:outline-blue-900" />
-                  </div>
-                  <div className="sm:col-span-1">
-                    <label className="text-[9.5px] font-bold text-slate-600 block mb-1">শিরোনাম (বাংলায়)</label>
-                    <input required name="banglaTitle" type="text" placeholder="উদা: বার্ষিক পরীক্ষার সমাপনী ফলাফল প্রকাশ" className="w-full text-xs font-semibold p-2 border rounded bg-white focus:outline-blue-900" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[9.5px] font-bold text-slate-600 block mb-1">বিজ্ঞপ্তির সম্পূর্ণ মূল টেক্সট</label>
-                  <textarea required name="content" placeholder="ডিলিট করুন অথবা নতুন নোটিশের বিস্তারিত সম্পূর্ণ বাক্যসমূহ বাংলায় লিখুন..." rows={3} className="w-full text-xs font-semibold p-2.5 border rounded bg-white focus:outline-blue-900" />
-                </div>
-                <div className="flex justify-end">
-                  <button type="submit" className="bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs p-2.5 px-6 rounded-xl cursor-pointer shadow transition-all">
-                    📢 বিজ্ঞপ্তি সম্প্রচার করুন
-                  </button>
-                </div>
-              </form>
-
-              {/* Interactive Announcement List */}
-              <div className="space-y-4 font-sans animate-fadeIn text-left">
-                {notices.map((n) => {
-                  return (
-                    <div key={n.id} className="p-5 border rounded-2xl bg-white shadow-sm flex items-start gap-4 hover:shadow-md transition-all border-slate-200">
-                      <div className="p-2 px-3 rounded-xl bg-slate-50 border shrink-0 text-center text-slate-500 font-mono font-bold select-none text-[10px]">
-                        Category<br />
-                        <span className={`text-[9.5px] block font-black mt-1 uppercase ${
-                          n.category === 'Holiday' ? 'text-amber-600' : n.category === 'Exam' ? 'text-rose-600' : n.category === 'Event' ? 'text-emerald-700' : 'text-blue-900'
-                        }`}>{n.category}</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <span className="text-[9.5px] font-bold font-mono text-slate-400">DATE DISPATCHED: {n.date}</span>
-                        <h4 className="font-extrabold text-slate-800 text-xs mt-1">{n.banglaTitle}</h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5 font-sans font-mono italic">Title: {n.title}</p>
-                        <p className="text-[10.5px] text-slate-600 leading-relaxed mt-2 p-2.5 bg-slate-50 border rounded-xl border-dashed font-semibold italic">"${n.content}"</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 13. GATE & SECURITY CONTROLLER */}
-          {activeTab === 'settings' && (
-            <div>
-              <div className="border-b pb-3 mb-6 font-sans">
-                <h3 className="font-bold text-slate-800 text-sm">১৩। গেট সিকিউরিটি, সিকিউরড লক ও নোটিফিকেশন হাব 🔒</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">শিক্ষা প্রতিষ্ঠানের প্রবেশদ্বার বা গেটলাইন অ্যাক্সেস লক, অটোমেটিক এটেন্ডেন্স মেসেজ এবং সিকিউরিটি কোড জেনারেটর এডিট করুন।</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 font-sans text-left animate-fadeIn">
-                <div className="p-5 rounded-2xl border bg-white shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-left">
-                    <KeyRound className="h-5 w-5 text-indigo-700 shrink-0" />
-                    <h4 className="font-extrabold text-xs text-slate-800">অ্যাডমিশন সাইনআপ পোর্টাল</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-500 leading-relaxed">অনলাইন ওয়েবসাইট থেকে সাধারণ ভর্তি আবেদন ফর্ম জমাদান সাময়িকভাবে সচল বা বন্ধ রাখুন।</p>
-                  <div className="pt-3 flex gap-1 items-center select-none text-left">
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black font-mono">PORTAL OPEN ✅</span>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl border bg-white shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-left">
-                    <ShieldCheck className="h-5 w-5 text-emerald-700 shrink-0" />
-                    <h4 className="font-extrabold text-xs text-slate-800">অটো আরএফআইডি / এসএমএস</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-500 leading-relaxed">শিক্ষার্থীর উপস্থিতি ও গেটলাইন আরএফআইডি ব্যবহারের সংকেত সাথে সাথে অভিভাবকের ফোনে এসএমএস প্রেরণ করুন।</p>
-                  <div className="pt-3 flex gap-1 items-center select-none text-left">
-                    <span className="text-[10px] bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded font-black font-mono">AUTOMATED GATE SMS ACTIVE</span>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl border bg-white shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-left">
-                    <KeyRound className="h-5 w-5 text-amber-600 shrink-0" />
-                    <h4 className="font-extrabold text-xs text-slate-800">সার্ভার ও ট্রানজেকশন কীলক</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-500 leading-relaxed">সকল ব্যাংক পেমেন্ট ও পরীক্ষার মার্ক এন্ট্রি সিস্টেমের সাথে আইটি সিকিউরিটি গেটওয়ের কানেকশন স্ট্যাটাস পর্যবেক্ষণ করুন।</p>
-                  <div className="pt-3 flex gap-1 items-center select-none text-left">
-                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black font-mono">GATEPORT-ONLINE: 3000 ✔</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Visitor Security Verification */}
-              <div className="mt-8 p-5 border border-amber-200 bg-amber-50/15 rounded-2xl text-left font-sans">
-                <h4 className="font-bold text-xs text-slate-800 flex items-center gap-1.5 leading-none">
-                  <span className="text-sm">👮</span> 
-                  অটোমেটিক গেইটলাইন সিকিউরিটি লক নির্দেশিকা
-                </h4>
-                <p className="text-[10.5px] text-slate-600 leading-relaxed mt-2 bg-white p-3 border rounded-xl border-dashed">
-                  সিস্টেম এবং স্টুডেন্ট কার্ড জেনারেটর সম্পূর্ণ আরএফআইডি এনাবেল্ড লাইভ মোশন ইন্টিগ্রেটেড। শিক্ষার্থীরা এবং গেটলাইনের দায়িত্বরত স্পেশাল গার্ডগণ স্ক্যানিং করে পাঞ্চ-আউট সক্রিয় রাখতে পারবে।
+          {/* 14. SYSTEM DB BACKUP / VERCEL SYNC */}
+          {activeTab === 'db' && (
+            <div className="space-y-6">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Database className="h-5 w-5 text-amber-500 animate-pulse" />
+                  ১৪। সিস্টেম ডিবি ব্যাকআপ ও ভার্সেল সিঙ্ক Hub
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">
+                  লোকাল ডাটাবেজ ফাইল ব্যাকআপ এবং ক্লাউড হোস্টিং এ ব্যাকগ্রাউন্ড ডাটা সিনক্রোনাইজেশনের সেন্ট্রাল গেটওয়ে।
                 </p>
               </div>
-            </div>
-          )}
 
-          {/* 14. DEVELOPER SYSTEM STATS */}
-          {activeTab === 'db' && (
-            <div>
-              <div className="border-b pb-3 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                    <Database className="h-5 w-5 text-amber-500" />
-                    ১। ডেটাবেজ ব্যাকআপ, গিট পুশ এবং ভার্সেল (Vercel) সিঙ্ক গাইড
-                  </h3>
-                  <p className="text-[10.5px] text-slate-500 mt-0.5">র-লোকালস্টোরেজ ডাম্প ম্যানেজমেন্ট এবং গিটহাব সিঙ্ক্রোনাইজেশন টুলস।</p>
-                </div>
-              </div>
-
-              {/* Informative Error & Concept Clarification Box (Extremely Helpful and Empathetic to User Situation) */}
-              <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl text-left font-sans mb-6">
-                <div className="flex gap-3">
-                  <span className="text-2xl mt-0.5">⚠️</span>
-                  <div>
-                    <h4 className="font-black text-amber-900 text-xs">আপনার ডাটা গিট পুশ (Git Push) বা ভার্সেলে (Vercel) কেন যাচ্ছে না?</h4>
-                    <p className="text-[11px] text-amber-800 leading-relaxed mt-2 font-medium">
-                      আপনি যখন এই রানিং লাইভ সাইটের কন্ট্রোল প্যানেলে তথ্য যোগ করেন বা কৃতি শিক্ষার্থী যোগ করে সেভ করেন, তখন সেই সমস্ত ডাটা এবং আপলোড করা ছবির ব্যাকগ্রাউন্ডে আমাদের ক্লাউড ডেভেলপমেন্ট কনটেইনারের <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9.5px]">db.json</code> ফাইলে এবং আপনার ব্রাউজার মেমরিতে সুরক্ষিতভাবে সেভ হয়। 
-                    </p>
-                    <p className="text-[11px] text-amber-800 leading-relaxed mt-1.5 font-medium">
-                      কিন্তু আপনার কম্পিউটার তো ওই ডাটাগুলো সরাসরি জানে না! আপনার কম্পিউটারে থাকা লোকাল ফোল্ডারে পুরাতন বা ফাঁকা ডাটাবেজ ফাইলটিই রয়ে গেছে। ফলস্বরূপ, আপনার কম্পিউটার থেকে যখন সরাসরি <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9.5px]">git push</code> করা হয়, তখন পূর্বের ফাঁকা বা ব্যাকগ্রাউন্ড ডাটাটাই গিটহাবে আপলোড হয়ে যায় এবং আপনার ভার্সেল (Vercel) সাইটটিও ফাঁকা হয়ে যায়।
-                    </p>
-                    <div className="mt-3.5 pt-3 border-t border-amber-200/50">
-                      <p className="text-[11px] font-black text-slate-800 uppercase tracking-wider">💡 চিরস্থায়ী সমাধানের অতি সহজ ৩টি ধাপ:</p>
-                      <ul className="list-decimal list-inside text-[11px] text-slate-700 mt-2 space-y-1.5 leading-relaxed pl-1 font-semibold">
-                        <li>নিচে দেয়া <span className="text-amber-800">"১. ডাউনলোড করুন db.json"</span> বাটনে ক্লিক করে লেটেস্ট ফাইলটি ডাউনলোড করুন এবং আপনার কম্পিউটারের প্রোজেক্টের প্রধান রুট ডিরেক্টরিতে (root folder) পুরাতন ফাইলটির জায়গায় পেস্ট করে দিন।</li>
-                        <li>এরপর <span className="text-amber-800">"২. ডাউনলোড করুন fallbackDb.ts"</span> বাটনে ক্লিক করে ফাইলটি ডাউনলোড করে আপনার প্রোজেক্টের <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/src/fallbackDb.ts</code> ফাইলের সব কোড কপি-পেস্ট করে প্রতিস্থাপন (Replace) করে দিন।</li>
-                        <li>এখন আপনার কম্পিউটার থেকে গিট কমিট এবং পুশ করুন! এবার ভার্সেল সাইটে আপনার নতুন ছবি ও কৃতি শিক্ষার্থী চিরস্থায়ীভাবে দৃশ্যমান হয়ে যাবে!</li>
-                      </ul>
-                    </div>
+              {/* Sync Alert */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex gap-3 text-left">
+                <Database className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-xs text-amber-800">ভার্সেল (Vercel) সাইটে ছবি ও ডাটা হারানোর সমস্যা দূর করুন!</h4>
+                  <p className="text-[10.5px] text-amber-700 mt-1 leading-relaxed font-sans">
+                    আপনার এই সাইটটি ফাইল-রুট ডাটাবেজ সিস্টেম দিয়ে তৈরি। লোকালহোস্ট থেকে যখন সরাসরি <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9.5px]">git push</code> করা হয়, তখন পূর্বের ফাঁকা বা ব্যাকগ্রাউন্ড ডাটাটাই গিটহাবে আপলোড হয়ে যায় এবং আপনার ভার্সেল (Vercel) সাইটটিও ফাঁকা হয়ে যায়।
+                  </p>
+                  <div className="mt-3.5 pt-3 border-t border-amber-200/50">
+                    <p className="text-[11px] font-black text-slate-800 uppercase tracking-wider">💡 চিরস্থায়ী সমাধানের অতি সহজ ৩টি ধাপ:</p>
+                    <ul className="list-decimal list-inside text-[11px] text-slate-700 mt-2 space-y-1.5 leading-relaxed pl-1 font-semibold font-sans">
+                      <li>নিচে দেয়া <span className="text-amber-800">"১. ডাউনলোড করুন db.json"</span> বাটনে ক্লিক করে লেটেস্ট ফাইলটি ডাউনলোড করুন এবং আপনার কম্পিউটারের প্রোজেক্টের প্রধান রুট ডিরেক্টরিতে (root folder) পুরাতন ফাইলটির জায়গায় পেস্ট করে দিন।</li>
+                      <li>এরপর <span className="text-amber-800">"২. ডাউনলোড করুন fallbackDb.ts"</span> বাটনে ক্লিক করে ফাইলটি ডাউনলোড করে আপনার প্রোজেক্টের <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">/src/fallbackDb.ts</code> ফাইলের সব কোড কপি-পেস্ট করে প্রতিস্থাপন (Replace) করে দিন।</li>
+                      <li>এখন আপনার কম্পিউটার থেকে গিট কমিট এবং পুশ করুন! এবার ভার্সেল সাইটে আপনার নতুন ছবি ও কৃতি শিক্ষার্থী চিরস্থায়ীভাবে দৃশ্যমান হয়ে যাবে!</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -4098,133 +4132,146 @@ export default fallbackDb;
             <div className="space-y-6">
               <div className="border-b pb-3 mb-6">
                 <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                  <Video className="h-5 w-5 text-red-600 animate-pulse" />
-                  ১৬। ডি-টিউব ও কালচারাল ভিডিও Hub কাস্টমাইজার
+                  <Video className="h-5 w-5 text-red-650 animate-pulse" />
+                  ১৬। ভিডিও কাস্টমাইজার ও মাল্টি-প্লেয়ার সেন্ট্রাল কন্ট্রোল ডেক 📺
                 </h3>
                 <p className="text-[10.5px] text-slate-500 mt-0.5">
-                  স্কুলের ওয়েবসাইট ও হোমপেইজের ভিডিও গ্যালারি ও ডি-টিউব প্লে-লিস্ট সরাসরি এডিট ও ম্যানেজ করার কন্ট্রোল ডেক।
+                  ইউনিকাইড মাল্টি-প্লেয়ার ভিডিও সিস্টেম। এখান থেকে স্কুলের বড় ক্লাস ভিডিও, রিলস/শর্টস এবং সাংস্কৃতিক কর্নারের ইউটিউব প্লে-লিস্ট সরাসরি ড্রপডাউন দিয়ে সিলেক্ট করে এডিট ও কন্ট্রোল করা যায়।
                 </p>
               </div>
 
-              {/* D-Tube Section */}
-              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-6 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-dashed border-slate-200 pb-3">
-                  <div className="bg-red-100 text-red-600 p-1.5 rounded-lg">
-                    <Video className="h-4.5 w-4.5" />
+              {/* Redesigned Unified Video Upload Card */}
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+                <h5 className="font-bold text-xs text-slate-700 flex items-center gap-1.5 border-b border-dashed border-slate-200 pb-2.5">
+                  <Plus className="h-4 w-4 text-emerald-600 animate-bounce" /> ভিডিও আপলোড ও প্লেয়ার নির্বাচন গেটওয়ে (Unified Uploader)
+                </h5>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিও প্লেয়ার চয়েস (কোন প্লেয়ারে প্লে হবে?) <span className="text-red-500">*</span></label>
+                    <select
+                      value={videoTargetPlayer}
+                      onChange={(e) => setVideoTargetPlayer(e.target.value as 'dtube_full' | 'dtube_reel' | 'cultural')}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:ring-2 focus:ring-blue-900/10 font-sans"
+                    >
+                      <option value="dtube_full">১। ডি-টিউব বড় একাডেমিক ক্লাস ভিডিও প্লেয়ার 📹</option>
+                      <option value="dtube_reel">২। ডি-টিউব মোবাইল রিলস ও শর্টস প্লেয়ার 📱</option>
+                      <option value="cultural">৩। বার্ষিক সাংস্কৃতিক উৎসব ও লাইভ কর্নার প্লেয়ার 🌟</option>
+                    </select>
                   </div>
+
                   <div>
-                    <h4 className="font-bold text-xs text-slate-800">১। ডি-টিউব (ভিডিও এবং রিলস/শর্টস প্লে-লিস্ট)</h4>
-                    <p className="text-[10px] text-slate-400">এখান থেকে নতুন ভিডিও যোগ করতে পারেন এবং অপ্রয়োজনীয় ভিডিও ফেলে দিতে পারেন।</p>
-                  </div>
-                </div>
-
-                {/* Form to Add D-Tube Video */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-                  <h5 className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
-                    <Plus className="h-4 w-4 text-emerald-600" /> নতুন ডি-টিউব ভিডিও লিঙ্ক এড করুন
-                  </h5>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিওর চমৎকার টাইটেলঃ <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: শতকরা অধ্যায়ের চমৎকার সমাধান 📐"
-                        value={newDtitle}
-                        onChange={(e) => setNewDtitle(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও / শর্টস URL লিংকঃ <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        placeholder="https://www.youtube.com/watch?v=... বা শর্টস লিংক"
-                        value={newDurl}
-                        onChange={(e) => {
-                          setNewDurl(e.target.value);
-                          setDtubeError('');
-                        }}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ক্যাটাগরি নির্ধারণ করুনঃ</label>
-                      <select
-                        value={newDcategory}
-                        onChange={(e) => setNewDcategory(e.target.value as 'full' | 'reel')}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
-                      >
-                        <option value="full">বড় একাডেমিক ভিডিও 📹</option>
-                        <option value="reel">রিলস / শর্টস স্পেস 📱</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">শ্রেণী / শ্রেণীবিভাগঃ</label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: Class 5 Mathematics বা Reel / Short"
-                        value={newDclassLabel}
-                        onChange={(e) => setNewDclassLabel(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">শিক্ষক অথবা প্রেজেন্টার নামঃ</label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: মিস ফারহানা চৌধুরী"
-                        value={newDauthor}
-                        onChange={(e) => setNewDauthor(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিও ব্যাপ্তিকালঃ (ঐচ্ছিক)</label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: ১৫:০০ মিনিট বা ০:৫৯ মিনিট"
-                        value={newDduration}
-                        onChange={(e) => setNewDduration(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
-                      />
-                    </div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিওর টাইটেল / শিরোনামঃ <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: শতকরা অধ্যায়ের চমৎকার সমাধান 📐"
+                      value={videoTitle}
+                      onChange={(e) => setVideoTitle(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900 font-sans"
+                    />
                   </div>
 
-                  {dtubeError && (
-                    <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                      ⚠ {dtubeError}
-                    </p>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও URL বা শর্টস লিংকঃ <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="https://www.youtube.com/watch?v=... বা শর্টস লিংক"
+                      value={videoUrl}
+                      onChange={(e) => {
+                        setVideoUrl(e.target.value);
+                        setVideoUploadError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900 font-sans"
+                    />
+                  </div>
+
+                  {videoTargetPlayer !== 'cultural' && (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">শ্রেণী / শ্রেণীবিভাগঃ</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: Class 5 Mathematics বা Reel / Short"
+                          value={videoClassLabel}
+                          onChange={(e) => setVideoClassLabel(e.target.value)}
+                          className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">শিক্ষক অথবা প্রেজেন্টার নামঃ</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: মিস ফারহানা চৌধুরী"
+                          value={videoAuthor}
+                          onChange={(e) => setVideoAuthor(e.target.value)}
+                          className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিও ব্যাপ্তিকালঃ (ঐচ্ছিক)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: ১৫:০০ মিনিট বা ০:৫৯ মিনিট"
+                          value={videoDuration}
+                          onChange={(e) => setVideoDuration(e.target.value)}
+                          className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 font-sans"
+                        />
+                      </div>
+                    </>
                   )}
 
-                  {dtubeSuccess && (
-                    <p className="text-[10px] font-bold text-emerald-750 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250">
-                      🎉 ভিডিওটি সফলভাবে আপনার ডি-টিউব প্লে-লিস্টে যোগ করা হয়েছে! হোমপেজে গিয়ে চেক করতে পারেন।
-                    </p>
+                  {videoTargetPlayer === 'cultural' && (
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিউস কাউন্ট সংখ্যাঃ (ঐচ্ছিক)</label>
+                      <input
+                        type="number"
+                        placeholder="যেমন: ৩৫০"
+                        value={videoViewsInput}
+                        onChange={(e) => setVideoViewsInput(e.target.value)}
+                        className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 font-sans"
+                      />
+                    </div>
                   )}
-
-                  <button
-                    onClick={handleAddDtubeVideo}
-                    className="bg-blue-950 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-blue-900 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center"
-                  >
-                    <Plus className="h-4 w-4" /> প্লে-লিস্টে লিঙ্ক যুক্ত করুন
-                  </button>
                 </div>
 
-                {/* Inline Playlist Grid */}
-                <div className="space-y-3">
-                  <h5 className="font-bold text-xs text-slate-700">বর্তমান ডি-টিউব প্লে-লিস্ট তালিকা ({dtubeManageList.length} টি)</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-                    {dtubeManageList.map((item) => {
+                {videoUploadError && (
+                  <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 max-w-full font-sans text-left">
+                    ⚠ {videoUploadError}
+                  </p>
+                )}
+
+                {videoUploadSuccess && (
+                  <p className="text-[10px] font-bold text-emerald-750 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250 font-sans text-left">
+                    🎉 ভিডিওটি সফলভাবে নির্বাচিত প্লে-লিস্টে যোগ করা হয়েছে! হোমপেজে যাচাই করুন।
+                  </p>
+                )}
+
+                <button
+                  onClick={handleUnifiedVideoUpload}
+                  className="bg-blue-950 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-blue-900 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center font-sans"
+                >
+                  <Plus className="h-4 w-4" /> প্লে-লিস্টে লিঙ্ক যুক্ত করুন
+                </button>
+              </div>
+
+              {/* View Lists side-by-side or stacked */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* DTube Column */}
+                <div className="bg-white border border-slate-250 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h5 className="font-bold text-xs text-slate-850 flex items-center gap-1.5 font-sans justify-start">
+                      <Video className="h-4 w-4 text-red-650" />
+                      ডি-টিউব প্লে-লিস্ট ভিডিওসমূহ ({dtubePlaylist.length} টি)
+                    </h5>
+                  </div>
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {dtubePlaylist.map((item) => {
                       const yId = getYouTubeId(item.url);
                       return (
-                        <div key={item.id} className="bg-white border border-slate-150 rounded-xl p-3 flex gap-3 relative shadow-xs hover:border-blue-100 transition-all">
-                          <div className="w-24 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-100">
+                        <div key={item.id} className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-2.5 flex gap-3 relative shadow-xs hover:border-blue-200 transition-all text-left">
+                          <div className="w-20 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-150">
                             {yId ? (
                               <img 
                                 src={`https://img.youtube.com/vi/${yId}/mqdefault.jpg`} 
@@ -4234,121 +4281,49 @@ export default fallbackDb;
                               />
                             ) : (
                               <div className="w-full h-full bg-slate-200 flex items-center justify-center">
-                                <Video className="h-5 w-5 text-slate-400" />
+                                <Video className="h-4 w-4 text-slate-400" />
                               </div>
                             )}
-                            <span className="absolute bottom-1 right-1 bg-black/75 px-1 py-0.5 rounded text-[8px] font-mono text-white font-bold leading-none">
+                            <span className="absolute bottom-0.5 right-0.5 bg-black/75 px-1 py-0.5 rounded text-[7px] font-mono text-white font-bold leading-none">
                               {item.category === 'reel' ? 'রিল' : 'পূর্ণ ক্লাস'}
                             </span>
                           </div>
                           
                           <div className="flex-1 min-w-0 pr-6 flex flex-col justify-between">
-                            <h6 className="font-bold text-[11px] text-slate-800 leading-snug truncate" title={item.title}>
+                            <h6 className="font-bold text-[10px] text-slate-800 leading-snug truncate" title={item.title}>
                               {item.title}
                             </h6>
-                            <p className="text-[9px] text-slate-500 font-bold mt-auto">শ্রেণীঃ {item.classLabel}</p>
-                            <p className="text-[9px] text-slate-400 font-medium">প্রেজেন্টারঃ {item.author}</p>
+                            <p className="text-[8px] text-slate-500 font-bold mt-auto font-sans">শ্রেণীঃ {item.classLabel}</p>
+                            <p className="text-[8px] text-slate-400 font-medium font-sans">প্রেজেন্টারঃ {item.author}</p>
                           </div>
 
                           <button
                             onClick={() => handleDeleteDtubeVideo(item.id)}
-                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
-                            title="ভিডিওটি বাদ দিন"
+                            className="absolute top-1.5 right-1.5 text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition-all cursor-pointer"
+                            title="বাদ দিন"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </div>
 
-              {/* Cultural Station Section */}
-              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-6 shadow-sm mt-6">
-                <div className="flex items-center gap-2 border-b border-dashed border-slate-200 pb-3">
-                  <div className="bg-amber-100 text-amber-950 p-1.5 rounded-lg">
-                    <Layers className="h-4.5 w-4.5 text-amber-600" />
+                {/* Cultural Column */}
+                <div className="bg-white border border-slate-250 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h5 className="font-bold text-xs text-slate-850 flex items-center gap-1.5 font-sans justify-start">
+                      <Layers className="h-4 w-4 text-amber-600" />
+                      সাংস্কৃতিক কর্নার ভিডিওসমূহ ({culturalPlaylist.length} টি)
+                    </h5>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-800">২। কালচারাল ইভেন্ট ভিডিও স্টেশন (হোমপেজ কালচারাল কর্নার)</h4>
-                    <p className="text-[10px] text-slate-400">বার্ষিক নাটক, বিতর্ক প্রতিযোগিতা, রবীন্দ্র জয়ন্তী সহ সাংস্কৃতিক উৎসবের আকর্ষণীয় ইউটিউব ভিডিও এন্ট্রি বুক।</p>
-                  </div>
-                </div>
-
-                {/* Form to Add Cultural Video */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-                  <h5 className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
-                    <Plus className="h-4 w-4 text-amber-600" /> নতুন কালচারাল ভিডিও যুক্ত করুন
-                  </h5>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">সাংস্কৃতিক অনুষ্ঠানের আকর্ষণীয় টাইটেলঃ <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸"
-                        value={newCtitle}
-                        onChange={(e) => setNewCtitle(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও URL লিংকঃ <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        value={newCurl}
-                        onChange={(e) => {
-                          setNewCurl(e.target.value);
-                          setCultError('');
-                        }}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10 focus:border-blue-900"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিউস কাউন্ট সংখ্যাঃ (ঐচ্ছিক)</label>
-                      <input
-                        type="number"
-                        placeholder="যেমন: ৩৫০"
-                        value={newCviews}
-                        onChange={(e) => setNewCviews(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/10"
-                      />
-                    </div>
-                  </div>
-
-                  {cultError && (
-                    <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                      ⚠ {cultError}
-                    </p>
-                  )}
-
-                  {cultSuccess && (
-                    <p className="text-[10px] font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250">
-                      🎉 কালচারাল ভিডিওটি সফলভাবে যোগ করা হয়েছে! হোমপেজে এটি প্রদর্শিত হবে।
-                    </p>
-                  )}
-
-                  <button
-                    onClick={handleAddCulturalVideo}
-                    className="bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-amber-700 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center"
-                  >
-                    <Plus className="h-4 w-4" /> সাংস্কৃতিক ভিডিও যুক্ত করুন
-                  </button>
-                </div>
-
-                {/* Cultural Inline List */}
-                <div className="space-y-3">
-                  <h5 className="font-bold text-xs text-slate-700">বর্তমান কালচারাল ভিডিও তালিকা ({culturalManageList.length} টি)</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-                    {culturalManageList.map((item) => {
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {culturalPlaylist.map((item) => {
                       const yId = getYouTubeId(item.url);
                       return (
-                        <div key={item.id} className="bg-white border border-slate-150 rounded-xl p-3 flex gap-3 relative shadow-xs hover:border-amber-100 transition-all">
-                          <div className="w-24 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-100">
+                        <div key={item.id} className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-2.5 flex gap-3 relative shadow-xs hover:border-amber-200 transition-all text-left">
+                          <div className="w-20 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-150">
                             {yId ? (
                               <img 
                                 src={`https://img.youtube.com/vi/${yId}/mqdefault.jpg`} 
@@ -4358,24 +4333,24 @@ export default fallbackDb;
                               />
                             ) : (
                               <div className="w-full h-full bg-slate-200 flex items-center justify-center">
-                                <Video className="h-5 w-5 text-slate-400" />
+                                <Video className="h-4 w-4 text-slate-400" />
                               </div>
                             )}
                           </div>
                           
                           <div className="flex-1 min-w-0 pr-6 flex flex-col justify-between">
-                            <h6 className="font-bold text-[11px] text-slate-800 leading-snug truncate" title={item.title}>
+                            <h6 className="font-bold text-[10px] text-slate-800 leading-snug truncate" title={item.title}>
                               {item.title}
                             </h6>
-                            <p className="text-[9px] text-slate-500 font-bold mt-auto">ভিউ সংখ্যাঃ {item.views || 0} জন</p>
+                            <p className="text-[8px] text-slate-500 font-bold mt-auto font-sans">ভিউস কাউন্টঃ {item.views || 0} জন</p>
                           </div>
 
                           <button
                             onClick={() => handleDeleteCulturalVideo(item.id)}
-                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
-                            title="ভিডিওটি বাদ দিন"
+                            className="absolute top-1.5 right-1.5 text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition-all cursor-pointer"
+                            title="বাদ দিন"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       );
@@ -4383,6 +4358,22 @@ export default fallbackDb;
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <div className="space-y-6">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-indigo-950" />
+                  ১৭। প্রাতিষ্ঠানিক একাডেমিক ডায়েরী ও কালপঞ্জী সংশোধনালয় 📅
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">
+                  মাদরাসার সাধারণ ছুটি, পরীক্ষা সূচি, সাংস্কৃতিক বা স্পোর্টস অনুষ্ঠানমালার তালিকা নিয়ন্ত্রণ করুন। এখান থেকে যুক্ত করা ইভেন্টসমূহ সরাসরি অভিভাবক ও শিক্ষার্থীদের ড্যাশবোর্ডে প্রদর্শিত হবে।
+                </p>
+              </div>
+
+              <AcademicEventCalendar role={role} />
             </div>
           )}
 

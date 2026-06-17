@@ -99,7 +99,8 @@ export const LandingPage: React.FC<{
 }> = ({ onOpenAuth, onLeadAutoLogin, loggedInRole }) => {
   const { 
     addLead, notices, routes, stationery, devProjects, sections, students, employees, attendanceLogs, requisitions,
-    schoolName, schoolSlogan, schoolLogoType, schoolLogoVal, campusPhotos, meritStudents, addEmployee
+    schoolName, schoolSlogan, schoolLogoType, schoolLogoVal, campusPhotos, meritStudents, addEmployee,
+    dtubePlaylist, culturalPlaylist, updateDtubePlaylist, updateCulturalPlaylist
   } = useSchool();
 
   const isSecVisible = (secId: string) => {
@@ -260,21 +261,7 @@ export const LandingPage: React.FC<{
   const [videoViews, setVideoViews] = useState<Record<string, number>>({ v1: 320, v2: 145, v3: 88, v4: 512, v5: 390 });
   const [isPlayingDtubeVideo, setIsPlayingDtubeVideo] = useState(false);
 
-  // D-Tube dynamic playlist for Videos and Reels
-  const [dtubePlaylist, setDtubePlaylist] = useState(() => {
-    const saved = localStorage.getItem('delicon_dtube_playlist');
-    return saved ? JSON.parse(saved) : [
-      { id: 'v1', title: 'শতকরা অধ্যায়ের চমৎকার সমাধান 📐', category: 'full', url: 'https://www.youtube.com/watch?v=pAnu7S8U_wI', views: 320, author: 'মিস ফারহানা চৌধুরী', duration: '১৫:০০ মিনিট', classLabel: 'Class 5 Mathematics' },
-      { id: 'v2', title: 'টেন্স এবং পার্টস অভ স্পিচ সহজে সমাধান 📝', category: 'full', url: 'https://www.youtube.com/watch?v=eG_QshOve4E', views: 145, author: 'জনাব মো: রেজওয়ানুর', duration: '১২:৩০ মিনিট', classLabel: 'Class 8 English' },
-      { id: 'v3', title: 'গতি ও বলবিদ্যার বেসিক সূত্রাবলি ⚡', category: 'full', url: 'https://www.youtube.com/watch?v=Aof_Zg05qYk', views: 88, author: 'জনাব আশরাফুল আমিন', duration: '১৮:১৫ মিনিট', classLabel: 'Class 10 Physics' },
-      { id: 'v4', title: 'ডিলিকন মডেল একাডেমী ক্যাম্পাসের এক ঝলক 🎬', category: 'reel', url: 'https://www.youtube.com/shorts/5e_2Iitid0Y', views: 512, author: 'ডি লিকন মিডিয়া সেল', duration: '০:৫৯ মিনিট', classLabel: 'Reel / Short' },
-      { id: 'v5', title: 'ছোট্ট বন্ধুদের সৃজনশীল চিত্রাংকন প্রতিযোগীতা 🎨', category: 'reel', url: 'https://www.youtube.com/shorts/XN6-M6bC8k4', views: 390, author: 'তাহমিনা সুলতানা', duration: '০:৪৫ মিনিট', classLabel: 'Reel / Short' },
-    ];
-  });
 
-  useEffect(() => {
-    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(dtubePlaylist));
-  }, [dtubePlaylist]);
 
   const [dtubeFilter, setDtubeFilter] = useState<'all' | 'full' | 'reel'>('all');
   const [customDtubeUrl, setCustomDtubeUrl] = useState('');
@@ -291,19 +278,7 @@ export const LandingPage: React.FC<{
   const [simulatingClassroom, setSimulatingClassroom] = useState<string | null>(null);
   const [galleryFilter, setGalleryFilter] = useState('All');
 
-  // Cultural Station YouTube player states
-  const [culturalPlaylist, setCulturalPlaylist] = useState(() => {
-    const saved = localStorage.getItem('delicon_cultural_playlist');
-    return saved ? JSON.parse(saved) : [
-      { id: 'cp1', title: 'রবীন্দ্র জয়ন্তী ও বসন্ত উৎসব নৃত্য ২০২৬ 🌸', url: 'https://www.youtube.com/watch?v=XN6-M6bC8k4', views: 420 },
-      { id: 'cp2', title: 'কবিতা আবৃত্তি ও বার্ষিক নাটক মঞ্চায়ন 🎭', url: 'https://www.youtube.com/watch?v=8XUvMOnu8cE', views: 280 },
-      { id: 'cp3', title: 'স্বাধীনতা দিবসের বিতর্ক প্রতিযোগিতা 🎤', url: 'https://www.youtube.com/watch?v=Fq2CvmgoO7I', views: 195 }
-    ];
-  });
 
-  useEffect(() => {
-    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(culturalPlaylist));
-  }, [culturalPlaylist]);
 
   const [activeCulturalVideoId, setActiveCulturalVideoId] = useState('cp1');
   const [isPlayingCulturalVideo, setIsPlayingCulturalVideo] = useState(false);
@@ -1547,7 +1522,7 @@ export const LandingPage: React.FC<{
                               setActiveCulturalVideoId(item.id);
                               setIsPlayingCulturalVideo(true);
                               // Increment views locally
-                              setCulturalPlaylist(prev => prev.map(p => p.id === item.id ? { ...p, views: p.views + 1 } : p));
+                              updateCulturalPlaylist(culturalPlaylist.map(p => p.id === item.id ? { ...p, views: p.views + 1 } : p));
                             }}
                             className={`text-left p-2 rounded-xl border transition-all text-[11px] flex flex-col justify-between h-14 cursor-pointer ${
                               activeCulturalVideoId === item.id
@@ -1634,7 +1609,7 @@ export const LandingPage: React.FC<{
                               views: 1
                             };
 
-                            setCulturalPlaylist(prev => [newEvent, ...prev]);
+                            updateCulturalPlaylist([newEvent, ...culturalPlaylist]);
                             setActiveCulturalVideoId(newId);
                             setIsPlayingCulturalVideo(true);
                             setCustomCulturalTitle('');
@@ -2066,7 +2041,7 @@ export const LandingPage: React.FC<{
                           classLabel: isReel ? 'Reel / Short' : (customDtubeClass || 'সাধারণ ক্লাস')
                         };
 
-                        setDtubePlaylist(prev => [newVideo, ...prev]);
+                        updateDtubePlaylist([newVideo, ...dtubePlaylist]);
                         setActiveDtubeVideo(newId);
                         setIsPlayingDtubeVideo(true);
                         setCustomDtubeTitle('');
