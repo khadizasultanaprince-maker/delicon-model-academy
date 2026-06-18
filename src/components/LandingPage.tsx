@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
+import { VideoPlayer } from './VideoPlayer';
 
 interface MeritStudent {
   name: string;
@@ -1467,49 +1468,13 @@ export const LandingPage: React.FC<{
                 return (
                   <div className="space-y-4">
                     {/* VIDEO FEED CONTAINER */}
-                    <div className="bg-slate-950 text-white rounded-xl border border-slate-850 p-3 overflow-hidden shadow-lg relative">
-                      {isPlayingCulturalVideo && videoId ? (
-                        <div className="aspect-video w-full rounded-lg overflow-hidden border border-slate-800">
-                          <iframe
-                            width="100%"
-                            height="100%"
-                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                            title={activeItem.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full"
-                          ></iframe>
-                        </div>
-                      ) : (
-                        <div className="aspect-video w-full rounded-lg bg-slate-900 border border-slate-800 relative flex flex-col items-center justify-center p-4 text-center group overflow-hidden">
-                          {/* Ambient background accent */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-0 opacity-80"></div>
-                          
-                          {/* Big animated play trigger button */}
-                          <button
-                            onClick={() => setIsPlayingCulturalVideo(true)}
-                            className="h-14 w-14 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-xl border border-rose-450/30 z-10 transition-transform active:scale-95 cursor-pointer hover:scale-105 duration-200"
-                          >
-                            ▶
-                          </button>
-                          
-                          <div className="mt-4 z-10">
-                            <span className="bg-rose-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase inline-block mb-1">
-                              PRESENTS SPECIAL EVENT
-                            </span>
-                            <h4 className="font-extrabold text-xs text-white leading-snug max-w-xs">{activeItem.title}</h4>
-                            <p className="text-[9px] text-slate-400 mt-1">ক্লিক করে ভিডিও স্ট্রিমটি সচল করুন</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Video playback metadata status */}
-                      <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-slate-850 text-[10px] text-slate-400">
-                        <span className="font-mono text-emerald-400 font-bold">● {isPlayingCulturalVideo ? "PLAYING STREAM" : "STANDBY MODE"}</span>
-                        <span className="font-sans">{activeItem.views} জন শিক্ষার্থী দেখেছে</span>
-                      </div>
+                    <div className="bg-slate-950 text-white rounded-xl border border-slate-850 p-2 overflow-hidden shadow-lg relative">
+                      <VideoPlayer 
+                        url={activeItem.url}
+                        title={activeItem.title}
+                        views={activeItem.views}
+                        showDetails={true}
+                      />
                     </div>
 
                     {/* SELECT FROM PLAYLIST */}
@@ -1822,61 +1787,26 @@ export const LandingPage: React.FC<{
                           </span>
                         </div>
 
-                        {/* Player Frame */}
-                        {isPlayingDtubeVideo && videoId ? (
-                          <div className={`overflow-hidden rounded-2xl border border-slate-850 bg-black ${
-                            isReel ? 'aspect-[9/16] w-full max-w-[320px] mx-auto' : 'aspect-video w-full'
-                          }`}>
-                            <iframe
-                              width="100%"
-                              height="100%"
-                              src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                              title={activeItem.title}
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full"
-                            ></iframe>
-                          </div>
-                        ) : (
-                          <div className={`relative flex flex-col items-center justify-center p-6 text-center overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 mx-auto ${
-                            isReel ? 'aspect-[9/16] w-full max-w-[320px]' : 'aspect-video w-full'
-                          }`}>
-                            {/* Accent Background light */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/30 to-transparent z-0"></div>
-                            
-                            {/* Big Play Button */}
-                            <button
-                              onClick={() => {
-                                setIsPlayingDtubeVideo(true);
-                                setVideoViews(prev => ({ ...prev, [activeItem.id]: (prev[activeItem.id] || 0) + 1 }));
-                              }}
-                              className="h-16 w-16 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-full flex items-center justify-center font-bold text-2xl shadow-2xl z-10 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                            >
-                              ▶
-                            </button>
-
-                            <div className="mt-6 z-10 max-w-sm px-4">
-                              <span className="bg-sky-500/10 text-sky-300 text-[8px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-sky-400/20 inline-block mb-2">
-                                {activeItem.classLabel}
-                              </span>
-                              <h4 className="font-extrabold text-sm md:text-base text-white leading-snug line-clamp-2">{activeItem.title}</h4>
-                              <p className="text-[10px] text-slate-400 mt-1 font-semibold">শিক্ষক: {activeItem.author}</p>
-                              <p className="text-[9.5px] text-slate-500 mt-2">প্লে করতে বাটনে ক্লিক করুন</p>
-                            </div>
-                          </div>
-                        )}
+                        {/* VideoPlayer Component */}
+                        <VideoPlayer 
+                          url={activeItem.url}
+                          title={activeItem.title}
+                          aspectRatio={isReel ? 'shorts' : 'video'}
+                          views={videoViews[activeItem.id] || activeItem.views}
+                          showDetails={true}
+                          onPlayStateChange={(playing) => {
+                            if (playing) {
+                              setIsPlayingDtubeVideo(true);
+                              setVideoViews(prev => ({ ...prev, [activeItem.id]: (prev[activeItem.id] || 0) + 1 }));
+                            }
+                          }}
+                        />
 
                         {/* Player Bottom Info */}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5 text-[10.5px] text-slate-400">
                           <div>
-                            <p className="font-bold text-slate-200 line-clamp-1">{activeItem.title}</p>
                             <p className="text-[9.5px] text-slate-405 mt-0.5">মেন্টরঃ <span className="text-sky-300 font-semibold">{activeItem.author}</span> • সময়ঃ {activeItem.duration}</p>
                           </div>
-                          <span className="text-[10px] font-mono bg-slate-900 text-amber-500 px-2.5 py-1 rounded-lg border border-slate-800 shrink-0 font-bold">
-                            ▷ {videoViews[activeItem.id] || activeItem.views} ভিউজ
-                          </span>
                         </div>
 
                       </div>
