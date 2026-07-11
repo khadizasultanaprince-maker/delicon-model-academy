@@ -567,12 +567,28 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateDtubePlaylist = (playlist: any[]) => {
     setDtubePlaylist(playlist);
-    localStorage.setItem('delicon_dtube_playlist', JSON.stringify(playlist));
+    const dataStr = JSON.stringify(playlist);
+    localStorage.setItem('delicon_dtube_playlist', dataStr);
+    
+    // Explicit server-side save for absolute durability and instant multi-browser consistency
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'delicon_dtube_playlist', data: dataStr })
+    }).catch(err => console.warn('[Sync] Direct D-Tube save failed:', err));
   };
 
   const updateCulturalPlaylist = (playlist: any[]) => {
     setCulturalPlaylist(playlist);
-    localStorage.setItem('delicon_cultural_playlist', JSON.stringify(playlist));
+    const dataStr = JSON.stringify(playlist);
+    localStorage.setItem('delicon_cultural_playlist', dataStr);
+    
+    // Explicit server-side save for absolute durability and instant multi-browser consistency
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'delicon_cultural_playlist', data: dataStr })
+    }).catch(err => console.warn('[Sync] Direct Cultural save failed:', err));
   };
 
   useEffect(() => {

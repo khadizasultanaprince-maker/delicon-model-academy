@@ -11,11 +11,12 @@ import {
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
   Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
-  Camera, CameraOff, Calendar, Book
+  Camera, CameraOff, Calendar, Book, Film
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
-import { AcademicEventCalendar } from './AcademicEventCalendar';
+import { AcademicCalendar } from './AcademicCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
+import { extractYouTubeId } from './VideoPlayer';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -117,7 +118,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library'>('admissions');
+  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('admissions');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -359,10 +360,55 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   const [videoUploadError, setVideoUploadError] = useState('');
   const [videoUploadSuccess, setVideoUploadSuccess] = useState(false);
 
+  // New Cultural Video Management Form State
+  const [cultMgtTitle, setCultMgtTitle] = useState('');
+  const [cultMgtUrl, setCultMgtUrl] = useState('');
+  const [cultMgtTag, setCultMgtTag] = useState('আবৃত্তি 🎤');
+  const [cultMgtViews, setCultMgtViews] = useState('');
+  const [cultMgtPublishDate, setCultMgtPublishDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  });
+  const [cultMgtError, setCultMgtError] = useState('');
+  const [cultMgtSuccess, setCultMgtSuccess] = useState(false);
+
+  const handleCulturalVideoSubmit = () => {
+    if (!cultMgtTitle.trim()) {
+      setCultMgtError('অনুগ্রহ করে ভিডিওর শিরোনাম টাইপ করুন।');
+      return;
+    }
+    if (!cultMgtUrl.trim()) {
+      setCultMgtError('দয়া করে সঠিক ইউটিউব ভিডিও লিংক প্রদান করুন।');
+      return;
+    }
+
+    const extractedId = getYouTubeId(cultMgtUrl);
+    if (!extractedId || extractedId.length !== 11) {
+      setCultMgtError('আপনার দেয়া ইনপুট থেকে কোনো সঠিক ইউটিউব আইডি পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিংক প্রদান করুন (যেমন: https://www.youtube.com/watch?v=dQw4w9WgXcQ)।');
+      return;
+    }
+
+    const newEvent = {
+      id: 'cp_' + Date.now(),
+      title: cultMgtTitle.trim() + ' 🌟',
+      url: cultMgtUrl.trim(),
+      tag: cultMgtTag,
+      views: parseInt(cultMgtViews) || Math.floor(Math.random() * 300) + 30,
+      publishDate: cultMgtPublishDate
+    };
+
+    updateCulturalPlaylist([newEvent, ...culturalPlaylist]);
+    setCultMgtTitle('');
+    setCultMgtUrl('');
+    setCultMgtViews('');
+    setCultMgtError('');
+    setCultMgtSuccess(true);
+    setTimeout(() => setCultMgtSuccess(false), 3000);
+  };
+
   const getYouTubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : null;
+    return extractYouTubeId(url);
   };
 
   const handleUnifiedVideoUpload = () => {
@@ -1046,15 +1092,21 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'planning', label: '১১। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
             { id: 'notices', label: '১২। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
             { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
-            { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল হাব 📺', icon: Video },
+            { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল কর্নার 🎭', icon: Video },
             { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
             { id: 'library', label: '১৮। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
+            { id: 'cultural_mgt', label: '১৯। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
             { id: 'settings', label: '১৩। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
             { id: 'db', label: '১৪। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setTimeout(() => {
+                  document.getElementById('erp-modules-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }}
               className={`flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-xs font-bold transition-all border cursor-pointer ${
                 activeTab === tab.id 
                   ? 'bg-blue-900 text-white border-blue-900 shadow-sm' 
@@ -1077,7 +1129,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
         </aside>
 
         {/* ERP Modules Wrapper */}
-        <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-x-auto">
+        <div id="erp-modules-content" className="flex-1 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-x-auto">
           
           {/* 1. ADMISSIONS MANAGER */}
           {activeTab === 'admissions' && (
@@ -4375,7 +4427,7 @@ export default fallbackDb;
                 </p>
               </div>
 
-              <AcademicEventCalendar role={role} />
+              <AcademicCalendar role={role} />
             </div>
           )}
 
@@ -4392,6 +4444,194 @@ export default fallbackDb;
               </div>
 
               <DigitalLibrary role={role} />
+            </div>
+          )}
+
+          {activeTab === 'cultural_mgt' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="border-b pb-3 mb-6">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Film className="h-5 w-5 text-indigo-700 animate-pulse" />
+                  ১৯। সাংস্কৃতিক ভিডিও এডিটিং ও সেন্ট্রাল কন্ট্রোল ডেক 🎭
+                </h3>
+                <p className="text-[10.5px] text-slate-500 mt-0.5">
+                  স্কুলের বার্ষিক সাংস্কৃতিক ইভেন্ট, কবিতা আবৃত্তি, নাটক, বিতর্ক ও ক্রীড়া প্রতিযোগিতার ইউটিউব ভিডিও লিঙ্ক ও টাইটেলসহ ইভেন্ট ক্যাটাগরি ট্যাগ যুক্ত করুন। যেকোনো সংযোজন বা বিয়োজন সাথে সাথে শিক্ষার্থীদের ভিডিও লিস্ট ও হোমপেজে আপডেট হবে।
+                </p>
+              </div>
+
+              {/* Upload Form Card */}
+              <div className="bg-gradient-to-br from-indigo-50/40 via-white to-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 text-left">
+                <h5 className="font-bold text-xs text-indigo-900 flex items-center gap-1.5 border-b border-dashed border-slate-200 pb-2.5">
+                  <Plus className="h-4 w-4 text-indigo-650" /> নতুন সাংস্কৃতিক ভিডিও সংযুক্তকরণ ফর্ম
+                </h5>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিডিওর টাইটেল / শিরোনামঃ <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: বিজয় দিবস আবৃত্তি প্রতিযোগিতা ২০২৬"
+                      value={cultMgtTitle}
+                      onChange={(e) => {
+                        setCultMgtTitle(e.target.value);
+                        setCultMgtError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-sans"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ইউটিউব ভিডিও URL বা লিঙ্কঃ <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={cultMgtUrl}
+                      onChange={(e) => {
+                        setCultMgtUrl(e.target.value);
+                        setCultMgtError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-sans"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ইভেন্ট ক্যাটাগরি ট্যাগঃ <span className="text-red-500">*</span></label>
+                    <select
+                      value={cultMgtTag}
+                      onChange={(e) => setCultMgtTag(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-sans"
+                    >
+                      <option value="আবৃত্তি 🎤">আবৃত্তি 🎤</option>
+                      <option value="নৃত্য 🌸">নৃত্য 🌸</option>
+                      <option value="গান 🎵">গান 🎵</option>
+                      <option value="বিতর্ক 💬">বিতর্ক 💬</option>
+                      <option value="নাটক 🎭">নাটক 🎭</option>
+                      <option value="বার্ষিক অনুষ্ঠান ✨">বার্ষিক অনুষ্ঠান ✨</option>
+                      <option value="সহ-শিক্ষা ও ক্রীড়া 🏆">সহ-শিক্ষা ও ক্রীড়া 🏆</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">ভিউস কাউন্ট সংখ্যাঃ (ঐচ্ছিক)</label>
+                    <input
+                      type="number"
+                      placeholder="যেমন: ২৫০"
+                      value={cultMgtViews}
+                      onChange={(e) => setCultMgtViews(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-sans"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-indigo-900 block mb-1 font-sans">প্রকাশের তারিখ ও সময় (Schedule Release) 🕒</label>
+                    <input
+                      type="datetime-local"
+                      value={cultMgtPublishDate}
+                      onChange={(e) => setCultMgtPublishDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-sans"
+                    />
+                  </div>
+                </div>
+
+                {cultMgtError && (
+                  <p className="text-[10px] font-bold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-sans text-left">
+                    ⚠ {cultMgtError}
+                  </p>
+                )}
+
+                {cultMgtSuccess && (
+                  <p className="text-[10px] font-bold text-emerald-750 bg-emerald-50 p-2.5 rounded-lg border border-emerald-250 font-sans text-left">
+                    🎉 সাংস্কৃতিক ভিডিওটি সফলভাবে যুক্ত ও ডাটাবেজে সেভ করা হয়েছে!
+                  </p>
+                )}
+
+                <button
+                  onClick={handleCulturalVideoSubmit}
+                  className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none cursor-pointer flex items-center gap-1.5 transition-all w-full justify-center font-sans"
+                >
+                  <Plus className="h-4 w-4" /> সাংস্কৃতিক প্লে-লিস্ট ও ডাটাবেজে যুক্ত করুন 🚀
+                </button>
+              </div>
+
+              {/* Current Playlist View Card */}
+              <div className="bg-white border border-slate-250 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs text-left">
+                <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+                  <h5 className="font-bold text-xs text-slate-850 flex items-center gap-1.5 font-sans">
+                    <Layers className="h-4 w-4 text-indigo-600" />
+                    বর্তমান তালিকাভুক্ত সাংস্কৃতিক ভিডিওসমূহ ({culturalPlaylist.length} টি)
+                  </h5>
+                  <span className="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">
+                    রিয়েল-টাইম ডাটাবেজ
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                  {culturalPlaylist.map((item) => {
+                    const yId = getYouTubeId(item.url);
+                    return (
+                      <div key={item.id} className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-3 flex gap-3.5 relative shadow-xs hover:border-indigo-200 transition-all">
+                        <div className="w-24 shrink-0 aspect-video rounded-lg overflow-hidden relative bg-slate-100 border border-slate-150">
+                          {yId ? (
+                            <img 
+                              src={`https://img.youtube.com/vi/${yId}/mqdefault.jpg`} 
+                              alt={item.title} 
+                              className="w-full h-full object-cover" 
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-200 flex items-center justify-center">
+                              <Film className="h-5 w-5 text-slate-400" />
+                            </div>
+                          )}
+                          <span className="absolute bottom-1 right-1 bg-black/75 px-1.5 py-0.5 rounded text-[7.5px] font-bold text-white font-sans">
+                            {item.tag || 'সাংস্কৃতিক'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0 pr-6 flex flex-col justify-between">
+                          <div>
+                            <h6 className="font-extrabold text-[11px] text-slate-850 leading-snug line-clamp-2" title={item.title}>
+                              {item.title}
+                            </h6>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              <span className="inline-block text-[8.5px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded border border-indigo-100/55 font-sans">
+                                {item.tag || 'সাংস্কৃতিক'}
+                              </span>
+                              {(!item.publishDate || new Date(item.publishDate) <= new Date()) ? (
+                                <span className="inline-flex items-center gap-0.5 text-[8.5px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-150 font-sans">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                  🟢 Live (প্রকাশিত)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 text-[8.5px] bg-amber-50 text-amber-700 font-bold px-1.5 py-0.5 rounded border border-amber-200 font-sans" title={`তফসিলভুক্ত সময়: ${new Date(item.publishDate).toLocaleString('bn-BD')}`}>
+                                  🕒 Pending (তফসিলভুক্ত: {new Date(item.publishDate).toLocaleString('bn-BD', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[8.5px] text-slate-500 font-bold mt-2 font-sans flex items-center gap-2">
+                            <span>▷ ভিউস কাউন্টঃ {item.views || 0} বার</span>
+                            {item.publishDate && (
+                              <span className="text-slate-400">| প্রকাশের তারিখঃ {new Date(item.publishDate).toLocaleDateString('bn-BD')}</span>
+                            )}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteCulturalVideo(item.id)}
+                          className="absolute top-2 right-2 text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all cursor-pointer"
+                          title="ডাটাবেজ থেকে মুছে ফেলুন"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {culturalPlaylist.length === 0 && (
+                  <p className="text-center text-slate-400 py-6 text-xs font-medium font-sans">কোনো সাংস্কৃতিক ভিডিও পাওয়া যায়নি। অনুগ্রহ করে উপরের ফর্মের মাধ্যমে যুক্ত করুন।</p>
+                )}
+              </div>
             </div>
           )}
 

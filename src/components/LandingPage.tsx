@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
-import { VideoPlayer } from './VideoPlayer';
+import { VideoPlayer, extractYouTubeId } from './VideoPlayer';
 
 interface MeritStudent {
   name: string;
@@ -289,10 +289,7 @@ export const LandingPage: React.FC<{
   const [culturalInputError, setCulturalInputError] = useState('');
 
   const getYouTubeId = (url: string) => {
-    if (!url) return '';
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : url;
+    return extractYouTubeId(url) || '';
   };
 
   // Merit Student slide states
@@ -1463,130 +1460,196 @@ export const LandingPage: React.FC<{
 
               {(() => {
                 const activeItem = culturalPlaylist.find(item => item.id === activeCulturalVideoId) || culturalPlaylist[0];
-                const videoId = getYouTubeId(activeItem.url);
+                const isLive = !activeItem || !activeItem.publishDate || new Date(activeItem.publishDate) <= new Date();
 
                 return (
                   <div className="space-y-4">
-                    {/* VIDEO FEED CONTAINER */}
+                    {/* VIDEO FEED CONTAINER OR COUNTDOWN PLACEHOLDER */}
                     <div className="bg-slate-950 text-white rounded-xl border border-slate-850 p-2 overflow-hidden shadow-lg relative">
-                      <VideoPlayer 
-                        url={activeItem.url}
-                        title={activeItem.title}
-                        views={activeItem.views}
-                        showDetails={true}
-                      />
+                      {isLive ? (
+                        <VideoPlayer 
+                          url={activeItem?.url || ''}
+                          title={activeItem?.title || ''}
+                          views={activeItem?.views || 0}
+                          showDetails={true}
+                        />
+                      ) : (
+                        <div className="aspect-video bg-gradient-to-br from-slate-900 to-indigo-950 rounded-lg flex flex-col items-center justify-center p-6 text-center border border-indigo-900/40 relative overflow-hidden min-h-[220px]">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12),transparent)] animate-pulse"></div>
+                          <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl p-3 mb-2 animate-bounce">
+                            <Clock className="h-7 w-7" />
+                          </div>
+                          <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest mb-2 font-sans shadow-sm">
+                            🕒 Scheduled Release (তফসিলভুক্ত)
+                          </span>
+                          <h4 className="text-xs font-black text-white max-w-sm leading-snug">
+                            {activeItem.title}
+                          </h4>
+                          <p className="text-[10px] text-slate-300 font-bold mt-1 font-sans">
+                            অনুষ্ঠানটি এখনো শুরু হয়নি!
+                          </p>
+                          <div className="mt-3 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-center">
+                            <span className="text-[9px] text-slate-400 block font-bold">প্রকাশের নির্ধারিত সময়ঃ</span>
+                            <span className="text-[11px] text-amber-300 font-black font-sans block mt-0.5">
+                              {new Date(activeItem.publishDate).toLocaleString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* SELECT FROM PLAYLIST */}
                     <div className="space-y-1.5">
                       <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">ইভেন্ট প্লেলিস্ট বাছুনঃ</span>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                        {culturalPlaylist.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => {
-                              setActiveCulturalVideoId(item.id);
-                              setIsPlayingCulturalVideo(true);
-                              // Increment views locally
-                              updateCulturalPlaylist(culturalPlaylist.map(p => p.id === item.id ? { ...p, views: p.views + 1 } : p));
-                            }}
-                            className={`text-left p-2 rounded-xl border transition-all text-[11px] flex flex-col justify-between h-14 cursor-pointer ${
-                              activeCulturalVideoId === item.id
-                                ? 'bg-indigo-50 border-indigo-250 text-indigo-900 font-extrabold'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                            }`}
-                          >
-                            <span className="line-clamp-1 leading-tight">{item.title}</span>
-                            <span className="text-[8.5px] font-semibold text-slate-400 block mt-0.5">
-                              ▷ {item.views} ভিউজ
-                            </span>
-                          </button>
-                        ))}
+                        {culturalPlaylist.map((item) => {
+                          const itemLive = !item.publishDate || new Date(item.publishDate) <= new Date();
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setActiveCulturalVideoId(item.id);
+                                setIsPlayingCulturalVideo(true);
+                                if (itemLive) {
+                                  // Increment views locally
+                                  updateCulturalPlaylist(culturalPlaylist.map(p => p.id === item.id ? { ...p, views: p.views + 1 } : p));
+                                }
+                              }}
+                              className={`text-left p-2.5 rounded-xl border transition-all text-[11px] flex flex-col justify-between h-20 cursor-pointer relative ${
+                                activeCulturalVideoId === item.id
+                                  ? 'bg-indigo-50 border-indigo-250 text-indigo-900 font-extrabold shadow-sm'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-1 w-full">
+                                <span className="line-clamp-2 leading-tight flex-1 font-bold">{item.title}</span>
+                                {itemLive ? (
+                                  <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 scale-95 origin-top-right">Live 🟢</span>
+                                ) : (
+                                  <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 scale-95 origin-top-right">Upcoming 🕒</span>
+                                )}
+                              </div>
+                              <div className="flex justify-between items-center text-[8.5px] font-semibold text-slate-400 mt-1 w-full border-t border-slate-100/50 pt-1">
+                                <span>▷ {item.views} ভিউজ</span>
+                                {item.tag && (
+                                  <span className="bg-indigo-100 text-indigo-700 font-extrabold px-1.5 py-0.5 rounded text-[7.5px] scale-90 origin-right">
+                                    {item.tag}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* DYNAMIC URL FORMS WITH GRAPHICAL WRITING SHAPE */}
-                    <div className="bg-slate-55 p-4 border border-indigo-100 rounded-2xl space-y-3">
-                      <div className="flex items-center gap-1.5 text-indigo-900 animate-pulse">
-                        <span className="text-xs font-black">🔗 কালচারাল ইভেন্টে নিজের ভিডিও লিংক সংযোগ দিনঃ</span>
-                      </div>
-                      <p className="text-[10px] text-slate-600 leading-snug">
-                        ইউটিউব ভিডিও-র লিংক কিংবা ১১ সংখ্যার ইউনিক ভিডিও আইডি নিচের বক্সে পেস্ট করে বাটনে চাপ দিন। প্লেয়ারটি স্বয়ংক্রিয়ভাবে ভিডিও সচল করবে।
-                      </p>
-
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[9px] font-black text-slate-500 block mb-0.5">অনুষ্ঠানের নাম (শিরোনাম):</label>
-                            <input
-                              type="text"
-                              placeholder="যেমন: বিজয় দিবস আবৃত্তি প্রতিযোগিতা ২০২৬"
-                              value={customCulturalTitle}
-                              onChange={(e) => {
-                                setCustomCulturalTitle(e.target.value);
-                                setCulturalInputError('');
-                              }}
-                              className="w-full bg-white border border-slate-250 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                            />
+                    <div className="bg-slate-55 p-4 border border-indigo-100 rounded-2xl space-y-3 relative overflow-hidden">
+                      {!(loggedInRole && ['Admin', 'Developer', 'Teacher', 'Creator'].includes(loggedInRole)) ? (
+                        <div className="text-center py-4 px-2 space-y-3">
+                          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 border border-rose-150 text-rose-600 shadow-sm">
+                            <Shield className="h-5 w-5" />
                           </div>
-                          <div>
-                            <label className="text-[9px] font-black text-slate-500 block mb-0.5">ইউটিউব ইউআরএল লিংক / আইডিঃ</label>
-                            <input
-                              type="text"
-                              placeholder="https://www.youtube.com/watch?v=..."
-                              value={customCulturalUrl}
-                              onChange={(e) => {
-                                setCustomCulturalUrl(e.target.value);
-                                setCulturalInputError('');
-                              }}
-                              className="w-full bg-white border border-slate-250 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                            />
-                          </div>
-                        </div>
-
-                        {culturalInputError && (
-                          <p className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
-                            ⚠ {culturalInputError}
+                          <h4 className="text-xs font-black text-slate-800">
+                            কালচারাল স্টেশনে সরাসরি ভিডিও আপলোড লকডাউন 🔒
+                          </h4>
+                          <p className="text-[10.5px] text-slate-500 leading-relaxed max-w-sm mx-auto font-medium">
+                            নিরাপত্তার স্বার্থে সরাসরি লিঙ্কের মাধ্যমে ভিডিও আপলোড সুবিধাটি সুরক্ষিত করা হয়েছে। কেবলমাত্র স্কুলের অনুমোদিত শিক্ষক, অ্যাডমিন বা কো-অর্ডিনেটর অ্যাকাউন্টে সাইন-ইন করে এই প্লে-লিস্ট আপডেট করা যাবে।
                           </p>
-                        )}
+                          <button
+                            onClick={onOpenAuth}
+                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-4 py-1.5 text-[10px] transition-all cursor-pointer shadow-sm"
+                          >
+                            অ্যাডমিন/শিক্ষক হিসেবে সাইন-ইন করুন 🔑
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5 text-indigo-900 animate-pulse">
+                            <span className="text-xs font-black">🔗 কালচারাল ইভেন্টে নিজের ভিডিও লিংক সংযোগ দিনঃ</span>
+                            <span className="bg-emerald-100 text-emerald-800 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">
+                              {loggedInRole === 'Developer' ? 'ডেভেলপার অ্যাক্সেস' : loggedInRole === 'Admin' ? 'অ্যাডমিন অ্যাক্সেস' : 'শিক্ষক অ্যাক্সেস'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 leading-snug">
+                            ইউটিউব ভিডিও-র লিংক কিংবা ১১ সংখ্যার ইউনিক ভিডিও আইডি নিচের বক্সে পেস্ট করে বাটনে চাপ দিন। প্লেয়ারটি স্বয়ংক্রিয়ভাবে ভিডিও সচল করবে।
+                          </p>
 
-                        <button
-                          onClick={() => {
-                            if (!customCulturalTitle.trim()) {
-                              setCulturalInputError('অনুগ্রহ করে স্পেশাল কালচারাল ইভেন্টের একটি নাম অথবা শিরোনাম টাইপ করুন।');
-                              return;
-                            }
-                            if (!customCulturalUrl.trim()) {
-                              setCulturalInputError('দয়া করে ইউটিউব লিংক অথবা ভিডিও আইডি ইনপুট দিন।');
-                              return;
-                            }
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-black text-slate-500 block mb-0.5">অনুষ্ঠানের নাম (শিরোনাম):</label>
+                                <input
+                                  type="text"
+                                  placeholder="যেমন: বিজয় দিবস আবৃত্তি প্রতিযোগিতা ২০২৬"
+                                  value={customCulturalTitle}
+                                  onChange={(e) => {
+                                    setCustomCulturalTitle(e.target.value);
+                                    setCulturalInputError('');
+                                  }}
+                                  className="w-full bg-white border border-slate-250 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-black text-slate-500 block mb-0.5">ইউটিউব ইউআরএল লিংক / আইডিঃ</label>
+                                <input
+                                  type="text"
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  value={customCulturalUrl}
+                                  onChange={(e) => {
+                                    setCustomCulturalUrl(e.target.value);
+                                    setCulturalInputError('');
+                                  }}
+                                  className="w-full bg-white border border-slate-250 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                />
+                              </div>
+                            </div>
 
-                            const extractedId = getYouTubeId(customCulturalUrl);
-                            if (!extractedId || extractedId.length !== 11) {
-                              setCulturalInputError('আপনার দেয়া ইনপুট থেকে কোনো ইউটিউব আইডি পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিংক প্রদান করুন (যেমন: https://www.youtube.com/watch?v=dQw4w9WgXcQ)।');
-                              return;
-                            }
+                            {culturalInputError && (
+                              <p className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
+                                ⚠ {culturalInputError}
+                              </p>
+                            )}
 
-                            const newId = 'cp_' + Date.now();
-                            const newEvent = {
-                              id: newId,
-                              title: customCulturalTitle.trim() + ' 🌟',
-                              url: customCulturalUrl.trim(),
-                              views: 1
-                            };
+                            <button
+                              onClick={() => {
+                                if (!customCulturalTitle.trim()) {
+                                  setCulturalInputError('অনুগ্রহ করে স্পেশাল কালচারাল ইভেন্টের একটি নাম অথবা শিরোনাম টাইপ করুন।');
+                                  return;
+                                }
+                                if (!customCulturalUrl.trim()) {
+                                  setCulturalInputError('দয়া করে ইউটিউব লিংক অথবা ভিডিও আইডি ইনপুট দিন।');
+                                  return;
+                                }
 
-                            updateCulturalPlaylist([newEvent, ...culturalPlaylist]);
-                            setActiveCulturalVideoId(newId);
-                            setIsPlayingCulturalVideo(true);
-                            setCustomCulturalTitle('');
-                            setCustomCulturalUrl('');
-                            setCulturalInputError('');
-                          }}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-2 rounded-xl transition-all cursor-pointer shadow-sm text-center"
-                        >
-                          ভিডিও লোড করে প্লেয়ার সচল করুন 🚀
-                        </button>
-                      </div>
+                                const extractedId = getYouTubeId(customCulturalUrl);
+                                if (!extractedId || extractedId.length !== 11) {
+                                  setCulturalInputError('আপনার দেয়া ইনপুট থেকে কোনো ইউটিউব আইডি পাওয়া যায়নি। অনুগ্রহ করে সঠিক লিংক প্রদান করুন (যেমন: https://www.youtube.com/watch?v=dQw4w9WgXcQ)।');
+                                  return;
+                                }
+
+                                const newId = 'cp_' + Date.now();
+                                const newEvent = {
+                                  id: newId,
+                                  title: customCulturalTitle.trim() + ' 🌟',
+                                  url: customCulturalUrl.trim(),
+                                  views: 1
+                                };
+
+                                updateCulturalPlaylist([newEvent, ...culturalPlaylist]);
+                                setActiveCulturalVideoId(newId);
+                                setIsPlayingCulturalVideo(true);
+                                setCustomCulturalTitle('');
+                                setCustomCulturalUrl('');
+                                  setCulturalInputError('');
+                                }}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-2 rounded-xl transition-all cursor-pointer shadow-sm text-center"
+                              >
+                                ভিডিও লোড করে প্লেয়ার সচল করুন 🚀
+                              </button>
+                            </div>
+                        </>
+                      )}
                     </div>
 
                   </div>

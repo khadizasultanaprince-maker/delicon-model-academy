@@ -9,7 +9,7 @@ import { MarksController } from './MarksController';
 import { GuardianPerformanceCharts } from './GuardianPerformanceCharts';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 import { StudentFeeManagement } from './StudentFeeManagement';
-import { AcademicEventCalendar } from './AcademicEventCalendar';
+import { AcademicCalendar } from './AcademicCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
 import { AcademicAiAssistant } from './AcademicAiAssistant';
 import { StudentProgressTracker } from './StudentProgressTracker';
@@ -1081,7 +1081,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
             )}
 
             {/* Academic Event Calendar & Holidays Component */}
-            <AcademicEventCalendar role={role} />
+            <AcademicCalendar role={role} />
 
             {/* Digital Academic Library Component */}
             <DigitalLibrary role={role} />
