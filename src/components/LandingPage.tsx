@@ -9,7 +9,8 @@ import {
   BookOpen, Calculator, Calendar, CheckCircle, Clock, 
   MapPin, Phone, Users, Shield, Award, Sparkles, Book,
   Tv, Compass, HelpCircle, Truck, Home, GraduationCap,
-  MessageSquare, Briefcase, Mail, Send, Bell
+  MessageSquare, Briefcase, Mail, Send, Bell,
+  Youtube, Facebook, Globe, Video, Info
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
@@ -1324,10 +1325,18 @@ export const LandingPage: React.FC<{
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {(() => {
                     const defaultTeachers = [
-                      { id: 't1', name: 'জনাব আশরাফুল আমিন', title: 'বিভাগীয় প্রধান (রসায়ন)', qual: 'এম.এসসি (ঢাকা বিশ্ববিদ্যালয়)', phone: '০১৭১১-**৪৫৬', iconText: 'AA' },
-                      { id: 't2', name: 'মিস ফারহানা চৌধুরী', title: 'সিনিয়র গণিত ইনструкক্টর', qual: 'বি.এসসি (বুয়েট), এমএস', phone: '০১৭২২-**৭৮৯', iconText: 'FC' },
-                      { id: 't3', name: 'জনাব মো: রেজওয়ানুর রহমান', title: 'ইংরেজী ও ফনিক্স বিশেষজ্ঞ', qual: 'এম.এ ইন ইংলিশ (জাহাঙ্গীরনগর)', phone: '০১৮১১-**২৩৪', iconText: 'RR' },
-                      { id: 't4', name: 'মিস শাকিলা শারমিন', title: 'আইসিটি কো-অর্ডিনেটর', qual: 'বি.এসসি ইন সিএসই (জগন্নাথ)', phone: '০১৯১১-**৫৬৭', iconText: 'SS' }
+                      { id: 't1', name: 'মিতু আক্তার', title: 'প্রিন্সিপাল', qual: 'এম.এ, বি.এড (ঢাকা বিশ্ববিদ্যালয়)', phone: '০১৭০১-**১১২', iconText: 'MA' },
+                      { id: 't2', name: 'মোখলেস', title: 'আরবী শিক্ষক', qual: 'কামিল (ঢাকা আলিয়া মাদ্রাসা)', phone: '০১৭০২-**২২৩', iconText: 'MK' },
+                      { id: 't3', name: 'মাহবুব এলাহী প্রিন্স', title: 'আইসিটি শিক্ষক', qual: 'বি.এসসি ইন সিএসই', phone: '০১৭০৩-**৩৩৪', iconText: 'MP' },
+                      { id: 't4', name: 'সজীব', title: 'সহকারী শিক্ষক', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৪-**৪৪৫', iconText: 'SJ' },
+                      { id: 't5', name: 'মাজহারুল', title: 'সহকারী শিক্ষক', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৫-**৫৫৬', iconText: 'MJ' },
+                      { id: 't6', name: 'সালমা', title: 'সহকারী শিক্ষিকা', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৬-**৬৬৭', iconText: 'SL' },
+                      { id: 't7', name: 'মিতা', title: 'সহকারী শিক্ষিকা', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৭-**৭৭৮', iconText: 'MT' },
+                      { id: 't8', name: 'রুনা', title: 'সহকারী শিক্ষিকা', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৮-**৮৮৯', iconText: 'RN' },
+                      { id: 't9', name: 'মনির', title: 'সহকারী শিক্ষক', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭০৯-**৯৯০', iconText: 'MN' },
+                      { id: 't10', name: 'শাহনাজ', title: 'সহকারী শিক্ষিকা', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭১০-**১০১', iconText: 'SH' },
+                      { id: 't11', name: 'শান্তা', title: 'সহকারী শিক্ষিকা', qual: 'সম্মান ও বি.এড সম্পন্ন', phone: '০১৭১১-**১১২', iconText: 'ST' },
+                      { id: 't12', name: 'খাদিজা', title: 'বিজ্ঞান শিক্ষক', qual: 'এম.এসসি (পদার্থবিজ্ঞান)', phone: '০১৭১২-**২২৩', iconText: 'KD' }
                     ];
 
                     const dynamicTeachers = (employees || [])
@@ -1371,7 +1380,7 @@ export const LandingPage: React.FC<{
                     }
 
                     return filtered.map((teacher, idx) => (
-                      <div key={teacher.id || idx} className="bg-white p-5 rounded-2xl border border-slate-200/90 hover:shadow-lg transition-all text-center flex flex-col justify-between relative overflow-hidden group">
+                      <div key={teacher.id || idx} className="bg-white p-5 rounded-2xl border border-slate-200/90 hover:-translate-y-2 hover:shadow-2xl hover:border-amber-300/60 transition-all duration-300 ease-out text-center flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-900 via-amber-500 to-indigo-950"></div>
                         {teacher.isDynamic && (
                           <span className="absolute top-2.5 right-2.5 bg-emerald-50 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full border border-emerald-250 uppercase tracking-widest leading-none font-sans">
@@ -1387,11 +1396,59 @@ export const LandingPage: React.FC<{
                               🎖️ HERO
                             </div>
                           </div>
-                          <h4 className="font-extrabold text-slate-800 text-sm">{teacher.name}</h4>
+                          <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-blue-900 transition-colors duration-200">{teacher.name}</h4>
                           <p className="text-xs text-blue-900 font-bold mt-1 inline-block bg-blue-50/50 px-2 py-0.5 rounded border border-blue-100">
                             {teacher.title}
                           </p>
                           <p className="text-[10.5px] text-slate-500 mt-2.5 leading-normal">{teacher.qual}</p>
+
+                          {/* Quick Access Profile Details Buttons on Hover */}
+                          <div className="opacity-0 max-h-0 group-hover:opacity-100 group-hover:max-h-12 group-hover:mt-3.5 transition-all duration-350 ease-in-out overflow-hidden flex justify-center gap-2 items-center">
+                            <button 
+                              type="button"
+                              onClick={() => alert(`🎥 জনাব/মিস ${teacher.name} এর লাইভ ক্লাস পারফরমেন্স ভিডিও দেখতে শীঘ্রই ফাইল এডিটর থেকে এটি আপডেট করা হবে।`)}
+                              className="h-7 w-7 rounded-full bg-red-50 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center border border-red-100 shadow-xs transition-colors duration-200 cursor-pointer"
+                              title="ক্লাস পারফরমেন্স ভিডিও"
+                            >
+                              <Video className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button 
+                              type="button"
+                              onClick={() => alert(`📘 জনাব/মিস ${teacher.name} এর অফিশিয়াল ফেসবুক পেজ ও গ্রুপ লিংক দেখতে শীঘ্রই এখানে লিংক সেট করা হবে।`)}
+                              className="h-7 w-7 rounded-full bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white flex items-center justify-center border border-blue-100 shadow-xs transition-colors duration-200 cursor-pointer"
+                              title="ফেসবুক পেজ"
+                            >
+                              <Facebook className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button 
+                              type="button"
+                              onClick={() => alert(`📺 জনাব/মিস ${teacher.name} এর ডিজিটাল টিউটোরিয়াল ইউটিউব চ্যানেল লিংক শীঘ্রই যুক্ত করা হচ্ছে।`)}
+                              className="h-7 w-7 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center border border-rose-100 shadow-xs transition-colors duration-200 cursor-pointer"
+                              title="ইউটিউব চ্যানেল"
+                            >
+                              <Youtube className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button 
+                              type="button"
+                              onClick={() => alert(`🌐 জনাব/মিস ${teacher.name} এর ব্যক্তিগত ওয়েবসাইট ও স্টাডি মেটেরিয়াল পোর্টাল শীঘ্রই চালু হবে।`)}
+                              className="h-7 w-7 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center border border-emerald-100 shadow-xs transition-colors duration-200 cursor-pointer"
+                              title="নিজস্ব ওয়েবসাইট"
+                            >
+                              <Globe className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button 
+                              type="button"
+                              onClick={() => alert(`ℹ️ শিক্ষক পরিচিতি:\nনাম: ${teacher.name}\nপদবী: ${teacher.title}\nযোগ্যতা: ${teacher.qual}\nফোন: ${teacher.phone}`)}
+                              className="h-7 w-7 rounded-full bg-slate-50 hover:bg-slate-700 text-slate-600 hover:text-white flex items-center justify-center border border-slate-100 shadow-xs transition-colors duration-200 cursor-pointer"
+                              title="বিস্তারিত প্রোফাইল"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col gap-1.5 text-[10px]/normal text-left">
