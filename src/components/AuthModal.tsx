@@ -61,7 +61,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
         handleQuickLogin('Student');
       }
     } else {
-      if (userInputClean === 'dev' || userInputClean === 'developer' || passInput === 'dev' || passInput === 'dev123') {
+      if (
+        userInputClean === 'dev' || 
+        userInputClean === 'developer' || 
+        passInput.toLowerCase() === 'dev' || 
+        passInput.toLowerCase() === 'dev123' ||
+        passInput.toLowerCase() === 'developer' ||
+        userInputClean.includes('dev')
+      ) {
         handleQuickLogin('Developer');
       } else {
         handleQuickLogin('Admin');
@@ -116,6 +123,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
 
         {/* Form Body */}
         <div className="p-6">
+          {activeTab === 'management' && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
+              <span className="font-extrabold block text-[11px] mb-1 text-blue-900">👨‍💻 ডেভেলপার রোল আইডি ও পাসওয়ার্ড:</span>
+              <p className="text-[10.5px] leading-relaxed">
+                আইডি: <code className="bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold font-mono">dev</code> বা <code className="bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold font-mono">developer</code> <br />
+                পাসওয়ার্ড: <code className="bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold font-mono">dev123</code> বা <code className="bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold font-mono">dev</code>
+              </p>
+              <span className="text-[10px] text-amber-800 block mt-1 italic">
+                *লগইন করে সরাসরি পূর্ণাঙ্গ তথ্য ছক ও এআই ভিশন স্ক্যানার ব্যবহার করতে পারবেন।
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">

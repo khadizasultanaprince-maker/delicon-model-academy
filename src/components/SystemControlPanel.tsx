@@ -11,12 +11,13 @@ import {
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
   Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
-  Camera, CameraOff, Calendar, Book, Film
+  Camera, CameraOff, Calendar, Book, Film, Sparkles
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
 import { AcademicCalendar } from './AcademicCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
 import { extractYouTubeId } from './VideoPlayer';
+import { StudentDataEntryManager } from './StudentDataEntryManager';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -118,7 +119,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('admissions');
+  const [activeTab, setActiveTab] = useState<'student_entry' | 'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('student_entry');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -1079,25 +1080,26 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
         {/* Module Menu */}
         <aside className="w-full lg:w-64 shrink-0 space-y-1">
           {[
-            { id: 'admissions', label: '১। ভর্তি আবেদন ও শিক্ষার্থী এন্ট্রি', icon: Users, count: pendingLeads },
-            { id: 'finance', label: '২। ফি কালেকশন ও ব্যাংক', icon: CreditCard },
-            { id: 'staff', label: '৩। স্টাফ পে-রোল ও হাজিরা', icon: Clock },
-            { id: 'idcards', label: '৪। কিউআর আইডি কার্ড জেনারেটর', icon: QrCode },
-            { id: 'exams', label: '৫। পরীক্ষার মেট্রিক্স ও মার্কস এন্ট্রি', icon: FileText },
-            { id: 'docs', label: '৬। প্রশংসাপত্র ও ট্রান্সক্রিপ্ট প্রিন্ট', icon: Award },
-            { id: 'requisitions', label: '৭। রিকুইজিশন অনুমোদন হাব', icon: CheckCircle2, count: requisitions.filter(r => !r.status.includes('Principal Approved') && !r.status.includes('Rejected')).length },
-            { id: 'sections', label: '৮। ল্যান্ডিং সেকশন কাস্টমাইজার 🎨', icon: Layers },
-            { id: 'inventory', label: '৯। স্টেশনারি ইনভেনটরি', icon: PackageOpen },
-            { id: 'transport', label: '১০। স্কুল বাস পরিবহন রুট', icon: Bus },
-            { id: 'planning', label: '১১। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
-            { id: 'notices', label: '১২। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
-            { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
-            { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল কর্নার 🎭', icon: Video },
-            { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
-            { id: 'library', label: '১৮। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
-            { id: 'cultural_mgt', label: '১৯। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
-            { id: 'settings', label: '১৩। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
-            { id: 'db', label: '১৪। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
+            { id: 'student_entry', label: '১। শিক্ষার্থী তথ্য ছক ও AI স্ক্যানার ✨', icon: Sparkles },
+            { id: 'admissions', label: '২। ভর্তি আবেদন ও অনলাইন লিড', icon: Users, count: pendingLeads },
+            { id: 'finance', label: '৩। ফি কালেকশন ও ব্যাংক', icon: CreditCard },
+            { id: 'staff', label: '৪। স্টাফ পে-রোল ও হাজিরা', icon: Clock },
+            { id: 'idcards', label: '৫। কিউআর আইডি কার্ড জেনারেটর', icon: QrCode },
+            { id: 'exams', label: '৬। পরীক্ষার মেট্রিক্স ও মার্কস এন্ট্রি', icon: FileText },
+            { id: 'docs', label: '৭। প্রশংসাপত্র ও ট্রান্সক্রিপ্ট প্রিন্ট', icon: Award },
+            { id: 'requisitions', label: '৮। রিকুইজিশন অনুমোদন হাব', icon: CheckCircle2, count: requisitions.filter(r => !r.status.includes('Principal Approved') && !r.status.includes('Rejected')).length },
+            { id: 'sections', label: '৯। ল্যান্ডিং সেকশন কাস্টমাইজার 🎨', icon: Layers },
+            { id: 'inventory', label: '১০। স্টেশনারি ইনভেনটরি', icon: PackageOpen },
+            { id: 'transport', label: '১১। স্কুল বাস পরিবহন রুট', icon: Bus },
+            { id: 'planning', label: '১২। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
+            { id: 'notices', label: '১৩। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
+            { id: 'scanner', label: '১৪। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
+            { id: 'dtube', label: '১৫। ডি-টিউব ও কালচারাল কর্নার 🎭', icon: Video },
+            { id: 'calendar', label: '১৬। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
+            { id: 'library', label: '১৭। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
+            { id: 'cultural_mgt', label: '১৮। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
+            { id: 'settings', label: '১৯। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
+            { id: 'db', label: '২০। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
             <button
               key={tab.id}
@@ -1131,6 +1133,11 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
         {/* ERP Modules Wrapper */}
         <div id="erp-modules-content" className="flex-1 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-x-auto">
           
+          {/* 0. COMPREHENSIVE STUDENT DATA ENTRY & AI OCR SCANNER */}
+          {activeTab === 'student_entry' && (
+            <StudentDataEntryManager currentRole={role} />
+          )}
+
           {/* 1. ADMISSIONS MANAGER */}
           {activeTab === 'admissions' && (
             <div>

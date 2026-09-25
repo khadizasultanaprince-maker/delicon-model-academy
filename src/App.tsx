@@ -11,11 +11,12 @@ import { AttendanceSimulator } from './components/AttendanceSimulator';
 import { AuthModal } from './components/AuthModal';
 import { DashboardPortals } from './components/DashboardPortals';
 import { SystemControlPanel } from './components/SystemControlPanel';
+import { RecruitmentPosterGenerator } from './components/RecruitmentPosterGenerator';
 import { UserRole } from './types';
 import { Shield, Sparkles, KeyRound, Monitor, ScanLine, CreditCard, ChevronRight } from 'lucide-react';
 
 function AppContent() {
-  const [activeView, setActiveView] = useState<'home' | 'scanner' | 'portal'>(() => {
+  const [activeView, setActiveView] = useState<'home' | 'scanner' | 'portal' | 'poster'>(() => {
     const savedRole = localStorage.getItem('delicon_logged_in_role');
     return savedRole ? 'portal' : 'home';
   });
@@ -87,6 +88,12 @@ function AppContent() {
         
         {activeView === 'scanner' && (
           <AttendanceSimulator />
+        )}
+
+        {activeView === 'poster' && (
+          <div className="min-h-screen bg-slate-900 py-8 px-4 sm:px-6">
+            <RecruitmentPosterGenerator onClose={() => setActiveView('home')} />
+          </div>
         )}
         
         {activeView === 'portal' && (

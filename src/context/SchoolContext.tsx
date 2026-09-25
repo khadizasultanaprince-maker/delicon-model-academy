@@ -84,6 +84,8 @@ interface SchoolContextProps {
   deleteNotice: (id: string) => void;
   editNotice: (id: string, noticeData: Partial<Notice>) => void;
   addStudent: (student: Omit<Student, 'id' | 'attendancePct' | 'homeworkStatus'>) => void;
+  updateStudent: (id: string, updatedFields: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
   addEmployee: (employee: Omit<Employee, 'id' | 'paymentStatus'>) => void;
   updateStudentHomework: (id: string, status: 'Completed' | 'Pending' | 'Needs-Motivation') => void;
   receiveFees: (studentId: string, amount: number) => void;
@@ -117,6 +119,8 @@ interface SchoolContextProps {
   updateSchoolBranding: (name: string, slogan: string, logoType: 'crest' | 'text' | 'image', logoVal: string) => void;
   campusPhotos: { url: string; title: string; caption: string; }[];
   updateCampusPhotos: (photos: { url: string; title: string; caption: string; }[]) => void;
+  defaultTeacherPhotos: Record<string, string>;
+  updateTeacherPhoto: (id: string, photo: string) => void;
   meritStudents: MeritStudent[];
   updateMeritStudents: (students: MeritStudent[]) => void;
 
@@ -487,6 +491,42 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     ]);
   });
+
+  const [defaultTeacherPhotos, setDefaultTeacherPhotos] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('delicon_default_teacher_photos');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  });
+
+  const updateTeacherPhoto = (id: string, photo: string) => {
+    if (id.startsWith('t')) {
+      setDefaultTeacherPhotos(prev => {
+        const next = { ...prev, [id]: photo };
+        try {
+          localStorage.setItem('delicon_default_teacher_photos', JSON.stringify(next));
+        } catch (e) {
+          console.warn('Failed to save default teacher photo to local storage', e);
+        }
+        return next;
+      });
+    } else {
+      setEmployees(prev => {
+        const next = prev.map(e => e.id === id ? { ...e, photo } : e);
+        try {
+          localStorage.setItem('delicon_employees', JSON.stringify(next));
+        } catch (e) {
+          console.warn('Failed to save employee photo to local storage', e);
+        }
+        return next;
+      });
+    }
+  };
 
   const updateCampusPhotos = (photos: { url: string; title: string; caption: string; }[]) => {
     setCampusPhotos(photos);
@@ -894,8 +934,26 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: 's_' + Date.now(),
       attendancePct: 100,
       homeworkStatus: 'Completed',
+      lastUpdated: new Date().toISOString()
     };
     setStudents(prev => [...prev, newSt]);
+  };
+
+  const updateStudent = (id: string, updatedFields: Partial<Student>) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === id) {
+        return {
+          ...s,
+          ...updatedFields,
+          lastUpdated: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+  };
+
+  const deleteStudent = (id: string) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
   };
 
   const updateStudentHomework = (id: string, status: Student['homeworkStatus']) => {
@@ -1179,6 +1237,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updateSchoolBranding,
       campusPhotos,
       updateCampusPhotos,
+      defaultTeacherPhotos,
+      updateTeacherPhoto,
       meritStudents,
       updateMeritStudents,
       dtubePlaylist,
@@ -1193,6 +1253,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       deleteNotice,
       editNotice,
       addStudent,
+      updateStudent,
+      deleteStudent,
       addEmployee,
       updateStudentHomework,
       receiveFees,

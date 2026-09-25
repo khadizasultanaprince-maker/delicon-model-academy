@@ -25,6 +25,61 @@ export interface Student {
   totalFees: number;
   attendancePct: number;
   homeworkStatus: 'Completed' | 'Pending' | 'Needs-Motivation';
+
+  // Extended Comprehensive Data Entry Fields (All Optional for Partial/Progressive Entry):
+  section?: string;               // শাখা (ক, খ, A, B)
+  sessionYear?: string;           // শিক্ষাবর্ষ (উদা: 2026)
+  admissionDate?: string;         // ভর্তির তারিখ
+  version?: 'Bangla' | 'English'; // মাধ্যম
+  shift?: 'Morning' | 'Day';      // শিফট
+  birthRegNo?: string;            // জন্ম নিবন্ধন নম্বর (১৭ ডিজিট বিআরসি)
+  dob?: string;                   // জন্ম তারিখ
+  bloodGroup?: string;            // রক্তের গ্রুপ (A+, B+, O+, AB+, ইত্যাদি)
+  gender?: 'Male' | 'Female' | 'Other'; // লিঙ্গ
+  religion?: string;              // ধর্ম
+  nationality?: string;           // জাতীয়তা
+  disability?: string;            // বিশেষ চাহিদা
+  photoUrl?: string;              // শিক্ষার্থীর ছবির লিংক বা বেস৬৪
+
+  // Father's Information
+  fatherNameBn?: string;          // পিতার নাম (বাংলা)
+  fatherNameEn?: string;          // পিতার নাম (ইংরেজি)
+  fatherNid?: string;             // পিতার এনআইডি
+  fatherPhone?: string;           // পিতার ফোন
+  fatherOccupation?: string;      // পিতার পেশা
+  fatherEducation?: string;       // পিতার শিক্ষাগত যোগ্যতা
+  fatherIncome?: string;          // পিতার মাসিক আয়
+
+  // Mother's Information
+  motherNameBn?: string;          // মাতার নাম (বাংলা)
+  motherNameEn?: string;          // মাতার নাম (ইংরেজি)
+  motherNid?: string;             // মাতার এনআইডি
+  motherPhone?: string;           // মাতার ফোন
+  motherOccupation?: string;      // মাতার পেশা
+  motherEducation?: string;       // মাতার শিক্ষাগত যোগ্যতা
+
+  // Guardian Details
+  guardianRelation?: string;      // শিক্ষার্থীর সাথে সম্পর্ক
+  guardianNid?: string;           // অভিভাবকের এনআইডি
+  guardianEmail?: string;         // অভিভাবকের ইমেইল
+
+  // Addresses
+  presentAddress?: string;        // বর্তমান ঠিকানা
+  permanentAddress?: string;      // স্থায়ী ঠিকানা
+
+  // Prior School
+  previousSchool?: string;        // পূর্ববর্তী বিদ্যালয়
+  previousClassRoll?: string;     // পূর্ববর্তী শ্রেণী ও রোল
+  tcNumberDate?: string;          // টিসি নম্বর ও তারিখ
+
+  // Attachments & Reference Sources
+  formImageRefUrl?: string;       // তথ্যসূত্র ফরমের ইমেজ লিংক
+  formScanBase64?: string;        // স্ক্যান করা ফাইলের ছবি
+  birthCertScanUrl?: string;      // জন্ম সনদ স্ক্যান কপি
+  parentsNidScanUrl?: string;     // পিতা/মাতার এনআইডি স্ক্যান কপি
+  entryStatus?: 'Draft' | 'Partial' | 'Complete' | 'Verified'; // ডেটা এন্ট্রি পর্যায়
+  entryNotes?: string;            // অতিরিক্ত মন্তব্য / নোটস
+  lastUpdated?: string;           // সর্বশেষ আপডেটের সময়
 }
 
 export interface Employee {
@@ -37,6 +92,7 @@ export interface Employee {
   phone: string;
   subject?: string;
   qualification?: string;
+  photo?: string;
 }
 
 export interface AttendanceLog {

@@ -92,6 +92,222 @@ app.post('/api/db/init', (req, res) => {
   res.json({ success: true });
 });
 
+// API endpoint for Student Form AI OCR Vision Scanner
+app.post('/api/gemini/scan-student-form', async (req, res) => {
+  try {
+    const { imageData, imageUrl } = req.body;
+    
+    let base64Clean = '';
+    let mimeType = 'image/jpeg';
+
+    if (imageData && typeof imageData === 'string') {
+      if (imageData.startsWith('data:')) {
+        const matches = imageData.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          mimeType = matches[1];
+          base64Clean = matches[2];
+        } else {
+          base64Clean = imageData.split(',')[1] || imageData;
+        }
+      } else {
+        base64Clean = imageData;
+      }
+    } else if (imageUrl && typeof imageUrl === 'string') {
+      try {
+        const imgFetch = await fetch(imageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          }
+        });
+        if (!imgFetch.ok) {
+          throw new Error(`Failed to fetch image from URL: ${imgFetch.statusText}`);
+        }
+        const contentType = imgFetch.headers.get('content-type') || 'image/jpeg';
+        if (contentType.includes('image/')) {
+          mimeType = contentType.split(';')[0];
+        }
+        const arrayBuffer = await imgFetch.arrayBuffer();
+        base64Clean = Buffer.from(arrayBuffer).toString('base64');
+      } catch (fetchErr: any) {
+        return res.status(400).json({ error: `ইমেজ লিংক থেকে ছবি লোড করা সম্ভব হয়নি: ${fetchErr?.message || fetchErr}` });
+      }
+    } else {
+      return res.status(400).json({ error: 'অনুগ্রহ করে স্ক্যান করা ছবির ফাইল অথবা ছবির লিংক প্রদান করুন।' });
+    }
+
+    if (!base64Clean || base64Clean.length < 50) {
+      return res.status(400).json({ error: 'ছবি ডাটা সঠিক নয় বা অসম্পূর্ণ।' });
+    }
+
+    const ai = getAiClient();
+
+    const prompt = `
+You are an expert OCR & Student Information Sheet (তথ্য ছক / ভর্তি ফরম) Digitization AI for Bangladeshi schools (Primary, High School, Model Academy, Kindergarten).
+Analyze this uploaded student form/document image carefully. It may contain printed text, tabular forms, or handwritten Bengali/English entries.
+Extract all discernible fields accurately into a clean JSON object.
+If a field is empty, blank, or illegible on the form, return an empty string "" for that field. DO NOT make up fake information.
+
+Field guidelines:
+- banglaName: শিক্ষার্থীর নাম (বাংলায়)
+- name: শিক্ষার্থীর নাম (ইংরেজিতে ক্যাপিটাল অক্ষরে)
+- className: শ্রেণী (উদা: "Class 5", "Class 4", "Play", "Nursery", "KG", "Class 1", "Class 2", etc.)
+- section: শাখা (উদা: "ক", "খ", "A", "B")
+- roll: রোল নম্বর (উদা: "০১", "01")
+- sessionYear: শিক্ষাবর্ষ (উদা: "2026")
+- admissionDate: ভর্তির তারিখ (YYYY-MM-DD or DD-MM-YYYY)
+- version: মাধ্যম ("Bangla" or "English")
+- shift: শিফট ("Morning" or "Day")
+- birthRegNo: জন্ম নিবন্ধন সনদ নম্বর (১৭ ডিজিট বিআরসি নং)
+- dob: জন্ম তারিখ (YYYY-MM-DD)
+- bloodGroup: রক্তের গ্রুপ (উদা: "A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-")
+- gender: লিঙ্গ ("Male" or "Female")
+- religion: ধর্ম ("ইসলাম", "হিন্দু", "বৌদ্ধ", "খ্রিস্টান")
+- nationality: জাতীয়তা (default "বাংলাদেশী")
+- disability: বিশেষ চাহিদা / শারীরিক প্রতিবন্ধকতা (থাকলে লিখুন, না থাকলে "")
+- fatherNameBn: পিতার নাম (বাংলায়)
+- fatherNameEn: পিতার নাম (ইংরেজিতে)
+- fatherNid: পিতার জাতীয় পরিচয়পত্র (এনআইডি) নম্বর
+- fatherPhone: পিতার মোবাইল নম্বর
+- fatherOccupation: পিতার পেশা
+- fatherEducation: পিতার শিক্ষাগত যোগ্যতা
+- fatherIncome: পিতার মাসিক/বাৎসরিক আয়
+- motherNameBn: মাতার নাম (বাংলায়)
+- motherNameEn: মাতার নাম (ইংরেজিতে)
+- motherNid: মাতার জাতীয় পরিচয়পত্র (এনআইডি) নম্বর
+- motherPhone: মাতার মোবাইল নম্বর
+- motherOccupation: মাতার পেশা
+- motherEducation: মাতার শিক্ষাগত যোগ্যতা
+- guardianName: অভিভাবকের নাম (পিতা/মাতা বা অভিভাবকের নাম)
+- guardianPhone: জরুরী যোগাযোগের অভিভাবকের মোবাইল নম্বর
+- guardianRelation: শিক্ষার্থীর সাথে সম্পর্ক (যেমন: "পিতা", "মাতা", "চাচা", ইত্যাদি)
+- guardianNid: অভিভাবকের এনআইডি
+- presentAddress: বর্তমান ঠিকানা (গ্রাম, ডাকঘর, উপজেলা, জেলা)
+- permanentAddress: স্থায়ী ঠিকানা
+- previousSchool: পূর্ববর্তী বিদ্যালয়ের নাম
+- previousClassRoll: পূর্ববর্তী শ্রেণী ও রোল
+- tcNumberDate: ছাড়পত্র / টিসি নম্বর ও তারিখ
+- detectedTextSummary: ফরম থেকে পঠিত মূল তথ্যের সংক্ষিপ্ত বাংলা বুলেট বা সারাংশ
+- confidence: "High" | "Medium" | "Low"
+`;
+
+    const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    let lastError: any = null;
+    let response: any = null;
+
+    for (const modelCandidate of candidateModels) {
+      try {
+        console.log(`[OCR] Trying model ${modelCandidate}...`);
+        response = await ai.models.generateContent({
+          model: modelCandidate,
+          contents: {
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Clean
+                }
+              },
+              {
+                text: prompt
+              }
+            ]
+          },
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                banglaName: { type: Type.STRING },
+                name: { type: Type.STRING },
+                className: { type: Type.STRING },
+                section: { type: Type.STRING },
+                roll: { type: Type.STRING },
+                sessionYear: { type: Type.STRING },
+                admissionDate: { type: Type.STRING },
+                version: { type: Type.STRING },
+                shift: { type: Type.STRING },
+                birthRegNo: { type: Type.STRING },
+                dob: { type: Type.STRING },
+                bloodGroup: { type: Type.STRING },
+                gender: { type: Type.STRING },
+                religion: { type: Type.STRING },
+                nationality: { type: Type.STRING },
+                disability: { type: Type.STRING },
+                fatherNameBn: { type: Type.STRING },
+                fatherNameEn: { type: Type.STRING },
+                fatherNid: { type: Type.STRING },
+                fatherPhone: { type: Type.STRING },
+                fatherOccupation: { type: Type.STRING },
+                fatherEducation: { type: Type.STRING },
+                fatherIncome: { type: Type.STRING },
+                motherNameBn: { type: Type.STRING },
+                motherNameEn: { type: Type.STRING },
+                motherNid: { type: Type.STRING },
+                motherPhone: { type: Type.STRING },
+                motherOccupation: { type: Type.STRING },
+                motherEducation: { type: Type.STRING },
+                guardianName: { type: Type.STRING },
+                guardianPhone: { type: Type.STRING },
+                guardianRelation: { type: Type.STRING },
+                guardianNid: { type: Type.STRING },
+                presentAddress: { type: Type.STRING },
+                permanentAddress: { type: Type.STRING },
+                previousSchool: { type: Type.STRING },
+                previousClassRoll: { type: Type.STRING },
+                tcNumberDate: { type: Type.STRING },
+                detectedTextSummary: { type: Type.STRING },
+                confidence: { type: Type.STRING }
+              }
+            }
+          }
+        });
+
+        if (response && response.text) {
+          console.log(`[OCR] Successfully processed with ${modelCandidate}`);
+          break;
+        }
+      } catch (modelErr: any) {
+        lastError = modelErr;
+        console.warn(`[OCR] Model ${modelCandidate} failed:`, modelErr?.message || modelErr);
+        // Wait briefly before attempting next candidate
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error('সকল এআই মডেল সাময়িকভাবে ব্যস্ত আছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+    }
+
+    const parsedData = response.text ? JSON.parse(response.text) : {};
+    
+    // Set fallback defaults if critical fields were not detected
+    if (!parsedData.banglaName && parsedData.name) parsedData.banglaName = parsedData.name;
+    if (!parsedData.name && parsedData.banglaName) parsedData.name = parsedData.banglaName;
+    if (!parsedData.guardianName) parsedData.guardianName = parsedData.fatherNameBn || parsedData.motherNameBn || parsedData.banglaName ? `${parsedData.banglaName}-এর অভিভাবক` : 'অভিভাবক';
+    if (!parsedData.guardianPhone) parsedData.guardianPhone = parsedData.fatherPhone || parsedData.motherPhone || '01700000000';
+    if (!parsedData.className) parsedData.className = 'Class 5';
+    if (!parsedData.roll) parsedData.roll = '01';
+
+    res.json({
+      success: true,
+      data: parsedData,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/scan-student-form:', err);
+    let errorMsg = 'ফরমটি এআই দিয়ে রিড করার সময় সমস্যা হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন অথবা ম্যানুয়ালি তথ্য প্রদান করুন।';
+    const rawMsg = err?.message || String(err);
+    if (rawMsg.includes('503') || rawMsg.includes('high demand') || rawMsg.includes('UNAVAILABLE')) {
+      errorMsg = 'এআই সার্ভারে বর্তমানে সাময়িক চাপ রয়েছে। অনুগ্রহ করে ১-২ সেকেন্ড পর আবার "স্ক্যান ও ফিলআপ" বাটনে চাপুন।';
+    } else if (rawMsg.includes('429') || rawMsg.includes('RESOURCE_EXHAUSTED')) {
+      errorMsg = 'রিকোয়েস্ট লিমিট অতিক্রম করেছে। ক্ষনিক অপেক্ষা করে পুনরায় চেষ্টা করুন।';
+    } else if (rawMsg.length > 0 && !rawMsg.startsWith('{')) {
+      errorMsg = rawMsg;
+    }
+    res.status(500).json({ error: errorMsg });
+  }
+});
+
 // API endpoint for Student Performance AI Summarization
 app.post('/api/gemini/summarize', async (req, res) => {
   try {
@@ -152,6 +368,157 @@ Keep language native, polite, and completely constructive. Avoid clinical or har
   } catch (err: any) {
     console.error('Error in AI Summarize endpoint:', err);
     res.status(500).json({ error: err?.message || 'Failed to generate academic summary report' });
+  }
+});
+
+// API endpoint for AI / Imagen Recruitment Poster Generator
+app.post('/api/imagen/generate-poster', async (req, res) => {
+  try {
+    const { 
+      prompt, 
+      style = 'modern-smart', 
+      aspectRatio = '3:4', 
+      headline, 
+      targetAudience = 'guardians', 
+      lang = 'bn',
+      discount = 'প্রথম ১০০ জনের বিশেষ মেধা বৃত্তি'
+    } = req.body;
+
+    const ai = getAiClient();
+
+    // 1. High-converting AI Marketing Copywriting via Gemini
+    let copyData: any = null;
+    try {
+      const copyPrompt = `
+You are an expert Chief Marketing Officer and conversion copywriter for Delicon Model Academy.
+The school is running its mega admission campaign for the upcoming academic season with a bold mission:
+"ENROLL 1,000 STUDENTS (১০০০ শিক্ষার্থী ভর্তি লক্ষ্যমাত্রা)".
+
+LANGUAGE: ${lang === 'en' ? 'English' : 'Bengali (Bangla - authentic, persuasive, parent-focused)'}.
+
+THE 5 PILLARS OF DELICON MODEL ACADEMY (UNIQUE VALUE PROPOSITIONS):
+1. Digital Tracking: Real-time home study monitoring & app-based attendance/homework tracker.
+2. Computer Skills: Practical coding, robotics, ICT skills from early grades.
+3. Freelancing: Early career skills, graphic design, content creation, future freelance readiness.
+4. English Fluency: Daily spoken English drills, Oxford-standard vocabulary, natural fluency.
+5. Multimedia Classrooms: 100% smart interactive displays, 3D animated visual learning.
+
+Generate a JSON object with:
+- headline: High-converting headline (e.g., "আগামীর বিশ্বজয়ের জন্য প্রস্তুত হোক আপনার সন্তান")
+- subheadline: Emotional, inspiring subtitle highlighting modern tech and ethical education
+- goalBadge: "ভর্তি লক্ষ্যমাত্রা: ১০০০ শিক্ষার্থী" or "Mission 1000 Future Leaders"
+- enrolledCount: number between 720 and 840 (representing currently admitted seats)
+- remainingSeats: number between 160 and 280 (urgency indicator)
+- uvpPoints: array of 5 items, each with:
+  {
+    "key": "digital_tracking" | "computer_skills" | "freelancing" | "english_fluency" | "multimedia_classrooms",
+    "title": string,
+    "highlight": string,
+    "description": string
+  }
+- ctaTitle: string (e.g., "আজই আসন নিশ্চিত করুন!")
+- ctaSubtitle: string (e.g., "সীমিত আসন অবশিষ্ট - অনলাইনে ফরম পূরণ করুন বা ক্যাম্পাসে আসুন")
+- specialOffer: string (e.g., "${discount}")
+- contactHotline: string (e.g., "+880 1711-000000")
+- adCaption: Ready-to-copy social media ad post with emojis, hooks, bullet points, and admission hashtags.
+`;
+
+      const copyRes = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: copyPrompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              headline: { type: Type.STRING },
+              subheadline: { type: Type.STRING },
+              goalBadge: { type: Type.STRING },
+              enrolledCount: { type: Type.INTEGER },
+              remainingSeats: { type: Type.INTEGER },
+              uvpPoints: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    key: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    highlight: { type: Type.STRING },
+                    description: { type: Type.STRING }
+                  },
+                  required: ['key', 'title', 'highlight', 'description']
+                }
+              },
+              ctaTitle: { type: Type.STRING },
+              ctaSubtitle: { type: Type.STRING },
+              specialOffer: { type: Type.STRING },
+              contactHotline: { type: Type.STRING },
+              adCaption: { type: Type.STRING }
+            },
+            required: [
+              'headline', 'subheadline', 'goalBadge', 'enrolledCount', 
+              'remainingSeats', 'uvpPoints', 'ctaTitle', 'ctaSubtitle', 
+              'specialOffer', 'contactHotline', 'adCaption'
+            ]
+          }
+        }
+      });
+
+      if (copyRes.text) {
+        copyData = JSON.parse(copyRes.text);
+      }
+    } catch (copyErr) {
+      console.warn('Gemini copywriting fallback triggered:', copyErr);
+    }
+
+    // 2. Attempt Imagen / GenAI image model generation
+    let generatedImageUrl: string | null = null;
+    let modelStatus = 'studio-preset';
+
+    const visualPrompt = prompt || `
+High-converting professional admissions recruitment poster background for a smart Bangladeshi model academy.
+Show cheerful Bangladeshi school children wearing clean, smart academy uniforms, learning joyfully with laptops, robotics, and digital tablets in a modern bright multimedia smart classroom with interactive glowing holographic charts.
+Rich warm ambient lighting with prestigious sapphire blue and amber gold accents, cinematic lighting, 8k commercial photography, crisp negative space in upper and lower thirds for marketing text.
+`;
+
+    try {
+      const imgRes = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite-image',
+        contents: {
+          parts: [{ text: visualPrompt }]
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: aspectRatio === '1:1' ? '1:1' : aspectRatio === '16:9' ? '16:9' : '3:4'
+          }
+        }
+      });
+
+      if (imgRes.candidates && imgRes.candidates[0]?.content?.parts) {
+        for (const part of imgRes.candidates[0].content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            generatedImageUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+            modelStatus = 'ai-generated';
+            break;
+          }
+        }
+      }
+    } catch (imgErr: any) {
+      // Normal when on free quota or API restrictions; client handles gracefully with studio-grade presets
+      modelStatus = 'preset-fallback';
+    }
+
+    res.json({
+      success: true,
+      imageUrl: generatedImageUrl,
+      modelStatus,
+      copyData,
+      aspectRatio,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('Error in /api/imagen/generate-poster:', err);
+    res.status(500).json({ error: err?.message || 'Failed to generate poster' });
   }
 });
 

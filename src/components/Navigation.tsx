@@ -9,8 +9,8 @@ import { UserRole } from '../types';
 import { useSchool } from '../context/SchoolContext';
 
 interface NavigationProps {
-  activeView: 'home' | 'scanner' | 'portal';
-  setActiveView: (view: 'home' | 'scanner' | 'portal') => void;
+  activeView: 'home' | 'scanner' | 'portal' | 'poster';
+  setActiveView: (view: 'home' | 'scanner' | 'portal' | 'poster') => void;
   onOpenAuth: () => void;
   loggedInRole: UserRole | null;
   onLogout: () => void;
@@ -28,8 +28,9 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const navItems = [
     { id: 'home', label: '১। হোম পেইজ ও বিবরণ', icon: Landmark },
-    { id: 'scanner', label: '২। ডিজিটাল ট্র্যাকার ডিভাইস', icon: ScanLine },
-    { id: 'portal', label: '৩। ডিজিটাল পোর্টাল ও ERP', icon: KeyRound }
+    { id: 'poster', label: '২। ভর্তি পোস্টার জেনারেটর (AI)', icon: Sparkles },
+    { id: 'scanner', label: '৩। ডিজিটাল ট্র্যাকার ডিভাইস', icon: ScanLine },
+    { id: 'portal', label: '৪। ডিজিটাল পোর্টাল ও ERP', icon: KeyRound }
   ];
 
   const showAdminTabs = loggedInRole === 'Admin' || loggedInRole === 'Developer' || loggedInRole === 'Partner';
@@ -96,8 +97,20 @@ export const Navigation: React.FC<NavigationProps> = ({
             ))}
           </nav>
 
-          {/* User Sign In controls */}
-          <div className="hidden lg:flex items-center gap-2">
+          {/* User Sign In controls & Poster CTA */}
+          <div className="hidden lg:flex items-center gap-2.5">
+            <button
+              onClick={() => handleNavClick('poster')}
+              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                activeView === 'poster'
+                  ? 'bg-amber-400 text-blue-950 font-black shadow-md'
+                  : 'bg-blue-800 hover:bg-blue-750 text-amber-300 border border-amber-400/30'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <span>পোস্টার জেনারেটর (AI)</span>
+            </button>
+
             {loggedInRole ? (
               <div className="flex items-center gap-3">
                 <div className="text-right">
@@ -124,6 +137,13 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Mobile hamburger menu toggle */}
           <div className="lg:hidden flex items-center gap-2">
+            <button
+              onClick={() => handleNavClick('poster')}
+              className="flex items-center justify-center rounded-lg bg-blue-800 hover:bg-blue-750 p-2 text-amber-300 border border-amber-400/40 shadow-sm"
+              title="পোস্টার জেনারেটর"
+            >
+              <Sparkles className="h-4.5 w-4.5 text-amber-300" />
+            </button>
             {!loggedInRole && (
               <button
                 onClick={onOpenAuth}

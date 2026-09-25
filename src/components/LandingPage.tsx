@@ -5,16 +5,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSchool } from '../context/SchoolContext';
+import { UserRole } from '../types';
 import { 
   BookOpen, Calculator, Calendar, CheckCircle, Clock, 
   MapPin, Phone, Users, Shield, Award, Sparkles, Book,
   Tv, Compass, HelpCircle, Truck, Home, GraduationCap,
   MessageSquare, Briefcase, Mail, Send, Bell,
-  Youtube, Facebook, Globe, Video, Info
+  Youtube, Facebook, Globe, Video, Info, Camera, Upload,
+  Printer, Copy
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
 import { VideoPlayer, extractYouTubeId } from './VideoPlayer';
+import { RecruitmentPosterGenerator } from './RecruitmentPosterGenerator';
+
+const getYouTubeId = extractYouTubeId;
 
 interface MeritStudent {
   name: string;
@@ -40,1027 +45,244 @@ const MeritStudentCard: React.FC<{ student: MeritStudent }> = ({ student }) => {
         ) : (
           <img 
             src={student.photoUrl} 
-            alt={student.name} 
+            alt={student.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             referrerPolicy="no-referrer"
             onError={() => setPhotoError(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         )}
-        
-        {/* Small Aesthetic Star Badge on Photo */}
-        <div className="absolute top-2 left-2 bg-amber-500 text-white rounded-full p-1 shadow-md">
-          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        </div>
       </div>
 
-      {/* Right Side: Information Hub */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+      {/* Right Side: Informational body */}
+      <div className="flex-1 flex flex-col justify-between h-full">
         <div>
-          {/* Award Level Badge */}
-          <div className="mb-2">
-            <span className="bg-amber-50 text-amber-800 text-[9px] font-black tracking-wide px-2 py-0.5 rounded-full border border-amber-200 uppercase inline-block font-sans">
-              ★ {student.award}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="bg-amber-400/10 text-amber-850 text-[10px] font-black px-2.5 py-1 rounded-md border border-amber-300/30 uppercase tracking-wider font-sans">
+              🏆 {student.award}
             </span>
+            {student.className && (
+              <span className="bg-slate-100 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded border border-slate-200 font-sans">
+                {student.className}
+              </span>
+            )}
           </div>
-
-          {/* Student Name */}
-          <h4 className="font-black text-slate-950 text-base leading-snug tracking-tight hover:text-blue-900 transition-colors">
-            {student.name}
-          </h4>
-
-          {/* Class */}
-          <p className="text-[11px] font-bold text-slate-500 mt-1">
-            {student.className || student.class || 'শ্রেণী: নার্সারী'}
+          <h4 className="font-black text-slate-900 text-base mb-1.5">{student.name}</h4>
+          <p className="text-slate-650 text-xs font-medium leading-relaxed italic pr-4">
+            "{student.quote}"
           </p>
-
-          {/* Achievement Box */}
-          <div className="mt-2 text-left">
-            <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-md border border-emerald-100 inline-block">
-              🏆 {student.achievement}
-            </span>
-          </div>
         </div>
 
-        {/* Testimonial Quote */}
-        <div className="text-slate-600 text-[11px] leading-relaxed mt-4 pt-3 border-t border-slate-100 italic relative text-left">
-          <span className="text-slate-300 text-2xl font-serif absolute -top-1 -left-1 select-none leading-none">“</span>
-          <p className="pl-4 leading-relaxed line-clamp-3 font-sans" title={student.quote}>
-            {student.quote}
-          </p>
+        <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-450 font-bold">
+          <span>{student.achievement}</span>
         </div>
       </div>
     </div>
   );
 };
 
-export const LandingPage: React.FC<{ 
+interface LandingPageProps {
   onOpenAuth: () => void;
-  onLeadAutoLogin?: (studentName: string, parentName: string, phone: string, className: string) => void;
-  loggedInRole?: string | null;
-}> = ({ onOpenAuth, onLeadAutoLogin, loggedInRole }) => {
+  loggedInRole: UserRole | null;
+  onLeadAutoLogin: (stName: string, guardName: string, ph: string, cl: string) => void;
+}
+
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+  onOpenAuth, 
+  loggedInRole, 
+  onLeadAutoLogin 
+}) => {
   const { 
-    addLead, notices, routes, stationery, devProjects, sections, students, employees, attendanceLogs, requisitions,
-    schoolName, schoolSlogan, schoolLogoType, schoolLogoVal, campusPhotos, meritStudents, addEmployee,
-    dtubePlaylist, culturalPlaylist, updateDtubePlaylist, updateCulturalPlaylist
+    sections, 
+    employees, 
+    meritStudents, 
+    defaultTeacherPhotos, 
+    updateTeacherPhoto,
+    addLead,
+    dtubePlaylist,
+    culturalPlaylist,
+    updateDtubePlaylist,
+    updateCulturalPlaylist,
+    routes,
+    stationery,
+    schoolName
   } = useSchool();
 
+  // Helper functions for section visibility and titles
   const isSecVisible = (secId: string) => {
     const sec = sections?.find(s => s.id === secId);
     return sec ? sec.visible : true;
   };
-
   const getSecTitle = (secId: string, defaultTitle: string) => {
     const sec = sections?.find(s => s.id === secId);
-    return sec && sec.title ? sec.title : defaultTitle;
+    return sec ? sec.title : defaultTitle;
   };
-  
-  // Lead Generation state
-  const [parentName, setParentName] = useState('');
-  const [studentName, setStudentName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [desiredClass, setDesiredClass] = useState('Class 1');
-  const [leadSuccess, setLeadSuccess] = useState(false);
 
-  // Hero slide interactive state
-  const [heroSlide, setHeroSlide] = useState(0);
-  const [isHeroHovered, setIsHeroHovered] = useState(false);
-
-  // Campus Mugdhota Photos Gallery Slider
-  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-
-  // Photo rendering error trackers to provide premium fallback templates
+  // State definitions
+  const [tQuery, setTQuery] = useState('');
+  const [meritSlide, setMeritSlide] = useState(0);
+  const [isMeritHovered, setIsMeritHovered] = useState(false);
   const [studentPhotoErrors, setStudentPhotoErrors] = useState<Record<number, boolean>>({});
-  const [campusPhotoErrors, setCampusPhotoErrors] = useState<Record<number, boolean>>({});
+  const [videoViews, setVideoViews] = useState<Record<string, number>>({});
+  const [leadSuccess, setLeadSuccess] = useState(false);
+  
+  // A4 Admission Poster Generator States
+  const [posterTheme, setPosterTheme] = useState<'futuristic' | 'academic' | 'photocopy'>('futuristic');
+  const [posterPhone, setPosterPhone] = useState('০১৭০৮-**৮৮৯');
+  const [posterDiscount, setPosterDiscount] = useState('ভর্তিতে স্পেশাল কুপন ও ১০% ডিসকাউন্ট!');
+  const [posterAddress, setPosterAddress] = useState('স্মার্ট ক্যাম্পাস, ডিলিকন রোড, ঢাকা');
+  const [seatsBooked, setSeatsBooked] = useState(748);
+  const [copiedPostIndex, setCopiedPostIndex] = useState<number | null>(null);
 
-  const campusPhotosData = campusPhotos || [];
-
-  useEffect(() => {
-    if (campusPhotosData.length === 0) return;
-    const photoTimer = setInterval(() => {
-      setActivePhotoIndex((prev) => (prev + 1) % campusPhotosData.length);
-    }, 7500);
-    return () => clearInterval(photoTimer);
-  }, [campusPhotosData.length]);
-
-  const heroSlidesData = [
-    {
-      badge: '🌸 পরম স্নেহে প্রস্ফুটিত কানন',
-      title: 'এখানে শাসন মানে বেতের বাড়ি আর আতংক সৃষ্টি করে দিয়ে নয়। নিয়ম শৃঙখলা মেনে জীবন চলার সুশিক্ষার অনুপ্রেরণায় এগিয়ে চলা-সে হবে উজ্জল আর নির্ভিক।',
-      desc: 'আমাদের অভিজ্ঞ শিক্ষক মালীগণ এখানে কঠোর শাসন ছাড়াই, নিয়ম-শৃঙ্খলার সযত্ন অনুশীলনে প্রতিটি শিশুকে রঙের ছটায়, সুকৃতিতে আর সৌরভের আভায় ফুলের মতন তিলে তিলে বিকশিত করে তোলেন।'
-    },
-    {
-      badge: '✔ জীবনের কষ্টিপাথরে উত্তীর্ণ শিক্ষা',
-      title: 'খাতায় লিখে পাশকরা সার্টিফাইড পর্যন্তই নয়। মেধায় মননে শৃঙখলায় দায়িত্ববোধে সে হয়ে ওঠবে জাস্টিফাইড সুনাগরিক-আগামীর সমাধান।',
-      desc: 'শুধু পরীক্ষায় জিপিএ-৫ আর কাগজী পত্রে সার্টিফাইড হওয়া আমাদের উদ্দেশ্য নয়। ডি লিকন মডেল একাডেমীর সুদৃঢ় লক্ষ্য হচ্ছে এমনভাবে মনের ভিত্তি প্রস্তুত করা যেন প্রতিটি শিক্ষার্থী জীবনের বাস্তব পরীক্ষায় খাঁটি চরিত্র ও যোগ্যতায় জাস্টিফায়েড নাগরিক হয়।'
-    },
-    {
-      badge: '❤ আনন্দের রঙে সাজানো সযত্ন পাঠশালা',
-      title: 'শিশুরা যা কিছু প্রফুল্ল অন্তরে উপভোগ করে, মনের মণিকোঠায় আজীবন তা গেঁথে রাখে!',
-      desc: 'কোনো ভীতি নেই, নেই ক্লান্তিকর একঘেয়ে লেকচারের বোঝা। কৌতূহলী প্রশ্ন আর রোমাঞ্চকর খেলাচ্ছলে শিক্ষার এমন জাদুকরী ব্যবস্থাপনা করা হয়েছে যে প্রতিটি শিক্ষার্থী আনন্দের সাথে প্রতিটি সেকেন্ড পাঠ উপভোগ করে।'
-    },
-    {
-      badge: '💡 অসম মেধার সুষম সমাধান',
-      title: 'আপনার প্রিয় সন্তানকে পরম স্নেহ মমতায় গড়ে তুলি আমরা। অপেক্ষাকৃত দুর্বল শিক্ষার্থীদের জন্যে রয়েছে বাড়তি বন্দোবস্ত-এক্সট্রা কেয়ার।',
-      desc: 'সব ফুলের ফুটবার সময় এক নয়, তাই কোনো শিক্ষার্থী একটু পিছিয়ে পড়লে আমরা তাকে তুচ্ছ করি না। শিক্ষকরা অতিরিক্ত ক্লাসে মাতৃসুলভ মমতায় এবং পরম প্রণোদনায় তাদের সামনে এগিয়ে চলার আত্মবিশ্বাস যোগান।'
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!isHeroHovered) {
-        setHeroSlide((prev) => (prev + 1) % 4);
-      }
-    }, 14000);
-    return () => clearInterval(timer);
-  }, [isHeroHovered]);
-
-  // Fee calculator state
-  const [calcClass, setCalcClass] = useState('Primary');
+  // Calculator State
+  const [calcClass, setCalcClass] = useState('Play-KG');
   const [calcTransport, setCalcTransport] = useState(false);
   const [calcStationery, setCalcStationery] = useState(false);
 
-  // FAQ state
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  // Fee Calculation logic
+  const getCalculatedFee = () => {
+    let baseFee = 0;
+    if (calcClass === 'Play-KG') baseFee = 1200;
+    else if (calcClass === 'Primary') baseFee = 1800;
+    else if (calcClass === 'Secondary') baseFee = 2500;
 
-  // Navigation index state for 26 sections jumping
-  const [activeSection, setActiveSection] = useState(0);
+    let total = baseFee;
+    if (calcTransport) total += 500;
+    if (calcStationery) total += 300;
+    return total;
+  };
 
-  // Newsletter state
-  const [newsEmail, setNewsEmail] = useState('');
-  const [newsSuccess, setNewsSuccess] = useState(false);
-
-  // Teacher Data Entry State
-  const [tNameEng, setTNameEng] = useState('');
-  const [tNameBng, setTNameBng] = useState('');
-  const [tPhone, setTPhone] = useState('');
-  const [tSubject, setTSubject] = useState('');
-  const [tQual, setTQual] = useState('');
-  const [tSalary, setTSalary] = useState('28000');
-  const [tSuccess, setTSuccess] = useState(false);
-  const [showEntryForm, setShowEntryForm] = useState(false);
-  const [tQuery, setTQuery] = useState('');
-
-  // Real-time Clock State & Bengali digit converter
+  // Date/Time ticker
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-
-  // Time-conscious Quotes for the auto-sliding alert banner
-  const timeConsciousQuotes = [
-    "সময় পার হয়ে যাবার আগেই ধরে ফেলতে হয়। তুমি কি পিছিয়ে পড়ছো আলস্যে ঘুমে বা অন্য খেয়ালে!",
-    "সময়কে দৌড়ে গিয়ে ধরতে হয়।",
-    "তুমি বলছো, সময় যায়, আসলে যাচ্ছি আমরা",
-    "তুমি কি সময়ের পরিকল্পিত ব্যবহার জানো",
-    "তোমার রুটিন আছে",
-    "ধর্মীয় নির্দেশনা মানেই সময় ধরে চলা",
-    "সাফল্য আসে সময়ের পরিকল্পিত ব্যাবহারের সক্ষমতায়",
-    "আমরা সময়টাকে পাল্টাই নিজের কাজ ও পরিশ্রম দিয়েই নয়, আরো থাকে সেই পরিকল্পনা যা মহা পরিকল্পনার অংশ হয়ে পথ চলে।",
-    "আজকের কর্মব্যস্ততাই আগামী দিনের সফলতার প্রধান সোপান, তাই অলসতাকে বিদায় দাও এখনই!",
-    "সময় কারো জন্য অপেক্ষা করে না, প্রতিটি সেকেন্ডই জীবন গঠনের একেকটি অনন্য সুযোগ。",
-    "পরিকল্পনাহীন জীবন যেন হালবিহীন নৌকা, সময় থাকতে সঠিক সিদ্ধান্ত গ্রহণ এবং বাস্তবায়ন করুন।",
-    "প্রতিটি দিনই আমাদের সামনে নতুন সম্ভাবনার দরজা খোলে, একটি মুহূর্তও যেন অবহেলায় হারিয়ে না যায়।"
-  ];
-  
-  const [activeQuoteIdx, setActiveQuoteIdx ] = useState(0);
-  const [isQuoteHovered, setIsQuoteHovered] = useState(false);
-
   useEffect(() => {
-    const clockInterval = setInterval(() => {
+    const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
-    return () => clearInterval(clockInterval);
+    return () => clearInterval(timer);
   }, []);
 
-  // Quotes rotation interval (every 15 seconds, pause on hover)
-  useEffect(() => {
-    const quoteInterval = setInterval(() => {
-      if (!isQuoteHovered) {
-        setActiveQuoteIdx((prev) => (prev + 1) % timeConsciousQuotes.length);
-      }
-    }, 15000);
-    return () => clearInterval(quoteInterval);
-  }, [isQuoteHovered, timeConsciousQuotes.length]);
-
-  const toBengaliDigits = (numStr: string) => {
-    const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return numStr.replace(/[0-9]/g, (digit) => bengaliDigits[parseInt(digit, 10)]);
-  };
-
   const formatTimeBn = (date: Date) => {
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    const period = hours >= 12 ? 'অপরাহ্ন' : 'পূর্বাহ্ন';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    const hoursStr = String(hours).padStart(2, '0');
-    
-    return `${toBengaliDigits(`${hoursStr}:${minutes}:${seconds}`)} ${period}`;
+    return date.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  // State for new interactive sections
-  const [activeDtubeVideo, setActiveDtubeVideo] = useState('v1');
-  const [videoViews, setVideoViews] = useState<Record<string, number>>({ v1: 320, v2: 145, v3: 88, v4: 512, v5: 390 });
-  const [isPlayingDtubeVideo, setIsPlayingDtubeVideo] = useState(false);
-
-
-
-  const [dtubeFilter, setDtubeFilter] = useState<'all' | 'full' | 'reel'>('all');
-  const [customDtubeUrl, setCustomDtubeUrl] = useState('');
-  const [customDtubeTitle, setCustomDtubeTitle] = useState('');
-  const [customDtubeAuthor, setCustomDtubeAuthor] = useState('');
-  const [customDtubeCategory, setCustomDtubeCategory] = useState<'full' | 'reel'>('full');
-  const [customDtubeClass, setCustomDtubeClass] = useState('সাধারণ');
-  const [dtubeInputError, setDtubeInputError] = useState('');
-
-  const [blogLikes, setBlogLikes] = useState<Record<string, number>>({ b1: 15, b2: 24, b3: 9 });
-  const [likedBlogs, setLikedBlogs] = useState<Record<string, boolean>>({});
+  // Other States needed by the sections
+  const [studentName, setStudentName] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [desiredClass, setDesiredClass] = useState('Play');
   const [parentFeedback, setParentFeedback] = useState('');
   const [parentFeedbackSuccess, setParentFeedbackSuccess] = useState(false);
+  const [email, setEmail] = useState('');
+  const [newsEmail, setNewsEmail] = useState('');
   const [simulatingClassroom, setSimulatingClassroom] = useState<string | null>(null);
-  const [galleryFilter, setGalleryFilter] = useState('All');
+  const [galleryFilter, setGalleryFilter] = useState('all');
+  const [dtubeFilter, setDtubeFilter] = useState('all');
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
+  // DTube Playlists customizer states
+  const [customDtubeUrl, setCustomDtubeUrl] = useState('');
+  const [customDtubeTitle, setCustomDtubeTitle] = useState('');
+  const [customDtubeClass, setCustomDtubeClass] = useState('');
+  const [customDtubeAuthor, setCustomDtubeAuthor] = useState('');
+  const [customDtubeCategory, setCustomDtubeCategory] = useState('');
+  const [dtubeInputError, setDtubeInputError] = useState('');
+  const [activeDtubeVideo, setActiveDtubeVideo] = useState<any>(null);
+  const [isPlayingDtubeVideo, setIsPlayingDtubeVideo] = useState(false);
 
-
-  const [activeCulturalVideoId, setActiveCulturalVideoId] = useState('cp1');
-  const [isPlayingCulturalVideo, setIsPlayingCulturalVideo] = useState(false);
+  // Cultural customizer states
   const [customCulturalUrl, setCustomCulturalUrl] = useState('');
   const [customCulturalTitle, setCustomCulturalTitle] = useState('');
   const [culturalInputError, setCulturalInputError] = useState('');
+  const [activeCulturalVideoId, setActiveCulturalVideoId] = useState<any>(null);
+  const [isPlayingCulturalVideo, setIsPlayingCulturalVideo] = useState(false);
 
-  const getYouTubeId = (url: string) => {
-    return extractYouTubeId(url) || '';
-  };
+  // Social interactions states
+  const [blogLikes, setBlogLikes] = useState<Record<string, number>>({});
+  const [likedBlogs, setLikedBlogs] = useState<Record<string, boolean>>({});
 
-  // Merit Student slide states
-  const [meritSlide, setMeritSlide] = useState(0);
-  const [isMeritHovered, setIsMeritHovered] = useState(false);
-
+  // Slide interval for Merit Students
   useEffect(() => {
-    const list = meritStudents || [];
-    if (list.length <= 1) return;
-    const timer = setInterval(() => {
-      if (!isMeritHovered) {
+    if (isMeritHovered) return;
+    const interval = setInterval(() => {
+      const list = meritStudents || [];
+      if (list.length > 0) {
         setMeritSlide((prev) => (prev + 1) % list.length);
       }
-    }, 14000); // 14 seconds high-fidelity read time
-    return () => clearInterval(timer);
-  }, [isMeritHovered, meritStudents?.length]);
+    }, 14000);
+    return () => clearInterval(interval);
+  }, [isMeritHovered, meritStudents]);
 
-  const sectionsList = [
-    { title: 'পরিচিতি ও ব্যানার', id: 'sec-hero', bg: 'bg-slate-900 text-white' },
-    { title: 'মুগ্ধতা ছড়ানো ক্যাম্পাস গ্যালারি 🌸', id: 'sec-mugdhota-slider', bg: 'bg-emerald-955 text-white' },
-    { title: 'আজকের ড্যাশবোর্ড ⏰', id: 'sec-today-campus-dash', bg: 'bg-slate-900 text-white' },
-    { title: 'কৃতি শিক্ষার্থী 🏆', id: 'sec-merit-students', bg: 'bg-white text-slate-800' },
-    { title: 'সকল শিক্ষকগন 👥', id: 'sec-all-teachers', bg: 'bg-slate-50 text-slate-800' },
-    { title: 'কালচারাল স্টেশন 🎭', id: 'sec-cultural-station', bg: 'bg-slate-100 text-slate-800' },
-    { title: 'ফটো গ্যালারী 📸', id: 'sec-campus-gallery-new', bg: 'bg-white text-slate-800' },
-    { title: 'ডিজিটাল নোটিশবোর্ড 📢', id: 'sec-notice', bg: 'bg-amber-50 text-amber-950' },
-    { title: 'একাডেমিক ব্লগ ✍️', id: 'sec-school-blog', bg: 'bg-slate-50 text-slate-800' },
-    { title: 'ডিটিউব - ভিডিও হাব 📺', id: 'sec-dtube-video-hub', bg: 'bg-slate-900 text-white' },
-    { title: 'অভিভাবক পাতা 👨‍👩‍👦', id: 'sec-guardian-guide-page', bg: 'bg-white text-slate-800' },
-    { title: 'ডিজিটাল ক্লাসরুম 💻', id: 'sec-digital-classrooms', bg: 'bg-slate-50 text-slate-800' },
-    { title: 'সহ-শিক্ষা ও স্পোর্টস ক্লাব', id: 'sec-sports', bg: 'bg-emerald-950 text-white' },
-    { title: 'নিরাপদ পরিবহন', id: 'sec-transport', bg: 'bg-white text-slate-800' },
-    { title: 'বেতন ও ফি হিসাবকারী', id: 'sec-fees-calc', bg: 'bg-blue-50 text-slate-900' },
-    { title: 'ভর্তি ও তথ্যের আবেদন', id: 'sec-lead-form', bg: 'bg-blue-950 text-white' },
-    { title: 'জিজ্ঞাসিত প্রশ্ন FAQ', id: 'sec-faq', bg: 'bg-white text-slate-800' },
-    { title: 'যোগাযোগ ও ম্যাপ 🗺️', id: 'sec-contact', bg: 'bg-slate-900 text-white' }
-  ];
+  // Handler for uploading teacher photos
+  const handleTeacherPhotoUpload = (teacherId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2.2 * 1024 * 1024) {
+        alert("ফাইল সাইজ ২.২ মেগাবাইটের বেশি হতে পারবে না।");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          updateTeacherPhoto(teacherId, reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const [newsSuccess, setNewsSuccess] = useState(false);
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsEmail.trim()) {
+      setNewsSuccess(true);
+      setTimeout(() => {
+        setNewsSuccess(false);
+        setNewsEmail('');
+      }, 5000);
+    }
+  };
 
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!parentName || !studentName || !phone) return;
-    addLead({
-      parentName,
-      studentName,
-      phone,
-      email: email || 'notprovided@school.com',
-      desiredClass
-    });
-    setLeadSuccess(true);
-    setTimeout(() => {
-      if (onLeadAutoLogin) {
-        onLeadAutoLogin(studentName, parentName, phone, desiredClass);
-      }
-      setLeadSuccess(false);
-      setParentName('');
-      setStudentName('');
-      setPhone('');
-      setEmail('');
-    }, 1800);
-  };
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsEmail) return;
-    setNewsSuccess(true);
-    setTimeout(() => {
-      setNewsSuccess(false);
-      setNewsEmail('');
-    }, 3000);
-  };
-
-  // Fees calculator math
-  const getCalculatedFee = () => {
-    let base = 0;
-    if (calcClass === 'Play-KG') base = 1200;
-    else if (calcClass === 'Primary') base = 1800;
-    else base = 2500;
-
-    let extra = 0;
-    if (calcTransport) extra += 1500;
-    if (calcStationery) extra += 800;
-
-    return base + extra;
-  };
-
-  const scrollToSection = (id: string, index: number) => {
-    setActiveSection(index);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (studentName.trim() && parentName.trim() && phone.trim()) {
+      addLead({
+        studentName,
+        parentName,
+        phone,
+        email: email || '',
+        desiredClass: desiredClass
+      });
+      onLeadAutoLogin(studentName, parentName, phone, desiredClass);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen bg-slate-50">
-      
-      {/* COMPREHENSIVE LANDING CONTENT */}
-      <main className="min-w-0 flex-1">
-        
-        {/* SECTION 1: HERO BANNER (RE-DESIGNED POETIC GARDEN & HIGH-CONVERSION ACCUMULATOR) */}
-        <section id="sec-hero" className="relative flex min-h-[92vh] flex-col justify-center overflow-hidden bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white px-6 py-12 lg:px-16 border-b border-emerald-900/50">
-          
-          {/* Garden Aesthetic Background */}
-          <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.18)_0%,transparent_60%)] animate-pulse duration-[8s]"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(245,158,11,0.12)_0%,transparent_60%)]"></div>
-            
-            {/* Subtle Grid overlay for 'Justified/Structured' feel */}
-            <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-            
-            {/* Soft drifting golden dusts */}
-            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/40 to-transparent"></div>
-          </div>
-          
-          <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            
-            {/* LEFT COLUMN: Deep Reflection & Philosophical Paradigm (7 cols) */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              
-              {/* BRAND LOGO OF D-LICON MODEL ACADEMY */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 bg-gradient-to-r from-emerald-950/70 via-slate-900/50 to-indigo-950/30 backdrop-blur-md border-2 border-emerald-500/30 px-6 py-6 rounded-3xl w-full shadow-2xl transition-all hover:border-emerald-400/40 group">
-                <div className="relative shrink-0">
-                  <div className="absolute inset-0 bg-emerald-400 rounded-full blur-xl opacity-35 group-hover:opacity-65 transition-opacity"></div>
-                  {/* Dynamic Logo Container */}
-                  <div className={`h-22 w-22 rounded-2xl flex items-center justify-center shadow-lg border-2 border-white/30 relative z-10 overflow-hidden ${
-                    schoolLogoType === 'image' ? 'bg-white p-2' : 'bg-gradient-to-tr from-emerald-600 via-teal-600 to-amber-500'
-                  }`}>
-                    {schoolLogoType === 'crest' && (
-                      <svg viewBox="0 0 100 100" className="h-14 w-14 text-white filter drop-shadow-md" fill="currentColor">
-                        {/* Shield background */}
-                        <path d="M50 5 L85 18 V55 C85 75, 50 90, 50 90 C50 90, 15 75, 15 55 V18 Z" fill="none" stroke="currentColor" strokeWidth="8" />
-                        {/* Sparkling growing plant inside shield */}
-                        <path d="M50 78 V38 M50 52 C58 45, 68 45, 68 52 C68 58, 55 60, 50 72 M50 52 C42 45, 32 45, 32 52 C32 58, 45 60, 50 72" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-                        {/* Sun ray dots */}
-                        <circle cx="50" cy="24" r="5" className="fill-amber-300" />
-                      </svg>
-                    )}
-                    {schoolLogoType === 'text' && (
-                      <span className="text-white font-sans font-black text-3xl filter drop-shadow-md tracking-normal">
-                        {schoolLogoVal}
-                      </span>
-                    )}
-                    {schoolLogoType === 'image' && (
-                      <img 
-                        src={schoolLogoVal} 
-                        alt="Logo" 
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-contain" 
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentNode as HTMLDivElement;
-                          const fallbackNode = document.createElement('span');
-                          fallbackNode.innerText = '🏫';
-                          fallbackNode.className = 'text-blue-900 text-3xl font-bold';
-                          parent.appendChild(fallbackNode);
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div className="text-center sm:text-left flex-1 space-y-2 w-full">
-                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono tracking-widest text-emerald-400 block uppercase font-black">ESTD 2018</span>
-                    <span className="h-1 w-1 bg-amber-400 rounded-full"></span>
-                    <span className="text-[9.5px] bg-amber-500/15 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-black">REG-2026</span>
-                    <span className="text-[9.5px] bg-emerald-500/15 text-emerald-350 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-black">ডিজিটাল ট্র্যাকিং ও স্মার্ট ক্যাম্পাস সুবিধা</span>
-                  </div>
-                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-emerald-250 tracking-tight block leading-tight font-sans">
-                    {schoolName}
-                  </span>
-                  <span className="text-xs sm:text-sm lg:text-base text-amber-300 block leading-relaxed font-bold border-l-2 border-emerald-500/35 pl-3.5 mt-1 select-text">
-                    {schoolSlogan}
-                  </span>
-                </div>
-              </div>
-
-              {/* EYE-CATCHING REFLECTIVE BANNER WITH INTEGRATED INLINE CAROUSEL */}
-              <div 
-                onMouseEnter={() => setIsHeroHovered(true)}
-                onMouseLeave={() => setIsHeroHovered(false)}
-                className="bg-emerald-950/60 backdrop-blur-md rounded-3xl border-2 border-emerald-500/30 p-6 mt-4 text-left shadow-2xl relative overflow-hidden transition-all duration-500 select-none group/hero"
-              >
-                <div className="absolute top-4 right-4 flex gap-1.5 z-20 items-center">
-                  {isHeroHovered && (
-                    <span className="text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-black font-sans uppercase animate-pulse leading-none mr-2">
-                      ⏸ PAUSED
-                    </span>
-                  )}
-                  {heroSlidesData.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setHeroSlide(idx)}
-                      className={`h-2.5 w-2.5 rounded-full transition-all cursor-pointer ${
-                        heroSlide === idx ? 'bg-emerald-450 w-5 bg-emerald-400' : 'bg-slate-600 hover:bg-slate-500'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <div className="min-h-[150px] flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10.5px] font-black tracking-wider text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/20 block w-fit mb-4">
-                      {heroSlidesData[heroSlide].badge}
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                      {heroSlidesData[heroSlide].title}
-                    </h2>
-                    <p className="text-sm sm:text-base text-slate-300 leading-relaxed mt-3 font-normal border-l-2 border-amber-500/40 pl-4 italic">
-                      {heroSlidesData[heroSlide].desc}
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mt-5 pt-3 border-t border-emerald-900/40 text-xs text-emerald-300 font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-amber-400 animate-pulse shrink-0" />
-                      {isHeroHovered ? (
-                        <span className="text-amber-300 font-black flex items-center gap-1 animate-pulse font-sans">
-                          ⏸ রিডিং মুড: মাউস রেখেই সম্পূর্ণ লেখাটি পড়তে থাকুন
-                        </span>
-                      ) : (
-                        <span>মেধাবিকাশে কঠোর শাসন নয়, পরম প্রণোদনা সৌভাগ্য!</span>
-                      )}
-                    </span>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => setHeroSlide((prev) => (prev - 1 + 4) % 4)}
-                        className="h-7 w-7 bg-emerald-900/60 hover:bg-emerald-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9]"
-                      >
-                        ‹
-                      </button>
-                      <button 
-                        onClick={() => setHeroSlide((prev) => (prev + 1) % 4)}
-                        className="h-7 w-7 bg-emerald-950 hover:bg-emerald-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9]"
-                      >
-                        ›
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* BENTO PARADIGM TABS OF ASSURANCE */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
-                
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition-all">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-extrabold text-xs">
-                      ✿
-                    </span>
-                    <h4 className="font-bold text-slate-100 text-xs sm:text-sm">অনুপ্রেরণাই যেখানে পরম সৌভাগ্য</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-400 leading-snug">
-                    এখানে কোনো কঠোর শাসন নেই। নিয়ম-শৃঙ্খলার মিষ্টি ও সুস্পষ্ট অনুশীলনে প্রতিটি শিশু আনন্দের সঙ্গে শেখে ও নিজেকে বিকশিত করে।
-                  </p>
-                </div>
-
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 hover:border-amber-500/30 transition-all">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-6 w-6 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 font-extrabold text-xs">
-                      ✔
-                    </span>
-                    <h4 className="font-bold text-slate-100 text-xs sm:text-sm">জাস্টিফাইড নাগরিকের সুদৃঢ় প্রত্যয়</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-400 leading-snug">
-                    শুধু খাতায় লিখে ও মুখস্থ করে শংসাপত্র পাওয়াই শেষ কথা নয়; আমরা বিশ্বাস করি এমন শিক্ষায় যা জীবনের বাস্তব পরীক্ষায় জাস্টিফাইড।
-                  </p>
-                </div>
-
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-6 w-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-extrabold text-xs">
-                      ❤
-                    </span>
-                    <h4 className="font-bold text-slate-100 text-xs sm:text-sm">উপভোগ্য ও দীর্ঘস্থায়ী শিখন</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-400 leading-snug">
-                    ক্লান্তিকর লেকচার নয়, প্রতিটি শিক্ষার্থী এখানে প্রতিটি মুহূর্ত প্রাণভরে উপভোগ করে এবং মনের গভীরে সযত্নে গেঁথে রাখে।
-                  </p>
-                </div>
-
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 hover:border-teal-500/30 transition-all">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-6 w-6 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-300 font-extrabold text-xs">
-                      💡
-                    </span>
-                    <h4 className="font-bold text-slate-100 text-xs sm:text-sm">অপেক্ষাকৃত দুর্বলদের জন্য বিশেষ পরশ</h4>
-                  </div>
-                  <p className="text-[10.5px] text-slate-400 leading-snug">
-                    সব শিশুর মেধা সমান নয়, তাই ডিলিকনে পিছিয়ে পড়াদের বাড়তি গুরুত্ব দেওয়া হয় যেন প্রতিটি কলিই প্রস্ফুটিত হবার অধিকার পায়।
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* RIGHT COLUMN: Interactive Registration Lead form with immediate confirmation (5 cols) */}
-            <div className="lg:col-span-5 w-full">
-              <div className="bg-white/95 text-slate-900 rounded-3xl p-6 border-2 border-emerald-500/30 shadow-2xl relative overflow-hidden backdrop-blur-md">
-                
-                {/* Embedded decorative garden accent inside form */}
-                <div className="absolute top-0 right-0 h-24 w-24 bg-emerald-500/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 h-24 w-24 bg-amber-500/10 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none"></div>
-
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider block">
-                      ভর্তি অনুসন্ধান ২০২৬
-                    </span>
-                    <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
-                    <span className="text-[10px] text-rose-600 font-bold">সীমিত আসন অবশিষ্ট</span>
-                  </div>
-
-                  <h3 className="text-xl font-extrabold text-slate-900 leading-tight">
-                    আজই সিদ্ধান্ত নিন ও আসন নিশ্চিত করুন ⚡
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 mb-5 leading-snug">
-                    নিচের মৌলিক তথ্যগুলো প্রদান করে সরাসরি আমাদের এক্সপার্ট প্যানেলের সাথে বিনামূল্যে ভর্তি কাউন্সেলিং সেশন শিডিউল করুন।
-                  </p>
-
-                  {leadSuccess ? (
-                    <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-6 text-center animate-bounce space-y-3">
-                      <div className="h-12 w-12 bg-emerald-500 text-white rounded-full mx-auto flex items-center justify-center text-xl font-black">
-                        ✓
-                      </div>
-                      <h4 className="font-black text-emerald-900 text-base">আবেদন সফল হয়েছে!</h4>
-                      <p className="text-xs text-emerald-700 leading-relaxed font-medium">
-                        সম্মানিত অভিভাবক, আপনার দেয়া তথ্যে আমাদের প্রধান মালী (শিক্ষক প্রতিনিধি) পরবর্তী ৪ ঘণ্টার মধ্যে সরাসরি ফোনে যোগাযোগ করে ফ্রি ভিজিট ও পরামর্শের সময় নির্ধারণ করে দেবেন।
-                      </p>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        ডিলিকন মডেল একাডেমীর প্রতি আপনার আস্থার জন্য ধন্যবাদ।
-                      </div>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleLeadSubmit} className="space-y-4">
-                      
-                      <div>
-                        <label className="text-[10.5px] font-extrabold text-slate-700 block mb-1">
-                          অভিভাবক মহোদয়ের সম্পূর্ণ নাম *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="উদাঃ মোহাম্মদ আসিফ হাসান"
-                          value={parentName}
-                          onChange={(e) => setParentName(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[10.5px] font-extrabold text-slate-700 block mb-1">
-                          আদরের শিক্ষার্থীর নাম *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="উদাঃ আয়রা সুবাহ"
-                          value={studentName}
-                          onChange={(e) => setStudentName(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[10.5px] font-extrabold text-slate-700 block mb-1">
-                            মোবাইল নাম্বার *
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            placeholder="যেমন: ০১XXXXXXXXX"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10.5px] font-extrabold text-slate-700 block mb-1">
-                            আকাঙ্ক্ষিত শ্রেণী *
-                          </label>
-                          <select
-                            value={desiredClass}
-                            onChange={(e) => setDesiredClass(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-emerald-600 transition-all"
-                          >
-                            <option value="Play-Group">প্লে গ্রুপ (বয়স ৩+)</option>
-                            <option value="Nursery">নার্সারি (বয়স ৪+)</option>
-                            <option value="KG">কেজি (বয়স ৫+)</option>
-                            <option value="Class 1">শ্রেণী ১</option>
-                            <option value="Class 2">শ্রেণী ২</option>
-                            <option value="Class 3">শ্রেণী ৩</option>
-                            <option value="Class 4">শ্রেণী ৪</option>
-                            <option value="Class 5">শ্রেণী ৫</option>
-                            <option value="Class 6">শ্রেণী ৬</option>
-                            <option value="Class 7">শ্রেণী ৭</option>
-                            <option value="Class 8">শ্রেণী ৮</option>
-                            <option value="Class 9">শ্রেণী ৯</option>
-                            <option value="Class 10">শ্রেণী ১০</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Additional reassurance checkpoint */}
-                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-2.5">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          disabled
-                          className="mt-0.5 accent-emerald-600"
-                        />
-                        <p className="text-[9.5px] text-emerald-800 leading-tight">
-                          আমি স্বীকার করছি যে আমি আমার সন্তানকে শুধুমাত্র সার্টিফিকেট নয়, সৎ, সাহসী, সহনশীল ও <strong>Justified নাগরিক</strong> হিসাবে গড়তে ইচ্ছুক।
-                        </p>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm py-3.5 px-4 rounded-xl transition-all shadow-md focus:outline-none active:scale-[0.98] cursor-pointer text-center flex items-center justify-center gap-2"
-                      >
-                        ভর্তি নিশ্চিত করতে এক ক্লিকে বুক করুন 🚀
-                      </button>
-
-                      <div className="flex items-center justify-between text-[9px] text-slate-400 mt-2">
-                        <span>🔓 ব্যক্তিগত তথ্য ১২৮-বিট এনক্রিপশনে সুরক্ষিত</span>
-                        <span className="font-bold text-slate-500">মিরপুর ডিলিকন শিক্ষা হাব</span>
-                      </div>
-
-                    </form>
-                  )}
-
-                  {/* Trust indicator right beneath form */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-[9px] text-slate-650 font-bold">
-                    <div>
-                      <span className="block text-emerald-600 text-[11px] font-black">১০০%</span>
-                      শারীরিক শাস্তি মুক্ত কানন
-                    </div>
-                    <div>
-                      <span className="block text-amber-600 text-[11px] font-black">১:১৫</span>
-                      শিক্ষক-শিক্ষার্থী অনুপাত
-                    </div>
-                    <div>
-                      <span className="block text-indigo-600 text-[11px] font-black">১০০%</span>
-                      বাস্তবভিত্তিক যুগোপযোগী পাঠ
-                    </div>
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-
-        {/* SECTION: GORGEOUS CAMPUS PHOTO SLIDER WITH HEALING POETIC BENGALI CALLOUTS */}
-        <section id="sec-mugdhota-slider" className="bg-gradient-to-b from-slate-900 to-slate-950 py-16 px-6 lg:px-16 text-white border-b border-emerald-950 relative overflow-hidden">
-          {/* Poetic Ambient Backdrop Lights */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute top-1/4 left-1/3 h-96 w-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 right-1/4 h-96 w-96 bg-amber-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.05)_0%,transparent_70%)]"></div>
-          </div>
-
-          <div className="relative z-10 max-w-5xl mx-auto space-y-8">
-            <div className="text-center space-y-3">
-              <span className="text-[10px] sm:text-xs font-black tracking-widest text-emerald-400 bg-emerald-950/60 px-4.5 py-1.5 rounded-full border border-emerald-500/25 uppercase inline-block">
-                মুগ্ধতা ছড়ানো প্রগতিশীল ক্যাম্পাস গ্যালারি ও অভিভাবক অনুভূতি
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-250 tracking-tight leading-tight">
-                মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায় 🌸
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                আমাদের প্রতিটি ছবি কেবল একটি দৃশ্য নয়, বরং স্নেহের ডোরে আবদ্ধ একেকটি আদর্শ মানুষ গড়ার জাদুকরী সচিত্র চিত্র। চোখ রাখুন স্লাইডারে, অনুভব করুন আমাদের ভালোবাসা।
-              </p>
-            </div>
-
-            {/* MAIN IMMERSIVE SLIDER */}
-            <div className="relative w-full aspect-[16/13] xs:aspect-[16/11] sm:aspect-[16/10] md:aspect-[16/9] bg-slate-950 rounded-2xl sm:rounded-3.5xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] border-2 border-slate-800/80 group">
-              {/* Slides Container */}
-              <div className="absolute inset-0 w-full h-full">
-                {campusPhotosData.map((slide, sIdx) => {
-                  const isActive = sIdx === activePhotoIndex;
-                  return (
-                    <div
-                      key={sIdx}
-                      className={`absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out ${
-                        isActive ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-95 pointer-events-none'
-                      }`}
-                    >
-                      {/* Huge Background Image */}
-                      {!slide.url || campusPhotoErrors[sIdx] ? (
-                        <div className="absolute inset-0 bg-gradient-to-tr from-slate-900 via-emerald-950/80 to-slate-950 flex flex-col items-center justify-center p-8 text-center select-none">
-                          <div className="h-16 w-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300 text-3xl mb-4 animate-bounce">
-                            🏫
-                          </div>
-                          <span className="text-emerald-400 font-extrabold text-xs uppercase tracking-widest font-sans mb-1.5">ডি লিকন মডেল একাডেমী</span>
-                          <h3 className="text-amber-300 font-black text-xl sm:text-2xl font-sans mt-1 max-w-xl">{slide.title}</h3>
-                          <p className="text-slate-350 text-xs sm:text-sm mt-3 max-w-lg leading-relaxed">{slide.caption}</p>
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none"></div>
-                        </div>
-                      ) : (
-                        <img
-                          src={slide.url}
-                          alt={slide.title}
-                          referrerPolicy="no-referrer"
-                          onError={() => setCampusPhotoErrors(prev => ({ ...prev, [sIdx]: true }))}
-                          className="w-full h-full object-cover select-none transition-transform duration-[8000ms] ease-out group-hover:scale-105"
-                        />
-                      )}
-                      
-                      {/* Premium Ambient Dark Overlay to protect lower caption typography compatibility */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-                      
-                      {/* Live Indicator on Top Corner */}
-                      <div className="absolute top-5 left-5 z-20 flex items-center gap-2 bg-slate-950/75 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 shadow-lg">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="text-[10px] font-mono tracking-widest text-emerald-300 font-bold uppercase">ক্যাম্পাস ফ্রেম ০{sIdx + 1}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-               {/* Slider Manual Navigation Arrows */}
-              <button
-                type="button"
-                onClick={() => setActivePhotoIndex((prev) => (prev - 1 + campusPhotosData.length) % campusPhotosData.length)}
-                className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-12 sm:w-12 rounded-full bg-slate-900/70 hover:bg-emerald-500 hover:text-slate-950 font-bold text-white flex items-center justify-center cursor-pointer transition-all border border-white/10 active:scale-90 shadow-2xl brightness-110"
-              >
-                <span className="text-lg sm:text-2xl leading-none select-none font-sans">‹</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActivePhotoIndex((prev) => (prev + 1) % campusPhotosData.length)}
-                className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-12 sm:w-12 rounded-full bg-slate-900/70 hover:bg-emerald-500 hover:text-slate-950 font-bold text-white flex items-center justify-center cursor-pointer transition-all border border-white/10 active:scale-90 shadow-2xl brightness-110"
-              >
-                <span className="text-lg sm:text-2xl leading-none select-none font-sans">›</span>
-              </button>
-
-              {/* GIANT CAPTION COUNTER AND TEXT - FIXED AND STYLIZED AT THE BOTTOM */}
-              <div className="absolute bottom-0 inset-x-0 z-20 p-4 sm:p-8 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5">
-                <div className="flex-1 space-y-1 sm:space-y-1.5 text-left">
-                  <span className="text-[9px] sm:text-[10.5px] font-black tracking-widest text-[#10b981] bg-emerald-500/10 px-2 sm:px-2.5 py-0.5 border border-emerald-500/20 rounded uppercase block w-fit font-sans">
-                    {campusPhotosData[activePhotoIndex]?.title}
-                  </span>
-                  <p className="text-[10.5px] xs:text-xs sm:text-base md:text-lg lg:text-xl font-extrabold text-amber-300 leading-relaxed font-sans filter drop-shadow-sm select-text">
-                    {campusPhotosData[activePhotoIndex]?.caption}
-                  </p>
-                </div>
-                
-                {/* Micro Action Button to drive engagement */}
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('sec-lead-form');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="hidden sm:flex shrink-0 self-start sm:self-center px-5 py-2.5 text-xs font-black text-slate-950 bg-amber-400 hover:bg-amber-350 active:scale-95 rounded-xl transition duration-200 cursor-pointer items-center gap-1.5 shadow-lg shadow-amber-400/20"
-                >
-                  সবুজ ক্যাম্পাসে চলুন 🌿
-                </button>
-              </div>
-            </div>
-
-            {/* SELECTION PROGRESS INDICATOR DOTS & POETIC ACCU LINES */}
-            <div className="flex flex-col items-center justify-center gap-4 pt-2">
-              <div className="flex items-center gap-3">
-                {campusPhotosData.map((_, dotIdx) => (
-                  <button
-                    key={dotIdx}
-                    type="button"
-                    onClick={() => setActivePhotoIndex(dotIdx)}
-                    className={`h-3 rounded-full transition-all cursor-pointer ${
-                      activePhotoIndex === dotIdx 
-                        ? 'w-10 bg-gradient-to-r from-emerald-400 to-amber-400 ring-2 ring-emerald-500/40 shadow-md shadow-emerald-500/20' 
-                        : 'w-3 bg-slate-700 hover:bg-slate-500'
-                    }`}
-                  />
-                ))}
-              </div>
-              
-              <div className="text-center">
-                <p className="text-[11.5px] sm:text-xs text-slate-450 font-bold max-w-lg mx-auto italic border-l-2 border-emerald-500 px-3.5 py-1">
-                  &ldquo;শাসন নয়, আনন্দ ও পরম স্নেহেই সুরভিত হোক প্রতিটি ফুটফুটে শিশু—ডি লিকন ক্যাম্পাস সেই স্নেহের এক পরম আঙ্গিনা।&rdquo;
+    <div className="bg-slate-900 text-slate-100 min-h-screen">
+      <main className="mx-auto max-w-7xl">
+        {/* SECTION: HERO / DIGITAL CLOCK (০। ডিজিটাল ক্লক ও কভার) */}
+        <section className="relative overflow-hidden bg-slate-950 py-16 px-6 lg:px-16 border-b border-slate-900">
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="flex-1 text-center md:text-left">
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-2">স্বাগতম ডিলিকন ডিজিটাল প্যানেল</span>
+                <h1 className="text-3xl md:text-4.5xl font-black text-white leading-tight">স্মার্ট ক্যাম্পাসের ডিজিটাল ইন্টারেক্টিভ কুপন ও এটেনডেন্স ম্যানেজমেন্ট সিস্টেম</h1>
+                <p className="text-slate-400 text-xs mt-3 leading-relaxed max-w-lg">
+                  শিক্ষা ও প্রযুক্তির এক অনবদ্য মেলবন্ধন। কুপন পাঞ্চ কার্ড গেটওয়ে, অভিভাবক এসএমএস এলার্ট এবং অটোমেশন সফটওয়্যারের সমন্বয়ে আমাদের ডিজিটাল রূপান্তর।
                 </p>
               </div>
-            </div>
 
-          </div>
-        </section>
-
-
-        {/* SECTION: TODAY'S LIVE CAMPUS BOARD & TERMINAL (৯। আজকের ড্যাশবোর্ড) */}
-        <section id="sec-today-campus-dash" className={`bg-slate-950 py-16 px-6 lg:px-16 text-white border-b border-slate-900 relative overflow-hidden ${!isSecVisible('sec-today-campus-dash') ? 'hidden' : ''}`}>
-          <div className="absolute inset-0 bg-radial-gradient from-blue-900/20 to-transparent"></div>
-          <div className="relative z-10 max-w-6xl mx-auto">
-            {/* Center-Aligned Elegant Section Title */}
-            <div className="text-center mb-10 pb-6 border-b border-slate-900">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold uppercase tracking-wider text-amber-500 shadow-sm leading-none">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                ডিলিকন রিয়েলটাইম ক্যাম্পাস ড্যাশবোর্ড
-              </span>
-              <h2 className="text-3xl md:text-4xl font-black mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 leading-tight">
-                {getSecTitle('sec-today-campus-dash', 'আজকের লাইভ ক্যাম্পাস আপডেট')}
-              </h2>
-              <div className="h-1 w-20 bg-gradient-to-r from-amber-500 to-rose-500 mx-auto mt-4 rounded-full"></div>
-            </div>
-
-            {/* Live Widgets Hub: Cohesive 3-Column Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 mb-10 items-stretch">
-              {/* ⏳ Time-Warning Reflective Quotes Slideshow */}
-              <div 
-                onMouseEnter={() => setIsQuoteHovered(true)}
-                onMouseLeave={() => setIsQuoteHovered(false)}
-                className="bg-slate-900/80 border border-amber-500/25 rounded-2xl p-5 text-xs leading-relaxed text-slate-300 relative overflow-hidden flex flex-col justify-between min-h-[170px] sm:min-h-[150px] shadow-lg shadow-amber-500/5 backdrop-blur-sm transition-all hover:border-amber-500/40 select-none group"
-              >
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500 animate-pulse"></div>
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 text-xl animate-pulse mt-0.5">⏱</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-amber-500 text-xs uppercase tracking-wider mb-2 flex items-center justify-between border-b border-amber-500/10 pb-1">
-                      <span className="flex items-center gap-1.5">
-                        <span>সময় সচেতনতা ও জীবন ভাবনা</span>
-                        {isQuoteHovered && (
-                          <span className="text-[8px] bg-amber-500 text-slate-950 font-black px-1 rounded animate-pulse">⏸ FIXED</span>
-                        )}
-                      </span>
-                      <span className="text-xs text-slate-400 font-mono tracking-widest">{activeQuoteIdx + 1}/{timeConsciousQuotes.length}</span>
-                    </div>
-                    <div className="transition-all duration-500 ease-in-out min-h-[75px] flex items-center py-1">
-                      <p className="text-sm sm:text-base md:text-lg font-extrabold text-amber-100 leading-relaxed animate-fadeIn text-left italic tracking-wide">
-                        “{timeConsciousQuotes[activeQuoteIdx]}”
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {/* Controllers & Indicators */}
-                <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-800/60">
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setActiveQuoteIdx((prev) => (prev - 1 + timeConsciousQuotes.length) % timeConsciousQuotes.length)}
-                      className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors text-[10px] font-bold"
-                      title="পূর্ববর্তী"
-                    >
-                      ◀
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveQuoteIdx((prev) => (prev + 1) % timeConsciousQuotes.length)}
-                      className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors text-[10px] font-bold"
-                      title="পরবর্তী"
-                    >
-                      ▶
-                    </button>
-                  </div>
-
-                  <div className="flex justify-center gap-1">
-                    {timeConsciousQuotes.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveQuoteIdx(idx)}
-                        className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                          idx === activeQuoteIdx ? 'w-3.5 bg-amber-500' : 'w-1 bg-slate-700 hover:bg-slate-500'
-                        }`}
-                        title={`উদ্ধৃতি ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-
-                  <span className="text-[8px] text-slate-500 font-bold select-none leading-none">
-                    {isQuoteHovered ? '⏱ স্থির করা আছে' : '⏱ অটো-রানিং'}
-                  </span>
-                </div>
-              </div>
-
-              {/* ⏰ Digital Live Clock */}
-              <div className="bg-slate-900/80 border border-rose-500/30 rounded-2xl p-5 text-right flex flex-col justify-center min-h-[130px] shadow-[0_0_20px_rgba(239,68,68,0.05)] backdrop-blur-sm relative overflow-hidden transition-all hover:border-rose-500/50">
-                <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-radial-gradient from-rose-500/10 to-transparent"></div>
-                <span className="text-[9px] font-bold text-rose-450 tracking-wider uppercase block mb-1.5">ডিজিটাল লাইভ সময়</span>
-                <div className="text-2xl font-mono font-black text-rose-500 tracking-widest leading-none drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse">
+              {/* Digital Clock with futuristic visual effects */}
+              <div className="bg-slate-900 border-2 border-amber-500/35 p-6 rounded-3xl text-center shadow-2xl shadow-amber-500/5 min-w-[240px] relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent opacity-50"></div>
+                <Clock className="h-6 w-6 text-amber-400 mx-auto mb-2 animate-spin-slow" />
+                <span className="text-slate-500 text-[10px] font-mono tracking-widest block uppercase">REALTIME DIGITAL TIMER</span>
+                <span className="text-2xl md:text-3.5xl font-mono font-extrabold text-white block tracking-widest mt-1.5 drop-shadow-[0_2px_4px_rgba(245,158,11,0.25)]">
                   {formatTimeBn(currentDateTime)}
-                </div>
-                <span className="text-[8px] text-slate-400 mt-2 block">সেকেন্ড সেকেন্ডে চলমান...</span>
-              </div>
-
-              {/* 🌤 Weather & Calendar Section */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 text-xs text-right text-slate-350 flex items-center justify-between gap-4 backdrop-blur-sm transition-all hover:border-slate-700">
-                <div className="text-left">
-                  <p className="text-[10px] text-slate-550 uppercase tracking-wider mb-1 font-bold">আবহাওয়া আপডেট</p>
-                  <p className="font-bold text-amber-500">কাপাসিয়া, গাজীপুর</p>
-                  <p className="text-[10.5px] text-slate-400 mt-0.5">হালকা মিষ্টি রোদ • ২৮° সেলসিয়াস</p>
-                </div>
-                <div className="h-10 w-px bg-slate-800"></div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-550 uppercase tracking-wider mb-1 font-bold">আজকের তারিখ</p>
-                  <p className="font-bold text-slate-100">{new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 font-mono text-emerald-500 font-semibold">সরাসরি আপডেট লাইভ</p>
-                </div>
+                </span>
+                <span className="text-slate-400 text-[10px] block mt-1 font-bold">
+                  {currentDateTime.toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
               </div>
             </div>
-
-            {/* Dynamic Calculations */}
-            {(() => {
-              const todayDateStr = new Date().toISOString().split('T')[0];
-              const totalStudentsCount = students?.length || 0;
-              const uniqueStudentsScannedToday = new Set(
-                (attendanceLogs || [])
-                  .filter(l => l.targetType === 'student' && l.type === 'Check-In' && l.timestamp.startsWith(todayDateStr))
-                  .map(l => l.targetId)
-              ).size;
-              const studentPercentage = totalStudentsCount > 0 
-                ? ((uniqueStudentsScannedToday / totalStudentsCount) * 100).toFixed(1) 
-                : '0.0';
-
-              const totalEmployeesCount = employees?.length || 0;
-              const uniqueStaffScannedToday = new Set(
-                (attendanceLogs || [])
-                  .filter(l => l.targetType === 'employee' && l.type === 'Check-In' && l.timestamp.startsWith(todayDateStr))
-                  .map(l => l.targetId)
-              ).size;
-              const staffPercentage = totalEmployeesCount > 0 
-                ? ((uniqueStaffScannedToday / totalEmployeesCount) * 100).toFixed(1) 
-                : '0.0';
-
-              const totalRequisitionsCount = requisitions?.length || 0;
-              const pendingRequisitionsCount = (requisitions || []).filter(r => r.status.includes('Pending')).length;
-
-              const statsList = [
-                { 
-                  label: 'শিক্ষার্থী উপস্থিতি', 
-                  count: `${studentPercentage}%`, 
-                  detail: totalStudentsCount > 0 && uniqueStudentsScannedToday > 0 
-                    ? `${uniqueStudentsScannedToday} জন বর্তমানে স্কুলে উপস্থিত` 
-                    : 'কোনো শিক্ষার্থী কার্ড এখনো পাঞ্চ করা হয়নি', 
-                  bg: 'from-blue-900/50 to-blue-950' 
-                },
-                { 
-                  label: 'শিক্ষক ও স্টাফ ডিউটি', 
-                  count: `${staffPercentage}%`, 
-                  detail: totalEmployeesCount > 0 && uniqueStaffScannedToday > 0 
-                    ? `${uniqueStaffScannedToday} জন বর্তমানে কর্মরত সক্রিয়` 
-                    : 'কোনো কর্মকর্তা আজ কার্ড পাঞ্চ করেননি', 
-                  bg: 'from-emerald-900/50 to-emerald-950' 
-                },
-                { 
-                  label: 'আজকের রিকুইজিশন', 
-                  count: `${pendingRequisitionsCount}টি রানিং`, 
-                  detail: totalRequisitionsCount > 0 
-                    ? `${totalRequisitionsCount}টি মোট রিকুইজিশন সাবমিট ট্রেইল` 
-                    : 'কোনো রিকুইজিশন পেন্ডিং নেই', 
-                  bg: 'from-amber-900/50 to-amber-950' 
-                },
-              ];
-
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {statsList.map((stat, idx) => (
-                    <div key={idx} className={`bg-gradient-to-br ${stat.bg} p-6 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-lg`}>
-                      <p className="text-xs text-slate-400 font-bold uppercase">{stat.label}</p>
-                      <p className="text-3.5xl font-extrabold text-white mt-1.5 mb-1 text-amber-500">{stat.count}</p>
-                      <p className="text-[11px] text-slate-300">{stat.detail}</p>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
 
             {/* live marquee updates and reminders */}
             <div className="mt-8 bg-slate-950 border-2 border-red-500 p-6 rounded-2xl flex flex-col md:flex-row gap-5 items-center shadow-2xl shadow-red-500/10">
@@ -1071,6 +293,44 @@ export const LandingPage: React.FC<{
                 "আজ বিকাল ৪.০০ টায় ৬ষ্ঠ শ্রেণীর বিশেষ অনলাইন অভিভাবক কুইজ অনুষ্ঠিত হবে। সংশ্লিষ্ট সকল শিক্ষার্থীদের যথাসময়ে আইডি পাঞ্চ করে লগইন থাকার অনুরোধ করা হলো।"
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* SECTION: ADMISSION CAMPAIGN & RECRUITMENT POSTER GENERATOR */}
+        <section id="sec-recruitment-poster" className="bg-slate-900 border-b border-slate-950 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+          {/* Custom print CSS for zero-margin perfect A4 print */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              #recruitment-poster-canvas, #recruitment-poster-canvas * {
+                visibility: visible !important;
+              }
+              #recruitment-poster-canvas {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                padding: 10mm !important;
+                box-sizing: border-box !important;
+                z-index: 9999999 !important;
+              }
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+            }
+          `}} />
+
+          {/* Background Ambient Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+          <div className="max-w-7xl mx-auto relative z-10">
+            <RecruitmentPosterGenerator />
           </div>
         </section>
 
@@ -1197,74 +457,74 @@ export const LandingPage: React.FC<{
                            {student.name}
                          </h3>
 
-                         {/* Achievement/Success Highlight Box */}
-                         <div className="mt-4 inline-block">
-                           <span className="bg-emerald-500/10 text-emerald-300 text-xs font-black px-3.5 py-1.5 rounded-lg border border-emerald-500/20 inline-flex items-center gap-2 shadow-xs">
-                             <span className="text-sm select-none">🏆</span> 
-                             <span className="font-sans font-extrabold">{student.achievement}</span>
-                           </span>
-                         </div>
+                          {/* Achievement/Success Highlight Box */}
+                          <div className="mt-4 inline-block">
+                            <span className="bg-emerald-500/10 text-emerald-300 text-xs font-black px-3.5 py-1.5 rounded-lg border border-emerald-500/20 inline-flex items-center gap-2 shadow-xs">
+                              <span className="text-sm select-none">🏆</span> 
+                              <span className="font-sans font-extrabold">{student.achievement}</span>
+                            </span>
+                          </div>
 
-                         {/* Heartfelt Quote/Opinion */}
-                         <div className="text-slate-300 text-sm md:text-base leading-relaxed mt-6 pt-5 border-t border-slate-800/80 italic relative">
-                           <span className="text-amber-500/40 text-4xl font-serif absolute -top-2 -left-2 select-none leading-none">“</span>
-                           <p className="pl-6 font-sans font-medium tracking-wide">
-                             {student.quote}
-                           </p>
-                         </div>
-                       </div>
+                          {/* Heartfelt Quote/Opinion */}
+                          <div className="text-slate-300 text-sm md:text-base leading-relaxed mt-6 pt-5 border-t border-slate-800/80 italic relative">
+                            <span className="text-amber-500/40 text-4xl font-serif absolute -top-2 -left-2 select-none leading-none">“</span>
+                            <p className="pl-6 font-sans font-medium tracking-wide">
+                              {student.quote}
+                            </p>
+                          </div>
+                        </div>
 
-                       {/* Dynamic Read Time Countdown bar */}
-                       <div className="mt-6 pt-3 border-t border-slate-800/40 flex items-center justify-between text-xs text-slate-400 font-bold">
-                         <span className="flex items-center gap-1 text-slate-400">
-                           {isMeritHovered ? '⏸ মাউস ধরে রেখেছেন - সময় স্থির আছে' : '✨ স্বয়ংক্রিয়ভাবে স্লাইড পরিবর্তন হচ্ছে'}
-                         </span>
-                         
-                         {/* Manual Arrows Navigation Overlay */}
-                         <div className="flex gap-2">
-                           <button 
-                             type="button"
-                             onClick={() => {
-                               setMeritSlide((prev) => (prev - 1 + list.length) % list.length);
-                               setIsMeritHovered(true);
-                             }}
-                             className="h-8 w-8 bg-slate-900 border border-slate-850 hover:border-amber-400/55 hover:bg-slate-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9] text-white"
-                             title="পূর্ববর্তী কৃতি ছাত্র"
-                           >
-                             ‹
-                           </button>
-                           <span className="self-center text-[10px] font-mono text-slate-500 tracking-wider px-1">
-                             {meritSlide + 1} / {list.length}
-                           </span>
-                           <button 
-                             type="button"
-                             onClick={() => {
-                               setMeritSlide((prev) => (prev + 1) % list.length);
-                               setIsMeritHovered(true);
-                             }}
-                             className="h-8 w-8 bg-slate-900 border border-slate-850 hover:border-amber-400/55 hover:bg-slate-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9] text-white"
-                             title="পরবর্তী কৃতি ছাত্র"
-                           >
-                             ›
-                           </button>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
+                        {/* Dynamic Read Time Countdown bar */}
+                        <div className="mt-6 pt-3 border-t border-slate-800/40 flex items-center justify-between text-xs text-slate-400 font-bold">
+                          <span className="flex items-center gap-1 text-slate-400">
+                            {isMeritHovered ? '⏸ মাউস ধরে রেখেছেন - সময় স্থির আছে' : '✨ স্বয়ংক্রিয়ভাবে স্লাইড পরিবর্তন হচ্ছে'}
+                          </span>
+                          
+                          {/* Manual Arrows Navigation Overlay */}
+                          <div className="flex gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setMeritSlide((prev) => (prev - 1 + list.length) % list.length);
+                                setIsMeritHovered(true);
+                              }}
+                              className="h-8 w-8 bg-slate-900 border border-slate-850 hover:border-amber-400/55 hover:bg-slate-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9] text-white"
+                              title="পূর্ববর্তী কৃতি ছাত্র"
+                            >
+                              ‹
+                            </button>
+                            <span className="self-center text-[10px] font-mono text-slate-500 tracking-wider px-1">
+                              {meritSlide + 1} / {list.length}
+                            </span>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setMeritSlide((prev) => (prev + 1) % list.length);
+                                setIsMeritHovered(true);
+                              }}
+                              className="h-8 w-8 bg-slate-900 border border-slate-850 hover:border-amber-400/55 hover:bg-slate-800 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer transition-all active:scale-[0.9] text-white"
+                              title="পরবর্তী কৃতি ছাত্র"
+                            >
+                              ›
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                   {/* Sleek Progress Timer Bar that freezes on hover */}
-                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-900 overflow-hidden">
-                     <motion.div 
-                       key={`${meritSlide}-${isMeritHovered}`}
-                       initial={{ width: "0%" }}
-                       animate={{ width: "100%" }}
-                       transition={isMeritHovered ? { duration: 0 } : { duration: 14, ease: "linear" }}
-                       className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-300"
-                     />
-                   </div>
-                 </div>
-               );
-             })()}
+                    {/* Sleek Progress Timer Bar that freezes on hover */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-900 overflow-hidden">
+                      <motion.div 
+                        key={`${meritSlide}-${isMeritHovered}`}
+                        initial={{ width: "0%" }}
+                        animate={{ width: "100%" }}
+                        transition={isMeritHovered ? { duration: 0 } : { duration: 14, ease: "linear" }}
+                        className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-300"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         </section>
 
@@ -1279,7 +539,10 @@ export const LandingPage: React.FC<{
                 </span>
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-snug">শাসন নয়, ভালোবাসার জাদুতে শিশুর সুপ্ত প্রতিভাকে সত্যের আলোয় বিকশিত করার একনিষ্ঠ কারিগর আমাদের শিক্ষকমণ্ডলী।</h2>
                 <p className="text-slate-650 text-xs mt-1.5 max-w-xl">
-                  ডিলিকন মডেল একাডেমীর আসল চালিকাশক্তি ও আমাদের গর্ব। আধুনিক বিজ্ঞান মনস্ক শিক্ষা ও উন্নত সুনাগরিক গড়ে তোলার মহৎ সংগ্রামে নিয়োজিত বিজয়ী বীরসৈনিকবৃন্দ।
+                  ডিলিকন মডেল একাডেমীর আসল চালিকাশক্তি ও আমাদের গর্ব। আধুনিক বিজ্ঞান মনস্ক শিক্ষা ও উন্নত সুনাগরিক গড়ে তোলার মহৎ সংগ্রামে নিয়োজিত বিজয়ী বীরসৈনিকবৃন্দ। 
+                  <span className="block mt-2 font-bold text-amber-800 bg-amber-50/70 border border-amber-200/50 px-2 py-1 rounded inline-flex items-center gap-1.5">
+                    📷 শিক্ষকদের ছবি আপলোড করতে প্রতি কার্ডে থাকা ক্যামেরা আইকনটি ক্লিক করুন।
+                  </span>
                 </p>
               </div>
 
@@ -2277,6 +1540,223 @@ export const LandingPage: React.FC<{
                     <p className="text-[10px] text-slate-500 max-w-xs mt-1">বামদিকের বাটন থেকে কাঙ্ক্ষিত শ্রেণী যুক্ত করুন এবং রিয়ালটাইম ওয়াইডবোর্ড ফিড এবং ট্রায়াল ক্লাস দেখুন।</p>
                   </div>
                 )}
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: SCHOOL UNIFORM & DRESS CODE (স্কুল ড্রেস ও ইউনিফর্ম কোড) */}
+        <section id="sec-uniform" className="bg-gradient-to-b from-indigo-50/70 to-white py-16 px-6 lg:px-16 border-b border-indigo-100 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-sky-200/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-100/30 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+          <div className="max-w-6xl mx-auto">
+            {/* Header Block */}
+            <div className="text-center md:max-w-2xl mx-auto mb-12">
+              <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-200 uppercase tracking-widest leading-none font-sans inline-block mb-3">
+                ক্যাম্পাস ড্রেস কোড ও ডিসিপ্লিন
+              </span>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                ডি-লিকন মডেল একাডেমী ইউনিফর্ম কোড
+              </h2>
+              <p className="text-slate-600 text-xs mt-2 font-medium">
+                দক্ষিণগাঁও, গনি মার্কেট, সনমামিয়া, কাপাসিয়া, গাজীপুর।
+              </p>
+            </div>
+
+            {/* Main Interactive Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+              
+              {/* Left Column: Uniform Details & Interactive Tabs */}
+              <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                <div className="bg-white p-6 rounded-3xl border border-indigo-100/80 shadow-md">
+                  <div className="flex border-b border-slate-100 pb-4 mb-5 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {}}
+                      className="flex-1 py-3 px-4 rounded-2xl font-bold text-xs md:text-sm transition-all text-center border bg-gradient-to-r from-sky-500 to-blue-600 text-white border-transparent shadow-sm"
+                    >
+                      ♀️ মেয়েদের ইউনিফর্ম
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {}}
+                      className="flex-1 py-3 px-4 rounded-2xl font-bold text-xs md:text-sm transition-all text-center border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      disabled // For single view, we render both beautifully side by side below for premium design, or keep interactive highlight!
+                    >
+                      ♂️ ছেলেদের ইউনিফর্ম
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Girls' Card */}
+                    <div className="bg-sky-50/40 p-5 rounded-2xl border border-sky-100/80 relative">
+                      <div className="absolute top-3 right-3 text-xs bg-sky-200/60 text-sky-900 px-2.5 py-0.5 rounded-full font-bold">
+                        ছাত্রী
+                      </div>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                        <span className="p-1 rounded bg-sky-100 text-sky-700">👗</span> মেয়েদের ড্রেস কোড
+                      </h3>
+                      <ul className="space-y-3">
+                        {[
+                          { title: 'আকাশী নীল কুর্তি', desc: 'নির্ধারিত মার্জিত ডিজাইন' },
+                          { title: 'নেভি ব্লু সালোয়ার', desc: 'আরামদায়ক ও মানানসই' },
+                          { title: 'সাদা ওড়না', desc: 'শালীনতা বজায় রাখার জন্য' },
+                          { title: 'বাম পকেটে মনোগ্রাম/লোগো', desc: 'স্কুলের অফিশিয়াল লোগো এমব্রয়ডারি' },
+                          { title: 'সাদা মোজা ও কালো জুতা', desc: 'দৈনন্দিন ব্যবহারের উপযোগী' }
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs">
+                            <span className="text-sky-600 mt-0.5 font-bold">✓</span>
+                            <div>
+                              <strong className="text-slate-800 font-extrabold block">{item.title}</strong>
+                              <span className="text-[10px] text-slate-500">{item.desc}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Boys' Card */}
+                    <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100/80 relative">
+                      <div className="absolute top-3 right-3 text-xs bg-indigo-100 text-indigo-900 px-2.5 py-0.5 rounded-full font-bold">
+                        ছাত্র
+                      </div>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                        <span className="p-1 rounded bg-indigo-100 text-indigo-700">👔</span> ছেলেদের ড্রেস কোড
+                      </h3>
+                      <ul className="space-y-3">
+                        {[
+                          { title: 'আকাশী নীল শার্ট', desc: 'ফুল অথবা হাফ হাতা ফরমাল' },
+                          { title: 'নেভি ব্লু প্যান্ট', desc: 'মার্জিত ফরমাল ট্রাউজার' },
+                          { title: 'স্ট্রাইপ টাই', desc: 'স্কুলের অফিশিয়াল স্ট্রাইপ টাই' },
+                          { title: 'বাম পকেটে মনোগ্রাম/লোগো', desc: 'পকেটের কেন্দ্রের উপরে এমব্রয়ডারি' },
+                          { title: 'সাদা মোজা ও কালো জুতা', desc: 'ফরমাল কালো লেদার বা রেক্সিন জুতা' }
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs">
+                            <span className="text-indigo-600 mt-0.5 font-bold">✓</span>
+                            <div>
+                              <strong className="text-slate-800 font-extrabold block">{item.title}</strong>
+                              <span className="text-[10px] text-slate-500">{item.desc}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slogan and Commitments Banner */}
+                <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 rounded-3xl border border-indigo-950 shadow-lg relative overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl"></div>
+                  
+                  <span className="text-[10px] font-bold text-amber-400 tracking-widest block uppercase mb-1">
+                    স্কুলের স্লোগান ও মূল আদর্শ
+                  </span>
+                  <p className="text-base md:text-lg font-black text-amber-300 tracking-tight mb-4">
+                    “শিক্ষাই শক্তি, সুশিক্ষাই উন্নতি, নৈতিকতাই ভবিষ্যৎ”
+                  </p>
+                  
+                  <div className="border-t border-slate-800 pt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { word: 'শৃঙ্খলা', desc: 'Discipline', bg: 'bg-indigo-900/40 text-sky-300' },
+                      { word: 'শিক্ষা', desc: 'Education', bg: 'bg-emerald-900/40 text-emerald-300' },
+                      { word: 'নৈতিকতা', desc: 'Morality', bg: 'bg-amber-900/40 text-amber-300' },
+                      { word: 'সাফল্য', desc: 'Success', bg: 'bg-rose-900/40 text-rose-300' }
+                    ].map((item, idx) => (
+                      <div key={idx} className={`p-2.5 rounded-xl text-center ${item.bg}`}>
+                        <span className="font-extrabold text-sm block">{item.word}</span>
+                        <span className="text-[8px] tracking-wider uppercase font-semibold opacity-80 block mt-0.5">{item.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Visual Mockup Showcase (Tie, Logo/Monogram and Badges) */}
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                
+                {/* School Logo / Monogram Re-creation Card */}
+                <div className="bg-white p-6 rounded-3xl border border-indigo-150/80 shadow-md flex flex-col items-center justify-between text-center flex-1">
+                  <span className="text-[9px] font-black text-indigo-900 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-full mb-4">
+                    মনোগ্রাম (লোগো ডিজাইন)
+                  </span>
+
+                  <div className="relative h-44 w-44 rounded-full border-4 border-indigo-900 bg-gradient-to-b from-indigo-950 to-indigo-900 shadow-xl flex items-center justify-center p-3 text-white overflow-hidden group hover:scale-105 transition-all duration-300">
+                    {/* Ring Accents */}
+                    <div className="absolute inset-1 rounded-full border border-dashed border-amber-400 opacity-60"></div>
+                    
+                    <div className="flex flex-col items-center text-center relative z-10 w-full px-1">
+                      {/* ESTD Banner */}
+                      <span className="text-[6px] text-amber-300 tracking-widest font-black uppercase mb-0.5">ESTD - 2024</span>
+                      
+                      {/* Flame/Light Icon SVG */}
+                      <div className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] mb-1">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+
+                      {/* Open Book representation */}
+                      <div className="bg-white rounded-xs p-1 text-slate-900 flex gap-0.5 shadow-md mb-1.5 leading-none">
+                        <BookOpen className="h-4 w-4 text-indigo-900" />
+                      </div>
+
+                      {/* School Name around center */}
+                      <span className="text-[10px] font-black tracking-tight text-white leading-tight">D-LIKON</span>
+                      <span className="text-[7px] font-bold text-amber-300 tracking-wider">MODEL ACADEMY</span>
+                      
+                      {/* Bottom ribbon text */}
+                      <div className="mt-2 border-t border-indigo-800/80 pt-1 w-full flex justify-center gap-1.5 text-[5.5px] text-slate-300 font-bold uppercase tracking-widest">
+                        <span>LEARN</span>
+                        <span className="text-amber-400">•</span>
+                        <span>DISCIPLINE</span>
+                        <span className="text-amber-400">•</span>
+                        <span>SUCCEED</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <h4 className="font-black text-slate-800 text-xs">অফিশিয়াল পকেট ব্যাজ</h4>
+                    <p className="text-[10px] text-slate-500 mt-1 max-w-xs mx-auto">
+                      সকল ছাত্র ও ছাত্রীদের বাম পকেটে এই লোগোটি নিখুঁতভাবে বসানো বাধ্যতামূলক।
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tie & Accessories Card */}
+                <div className="bg-white p-6 rounded-3xl border border-indigo-150/80 shadow-md flex items-center gap-5">
+                  {/* Tie visual */}
+                  <div className="w-16 h-36 bg-gradient-to-b from-indigo-950 via-blue-900 to-indigo-950 rounded-b-xl relative shadow-md shrink-0 overflow-hidden flex flex-col justify-between p-1 border-t-8 border-indigo-950">
+                    {/* Stripes */}
+                    <div className="absolute top-4 left-0 w-32 h-2 bg-sky-400/50 -rotate-12 transform -translate-x-4"></div>
+                    <div className="absolute top-10 left-0 w-32 h-2 bg-sky-400/50 -rotate-12 transform -translate-x-4"></div>
+                    <div className="absolute top-16 left-0 w-32 h-2 bg-sky-400/50 -rotate-12 transform -translate-x-4"></div>
+                    <div className="absolute top-22 left-0 w-32 h-2 bg-sky-400/50 -rotate-12 transform -translate-x-4"></div>
+                    <div className="absolute top-28 left-0 w-32 h-2 bg-sky-400/50 -rotate-12 transform -translate-x-4"></div>
+                    
+                    {/* Small Tie Logo representation */}
+                    <div className="mx-auto mt-auto mb-1 h-4 w-4 rounded-full bg-amber-400 flex items-center justify-center text-[5px] font-black text-indigo-950 shadow-xs">
+                      D
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[8px] font-black text-indigo-800 uppercase tracking-widest block bg-indigo-50/80 px-2 py-0.5 rounded-full w-max">
+                      অফিশিয়াল টাই ডিজাইন
+                    </span>
+                    <h4 className="font-extrabold text-slate-800 text-xs">ছাত্রদের জন্য টাই কোড</h4>
+                    <p className="text-[10px] text-slate-500">
+                      নেভি ব্লু এবং স্কাই ব্লু ডাবল স্ট্রাইপের নিখুঁত কম্বিনেশন সমৃদ্ধ টাই যা প্রতিটি পোশাকে মার্জিত ভাব এনে দেয়।
+                    </p>
+                    <div className="pt-2 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-sky-400 border border-sky-500"></span>
+                      <span className="text-[9px] font-bold text-slate-600">আকাশী নীল স্ট্রাইপ</span>
+                      <span className="h-2 w-2 rounded-full bg-indigo-950 border border-indigo-900"></span>
+                      <span className="text-[9px] font-bold text-slate-600">নেভি ব্লু বেস</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
             </div>

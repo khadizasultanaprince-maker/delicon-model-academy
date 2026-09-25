@@ -13,12 +13,13 @@ import { AcademicCalendar } from './AcademicCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
 import { AcademicAiAssistant } from './AcademicAiAssistant';
 import { StudentProgressTracker } from './StudentProgressTracker';
+import { StudentDataEntryManager } from './StudentDataEntryManager';
 import { UserRole, Student } from '../types';
 import { 
   Plus, Trash2, Check, BookOpen, Clock, AlertTriangle, 
   CreditCard, MessageSquare, Save, Edit3, Send, ShieldAlert,
   UserCheck, Receipt, GraduationCap, ChevronRight, Volume2,
-  Users
+  Users, QrCode, Sparkles, Award, BarChart3, Bot, ShieldCheck
 } from 'lucide-react';
 
 interface DashboardPortalsProps {
@@ -67,6 +68,10 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
   // Selected student for Guardian/Teacher actions
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
   const targetStudent = students.find(s => s.id === selectedStudentId) || students[0];
+
+  // Dedicated Student Portal Active Tab
+  const [studentActiveTab, setStudentActiveTab] = useState<'idcard' | 'progress' | 'attendance' | 'fees' | 'library' | 'ai'>('idcard');
+  const [showAdvancedDataEntry, setShowAdvancedDataEntry] = useState(false);
 
   // Prospect Interactive Portal States
   const [prospectMeritIndex, setProspectMeritIndex] = useState(0);
@@ -943,9 +948,257 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
       )}
 
       {/* ========================================================
-          3. GUARDIAN PORTAL (অভিভাবক গেটওয়ে)
+          3A. STUDENT PORTAL (শিক্ষার্থী ডিজিটাল পোর্টাল)
          ======================================================== */}
-      {(role === 'Guardian' || role === 'Student') && (
+      {role === 'Student' && (
+        <div className="space-y-6">
+          
+          {/* Student Profile Top Banner */}
+          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 rounded-3xl border border-blue-800 shadow-md relative overflow-hidden">
+            <div className="absolute top-0 right-0 h-40 w-40 bg-[radial-gradient(circle_at_70%_20%,rgba(245,158,11,0.2)_0%,transparent_70%)] pointer-events-none" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-2xl bg-white/10 border border-white/20 p-1 flex items-center justify-center text-2xl font-black text-amber-400 shrink-0 shadow-inner">
+                  {targetStudent?.name[0]?.toUpperCase() || 'S'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      ভেরিফাইড শিক্ষার্থী প্রোফাইল
+                    </span>
+                    <span className="text-[10px] text-zinc-300 font-mono">
+                      ID: DEL-{targetStudent?.id.toUpperCase()}
+                    </span>
+                  </div>
+                  <h2 className="text-xl md:text-2xl font-black text-white mt-1">
+                    {targetStudent?.banglaName} ({targetStudent?.name})
+                  </h2>
+                  <p className="text-xs text-blue-200 mt-0.5 flex flex-wrap items-center gap-2">
+                    <span>শ্রেণী: <strong className="text-amber-300">{targetStudent?.className}</strong></span>
+                    <span>•</span>
+                    <span>রোল: <strong className="text-amber-300">{targetStudent?.roll}</strong></span>
+                    <span>•</span>
+                    <span>সেশন: <strong>২০২৬ শিক্ষাবর্ষ</strong></span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Student Switcher for testing/demoing */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-white/10 p-2.5 rounded-2xl border border-white/15">
+                <div className="text-left sm:text-right">
+                  <span className="text-[9.5px] font-bold text-blue-200 uppercase tracking-wider block">প্রোফাইল পরিবর্তন:</span>
+                  <select
+                    value={selectedStudentId}
+                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                    className="rounded-lg border border-blue-400/40 p-1.5 text-xs text-slate-900 font-bold focus:outline-blue-400 mt-1 bg-white cursor-pointer"
+                  >
+                    {students.map(s => (
+                      <option key={s.id} value={s.id}>{s.banglaName} ({s.className} - রোল: {s.roll})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Student Portal Navigation Tabs */}
+          <div className="flex overflow-x-auto gap-2 border-b border-slate-200 pb-2 scrollbar-none">
+            <button
+              onClick={() => setStudentActiveTab('idcard')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'idcard'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <QrCode className="h-4 w-4 text-amber-400" />
+              <span>ডিজিটাল আইডি কার্ড ও QR কোড</span>
+            </button>
+
+            <button
+              onClick={() => setStudentActiveTab('progress')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'progress'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4 text-amber-400" />
+              <span>একাডেমিক প্রগ্রেস ও রিপোর্ট</span>
+            </button>
+
+            <button
+              onClick={() => setStudentActiveTab('attendance')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'attendance'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Volume2 className="h-4 w-4 text-amber-400" />
+              <span>হাজিরা ও SMS ট্র্যাকিং</span>
+            </button>
+
+            <button
+              onClick={() => setStudentActiveTab('fees')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'fees'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <CreditCard className="h-4 w-4 text-amber-400" />
+              <span>ফি ও পেমেন্ট পোর্টাল</span>
+            </button>
+
+            <button
+              onClick={() => setStudentActiveTab('library')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'library'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <BookOpen className="h-4 w-4 text-amber-400" />
+              <span>লাইব্রেরি ও ক্যালেন্ডার</span>
+            </button>
+
+            <button
+              onClick={() => setStudentActiveTab('ai')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                studentActiveTab === 'ai'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Bot className="h-4 w-4 text-amber-400" />
+              <span>এআই স্টাডি হেল্পার</span>
+            </button>
+          </div>
+
+          {/* Student Tab 1: Digital ID Card & QR Generator */}
+          {studentActiveTab === 'idcard' && targetStudent && (
+            <div className="space-y-6">
+              <DigitalStudentIdCard student={targetStudent} isStudentPortal={true} />
+
+              {/* ID Card Usage Information and Gate Access Tips */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0">
+                    <QrCode className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xs">ক্যাম্পাস গেট স্ক্যানার</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      কার্ডের পিছনের কিউআর কোডটি ক্যাম্পাসের প্রধান ফটকে স্ক্যানারে স্পর্শ করলে স্বয়ংক্রিয় হাজিরা রেকর্ড হয়।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xs">ডিজিটাল ও অফলাইন কপি</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      আপনি সরাসরি পিএনজি ইমেজ ডাউনলোড করে মোবাইলে সংরক্ষণ করতে পারেন অথবা এ৪ সাইজে প্রিন্ট করতে পারেন।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xs">তাৎক্ষণিক প্রোফাইল ভেরিফিকেশন</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      যেকোনো স্মার্টফোন ক্যামেরা দিয়ে স্ক্যান করলে সাথে সাথে শিক্ষার্থীর নাম, শ্রেণী ও সত্যতা প্রদর্শিত হবে।
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Student Tab 2: Progress & Analytics */}
+          {studentActiveTab === 'progress' && targetStudent && (
+            <div className="space-y-6">
+              <StudentProgressTracker student={targetStudent} />
+              <GuardianPerformanceCharts 
+                student={targetStudent} 
+                examMarks={examMarks} 
+                attendanceLogs={attendanceLogs} 
+              />
+            </div>
+          )}
+
+          {/* Student Tab 3: Attendance & SMS */}
+          {studentActiveTab === 'attendance' && targetStudent && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">হাজিরা ট্র্যাকিং ও তাৎক্ষণিক Guardian SMS লগ</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">আপনার স্কুলে পাঞ্চ করার সাথে সাথে যে নোটিফিকেশন মেসেজ অভিভাবকের ফোনে গেছে তার রেকর্ড</p>
+                  </div>
+                </div>
+
+                {smsLogs.filter(log => log.studentName === targetStudent?.banglaName).length === 0 ? (
+                  <div className="text-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="text-xs text-slate-500">বর্তমানে কোনো ডিজিটাল মেসেজ লগ নেই।</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {smsLogs.filter(log => log.studentName === targetStudent?.banglaName).map((sms, i) => (
+                      <div key={i} className="p-4 rounded-xl border border-blue-100 bg-blue-50/20 shadow-sm relative pr-20">
+                        <div className="flex gap-2 items-center mb-1.5 border-b border-blue-50 pb-1.5 text-[9px] font-bold text-blue-900 uppercase">
+                          <Volume2 className="h-3 w-3 text-amber-500" />
+                          <span>দ্বিমুখী ডিজিটাল SMS নিশ্চিতকরণ</span>
+                        </div>
+                        <p className="text-xs text-slate-700 font-medium leading-relaxed">"{sms.text}"</p>
+                        <div className="absolute top-4 right-4 text-right">
+                          <span className="text-[9px] font-mono text-slate-400 bg-slate-50/80 px-1.5 py-0.5 rounded border border-slate-105">{new Date(sms.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Student Tab 4: Fees */}
+          {studentActiveTab === 'fees' && targetStudent && (
+            <div className="space-y-6">
+              <StudentFeeManagement student={targetStudent} />
+            </div>
+          )}
+
+          {/* Student Tab 5: Library & Calendar */}
+          {studentActiveTab === 'library' && (
+            <div className="space-y-6">
+              <DigitalLibrary role={role} />
+              <AcademicCalendar role={role} />
+            </div>
+          )}
+
+          {/* Student Tab 6: AI Study Assistant */}
+          {studentActiveTab === 'ai' && targetStudent && (
+            <div className="space-y-6">
+              <AcademicAiAssistant student={targetStudent} examMarks={examMarks} />
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ========================================================
+          3B. GUARDIAN PORTAL (অভিভাবক গেটওয়ে)
+         ======================================================== */}
+      {role === 'Guardian' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             
@@ -956,7 +1209,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
                 <select 
                   value={selectedStudentId} 
                   onChange={(e) => setSelectedStudentId(e.target.value)}
-                  className="rounded border border-slate-200 p-1 text-xs text-slate-700 focus:outline-blue-600 mt-1 bg-white"
+                  className="rounded border border-slate-200 p-1 text-xs text-slate-700 focus:outline-blue-600 mt-1 bg-white cursor-pointer"
                 >
                   {students.map(s => (
                     <option key={s.id} value={s.id}>{s.banglaName} ({s.className} - রোল: {s.roll})</option>
@@ -994,7 +1247,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               </div>
             </div>
 
-            {/* Digital Student ID Card Component */}
+            {/* Digital Student ID Card Component for Guardian */}
             {targetStudent && (
               <DigitalStudentIdCard student={targetStudent} />
             )}
@@ -1817,6 +2070,23 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
           9. ASSISTANT PORTAL (অফিস সহকারী - ডাটা এন্ট্রি)
          ======================================================== */}
       {role === 'Assistant' && (
+        showAdvancedDataEntry ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200">
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm">পূর্ণাঙ্গ শিক্ষার্থী তথ্য ছক ও এআই ভিশন স্ক্যানার মোড</h4>
+                <p className="text-[10px] text-slate-500">স্ক্যান করা ফরম আপলোড করে এআই দিয়ে স্বয়ংক্রিয় এন্ট্রি বা তথ্য আপডেট করুন</p>
+              </div>
+              <button
+                onClick={() => setShowAdvancedDataEntry(false)}
+                className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+              >
+                সাধারণ ডেক্স মোডে ফিরুন
+              </button>
+            </div>
+            <StudentDataEntryManager currentRole="Assistant" />
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             
@@ -1856,9 +2126,18 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
             {/* Main Double Forms Container */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-8 animate-fade-in">
               
-              <div className="border-b pb-4">
-                <h3 className="font-bold text-slate-800 text-sm">ডিজিটাল ডাটা এন্ট্রি ডেক্স (শিক্ষার্থী ও এমপ্লয়ী)</h3>
-                <p className="text-[10px] text-slate-500 mt-1">অফিস সহকারী হিসেবে এখান থেকে নতুন শিক্ষার্থী ভর্তি এবং শিক্ষক-কর্মচারীদের ডাটাবেজ আপডেট সম্পন্ন করুন।</p>
+              <div className="border-b pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">ডিজিটাল ডাটা এন্ট্রি ডেক্স (শিক্ষার্থী ও এমপ্লয়ী)</h3>
+                  <p className="text-[10px] text-slate-500 mt-1">অফিস সহকারী হিসেবে এখান থেকে নতুন শিক্ষার্থী ভর্তি এবং শিক্ষক-কর্মচারীদের ডাটাবেজ আপডেট সম্পন্ন করুন।</p>
+                </div>
+                <button
+                  onClick={() => setShowAdvancedDataEntry(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-2 text-xs transition-all shadow-sm shrink-0 cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                  <span>পূর্ণাঙ্গ তথ্য ছক ও এআই স্ক্যানার</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -2280,6 +2559,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
           </div>
 
         </div>
+        )
       )}
 
     </div>
