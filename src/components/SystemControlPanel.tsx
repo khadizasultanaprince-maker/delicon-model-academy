@@ -6,12 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useSchool } from '../context/SchoolContext';
-import { UserRole } from '../types';
+import { Student, UserRole } from '../types';
 import { 
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
   Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
-  Camera, CameraOff, Calendar, Book, Film, Sparkles
+  Camera, CameraOff, Calendar, Book, Film, Sparkles, Search, UserCheck, Eye, RotateCcw
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
 import { AcademicCalendar } from './AcademicCalendar';
@@ -19,6 +19,8 @@ import { DigitalLibrary } from './DigitalLibrary';
 import { extractYouTubeId } from './VideoPlayer';
 import { StudentDataEntryManager } from './StudentDataEntryManager';
 import { NoticeBoard } from './NoticeBoard';
+import { DigitalStudentIdCard } from './DigitalStudentIdCard';
+import { RecruitmentPosterGenerator } from './RecruitmentPosterGenerator';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -72,6 +74,221 @@ const compressImage = (file: File, maxWidth = 300, maxHeight = 300, quality = 0.
   });
 };
 
+interface StudentGalleryIdCardProps {
+  student: Student;
+  schoolName: string;
+  schoolSlogan: string;
+  schoolLogoVal: string;
+  customPhoto?: string;
+  onInspect: (s: Student) => void;
+  onOpenStudio: (studentId: string) => void;
+  onUpdatePhoto: (studentId: string, photoBase64: string) => void;
+}
+
+const StudentGalleryIdCard: React.FC<StudentGalleryIdCardProps> = ({ 
+  student, 
+  schoolName, 
+  schoolLogoVal, 
+  customPhoto, 
+  onInspect, 
+  onOpenStudio, 
+  onUpdatePhoto 
+}) => {
+  const [qrUrl, setQrUrl] = useState<string>('');
+  const photoInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const token = `DELICON-STD-${student.id.toUpperCase()}`;
+    const payload = JSON.stringify({
+      school: schoolName || 'ডিলিকন মডেল একাডেমী',
+      studentId: `DEL-${student.id.toUpperCase()}`,
+      name: student.name,
+      banglaName: student.banglaName,
+      className: student.className,
+      roll: student.roll,
+      guardianName: student.guardianName,
+      guardianPhone: student.guardianPhone,
+      session: student.sessionYear || '2026',
+      token,
+      verified: true
+    });
+
+    QRCode.toDataURL(payload, {
+      margin: 1,
+      color: { dark: '#0f172a', light: '#ffffff' },
+      width: 140,
+      errorCorrectionLevel: 'M'
+    }).then(url => {
+      if (isMounted) setQrUrl(url);
+    }).catch(err => console.error('QR generation failed:', err));
+
+    return () => { isMounted = false; };
+  }, [student, schoolName]);
+
+  const activePhoto = customPhoto || student.photoUrl;
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          onUpdatePhoto(student.id, ev.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSinglePrint = () => {
+    onInspect(student);
+    setTimeout(() => {
+      window.print();
+    }, 400);
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-md hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between group">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 p-3 text-white text-center relative border-b border-amber-400/40">
+        <div className="flex items-center justify-center gap-2">
+          {schoolLogoVal ? (
+            <img src={schoolLogoVal} alt="Logo" className="h-6 w-6 object-contain rounded-full bg-white p-0.5 shadow-xs" />
+          ) : (
+            <span className="text-xs">🏫</span>
+          )}
+          <span className="font-extrabold text-[11px] tracking-wide truncate">
+            {schoolName || 'ডিলিকন মডেল একাডেমী'}
+          </span>
+        </div>
+        <span className="text-[8px] text-amber-300 font-bold block mt-0.5 tracking-wider uppercase font-mono">
+          ডিজিটাল স্টুডেন্ট আইডি কার্ড • সেশন ২০২৬
+        </span>
+      </div>
+
+      {/* Card Body */}
+      <div className="p-4 flex-1 flex flex-col items-center text-center">
+        {/* Photo Container with direct change button */}
+        <div className="relative group/photo mb-2.5">
+          <div className="h-20 w-20 rounded-full border-2 border-indigo-600 overflow-hidden shadow-md bg-slate-100 flex items-center justify-center">
+            {activePhoto ? (
+              <img src={activePhoto} alt={student.name} className="h-full w-full object-cover" />
+            ) : (
+              <span className="font-black text-2xl text-indigo-900">
+                {(student.banglaName || student.name || 'S')[0]}
+              </span>
+            )}
+          </div>
+          
+          <button
+            onClick={() => photoInputRef.current?.click()}
+            className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-blue-900 hover:bg-blue-800 text-white flex items-center justify-center shadow-md cursor-pointer transition-transform group-hover/photo:scale-110"
+            title="ছবি পরিবর্তন / আপলোড করুন"
+          >
+            <Camera className="h-3 w-3" />
+          </button>
+          <input 
+            type="file" 
+            ref={photoInputRef} 
+            accept="image/*" 
+            className="hidden" 
+            onChange={handlePhotoSelect} 
+          />
+        </div>
+
+        {/* Name and Class */}
+        <h4 className="font-black text-slate-900 text-sm leading-tight">
+          {student.banglaName || student.name}
+        </h4>
+        {student.name && student.name !== student.banglaName && (
+          <p className="text-[10px] text-slate-400 font-sans uppercase font-bold mt-0.5">
+            {student.name}
+          </p>
+        )}
+
+        <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[10px] font-black text-blue-900">
+          <span>{student.className}</span>
+          <span>•</span>
+          <span>রোল: {student.roll}</span>
+          {student.section && (
+            <>
+              <span>•</span>
+              <span>শাখা: {student.section}</span>
+            </>
+          )}
+        </div>
+
+        {/* Info Grid */}
+        <div className="mt-3 w-full grid grid-cols-2 gap-x-2 gap-y-1 text-left text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-100 font-semibold">
+          <div>
+            <span className="text-[8px] text-slate-400 block font-mono uppercase">Student ID</span>
+            <span className="text-slate-800 font-bold font-mono">DEL-{student.id.toUpperCase()}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[8px] text-slate-400 block font-mono uppercase">সেশন বছর</span>
+            <span className="text-slate-800 font-bold">{student.sessionYear || '2026'}</span>
+          </div>
+          <div>
+            <span className="text-[8px] text-slate-400 block font-mono uppercase">অভিভাবক</span>
+            <span className="text-slate-700 truncate block">{student.guardianName || '---'}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[8px] text-slate-400 block font-mono uppercase">জরুরী ফোন</span>
+            <span className="text-blue-900 font-bold font-mono text-[9px]">{student.guardianPhone || '---'}</span>
+          </div>
+        </div>
+
+        {/* Unique QR Code Plate */}
+        <div className="mt-3 w-full p-2 rounded-xl border border-slate-200 bg-white flex items-center justify-center gap-3 shadow-xs">
+          {qrUrl ? (
+            <img src={qrUrl} alt="Student QR Code" className="h-14 w-14 shrink-0 rounded border p-0.5 bg-white" />
+          ) : (
+            <div className="h-14 w-14 rounded bg-slate-100 animate-pulse"></div>
+          )}
+          <div className="text-left font-mono leading-none">
+            <span className="text-[7.5px] uppercase font-black text-slate-400 block">Unique QR Token</span>
+            <span className="text-[9.5px] text-indigo-950 font-black block mt-0.5">
+              STD-{student.id.toUpperCase()}
+            </span>
+            <span className="text-[8px] text-emerald-600 font-bold block mt-1">✓ গেট স্ক্যানার যাচাইকৃত</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Actions Footer */}
+      <div className="p-2.5 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-1.5 text-center">
+        <button
+          onClick={() => onInspect(student)}
+          className="flex items-center justify-center gap-1 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold text-[10.5px] py-1.5 px-2 transition-all cursor-pointer shadow-xs"
+          title="পূর্ণাঙ্গ দ্বিপাক্ষিক আইডি কার্ড ভিউ ও ডাউনলোড"
+        >
+          <Eye className="h-3 w-3" />
+          <span>পূর্ণাঙ্গ ভিউ</span>
+        </button>
+
+        <button
+          onClick={handleSinglePrint}
+          className="flex items-center justify-center gap-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[10.5px] py-1.5 px-2 border border-slate-200 transition-all cursor-pointer"
+          title="কার্ডটি প্রিন্ট করুন"
+        >
+          <Printer className="h-3 w-3 text-amber-500" />
+          <span>প্রিন্ট</span>
+        </button>
+
+        <button
+          onClick={() => onOpenStudio(student.id)}
+          className="flex items-center justify-center gap-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold text-[10.5px] py-1.5 px-2 border border-indigo-200 transition-all cursor-pointer"
+          title="ডিজাইন স্টুডিওতে কাস্টমাইজ করুন"
+        >
+          <Settings className="h-3 w-3 text-indigo-600" />
+          <span>ডিজাইন</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, onLogout }) => {
   const { 
     students, 
@@ -95,6 +312,9 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
     updateCampusPhotos,
     meritStudents,
     updateMeritStudents,
+    purgeDemoStudents,
+    restoreDemoStudents,
+    importMeritStudentsToDirectory,
     updateLeadStatus,
     deleteNotice,
     addNotice,
@@ -120,7 +340,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'student_entry' | 'admissions' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('student_entry');
+  const [activeTab, setActiveTab] = useState<'student_entry' | 'admissions' | 'posters' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('student_entry');
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -142,6 +362,10 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   const [employeeFormSuccess, setEmployeeFormSuccess] = useState(false);
 
   // ID Cards control states
+  const [idCardSubView, setIdCardSubView] = useState<'gallery' | 'studio' | 'batch'>('gallery');
+  const [idCardSearchQuery, setIdCardSearchQuery] = useState('');
+  const [idCardFilterClass, setIdCardFilterClass] = useState('All');
+  const [inspectingStudentIdCard, setInspectingStudentIdCard] = useState<Student | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState('');
   const [recipientType, setRecipientType] = useState<'student' | 'employee'>('student');
   const [idCardTheme, setIdCardTheme] = useState<'navy' | 'crimson' | 'emerald' | 'charcoal' | 'violet'>('navy');
@@ -1083,24 +1307,25 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
           {[
             { id: 'student_entry', label: '১। শিক্ষার্থী তথ্য ছক ও AI স্ক্যানার ✨', icon: Sparkles },
             { id: 'admissions', label: '২। ভর্তি আবেদন ও অনলাইন লিড', icon: Users, count: pendingLeads },
-            { id: 'finance', label: '৩। ফি কালেকশন ও ব্যাংক', icon: CreditCard },
-            { id: 'staff', label: '৪। স্টাফ পে-রোল ও হাজিরা', icon: Clock },
-            { id: 'idcards', label: '৫। কিউআর আইডি কার্ড জেনারেটর', icon: QrCode },
-            { id: 'exams', label: '৬। পরীক্ষার মেট্রিক্স ও মার্কস এন্ট্রি', icon: FileText },
-            { id: 'docs', label: '৭। প্রশংসাপত্র ও ট্রান্সক্রিপ্ট প্রিন্ট', icon: Award },
-            { id: 'requisitions', label: '৮। রিকুইজিশন অনুমোদন হাব', icon: CheckCircle2, count: requisitions.filter(r => !r.status.includes('Principal Approved') && !r.status.includes('Rejected')).length },
-            { id: 'sections', label: '৯। ল্যান্ডিং সেকশন কাস্টমাইজার 🎨', icon: Layers },
-            { id: 'inventory', label: '১০। স্টেশনারি ইনভেনটরি', icon: PackageOpen },
-            { id: 'transport', label: '১১। স্কুল বাস পরিবহন রুট', icon: Bus },
-            { id: 'planning', label: '১২। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
-            { id: 'notices', label: '১৩। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
-            { id: 'scanner', label: '১৪। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
-            { id: 'dtube', label: '১৫। ডি-টিউব ও কালচারাল কর্নার 🎭', icon: Video },
-            { id: 'calendar', label: '১৬। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
-            { id: 'library', label: '১৭। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
-            { id: 'cultural_mgt', label: '১৮। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
-            { id: 'settings', label: '১৯। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
-            { id: 'db', label: '২০। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
+            { id: 'posters', label: '৩। ভর্তি পোস্টার ও প্রচার স্টুডিও 📢', icon: Award },
+            { id: 'finance', label: '৪। ফি কালেকশন ও ব্যাংক', icon: CreditCard },
+            { id: 'staff', label: '৫। স্টাফ পে-রোল ও হাজিরা', icon: Clock },
+            { id: 'idcards', label: '৬। কিউআর আইডি কার্ড জেনারেটর', icon: QrCode },
+            { id: 'exams', label: '৭। পরীক্ষার মেট্রিক্স ও মার্কস এন্ট্রি', icon: FileText },
+            { id: 'docs', label: '৮। প্রশংসাপত্র ও ট্রান্সক্রিপ্ট প্রিন্ট', icon: Award },
+            { id: 'requisitions', label: '৯। রিকুইজিশন অনুমোদন হাব', icon: CheckCircle2, count: requisitions.filter(r => !r.status.includes('Principal Approved') && !r.status.includes('Rejected')).length },
+            { id: 'sections', label: '১০। ল্যান্ডিং সেকশন কাস্টমাইজার 🎨', icon: Layers },
+            { id: 'inventory', label: '১১। স্টেশনারি ইনভেনটরি', icon: PackageOpen },
+            { id: 'transport', label: '১২। স্কুল বাস পরিবহন রুট', icon: Bus },
+            { id: 'planning', label: '১৩। স্কুলের উন্নয়ন প্রজেক্ট', icon: TrendingUp },
+            { id: 'notices', label: '১৪। বিজ্ঞপ্তিসমূহ প্রকাশনা', icon: Bell },
+            { id: 'scanner', label: '১৫। আরএফআইডি গেট সিমুলেটর 🎯', icon: QrCode },
+            { id: 'dtube', label: '১৬। ডি-টিউব ও কালচারাল কর্নার 🎭', icon: Video },
+            { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
+            { id: 'library', label: '১৮। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
+            { id: 'cultural_mgt', label: '১৯। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
+            { id: 'settings', label: '২০। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
+            { id: 'db', label: '২১। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
             <button
               key={tab.id}
@@ -1284,6 +1509,27 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* POSTERS & RECRUITMENT CAMPAIGN STUDIO */}
+          {activeTab === 'posters' && (
+            <div className="space-y-4">
+              <div className="border-b border-slate-200 pb-3 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="font-black text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                    ভর্তি প্রচার ব্যানার ও পোস্টার জেনারেটর স্টুডিও
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    অফিসিয়াল ভর্তি প্রচার লিফলেট, ফেসবুক ব্যানার ও A4 সাইজ প্রিন্ট পোস্টার ডিজাইন, ডাউনলোড ও প্রিন্ট করুন
+                  </p>
+                </div>
+                <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-full border border-amber-200">
+                  অ্যাডমিন প্রচার কন্ট্রোল
+                </span>
+              </div>
+              <RecruitmentPosterGenerator />
             </div>
           )}
 

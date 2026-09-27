@@ -17,7 +17,6 @@ import {
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
 import { VideoPlayer, extractYouTubeId } from './VideoPlayer';
-import { RecruitmentPosterGenerator } from './RecruitmentPosterGenerator';
 
 const getYouTubeId = extractYouTubeId;
 
@@ -104,7 +103,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     updateCulturalPlaylist,
     routes,
     stationery,
-    schoolName
+    schoolName,
+    schoolSlogan
   } = useSchool();
 
   // Helper functions for section visibility and titles
@@ -124,14 +124,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [studentPhotoErrors, setStudentPhotoErrors] = useState<Record<number, boolean>>({});
   const [videoViews, setVideoViews] = useState<Record<string, number>>({});
   const [leadSuccess, setLeadSuccess] = useState(false);
-  
-  // A4 Admission Poster Generator States
-  const [posterTheme, setPosterTheme] = useState<'futuristic' | 'academic' | 'photocopy'>('futuristic');
-  const [posterPhone, setPosterPhone] = useState('০১৭০৮-**৮৮৯');
-  const [posterDiscount, setPosterDiscount] = useState('ভর্তিতে স্পেশাল কুপন ও ১০% ডিসকাউন্ট!');
-  const [posterAddress, setPosterAddress] = useState('স্মার্ট ক্যাম্পাস, ডিলিকন রোড, ঢাকা');
-  const [seatsBooked, setSeatsBooked] = useState(748);
-  const [copiedPostIndex, setCopiedPostIndex] = useState<number | null>(null);
+  const [teacherModalNotice, setTeacherModalNotice] = useState<{ title: string; message: string } | null>(null);
 
   // Calculator State
   const [calcClass, setCalcClass] = useState('Play-KG');
@@ -216,7 +209,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 2.2 * 1024 * 1024) {
-        alert("ফাইল সাইজ ২.২ মেগাবাইটের বেশি হতে পারবে না।");
+        setTeacherModalNotice({
+          title: "ফাইল সাইজ বেশি",
+          message: "ছবি ফাইলের সাইজ ২.২ মেগাবাইটের বেশি হতে পারবে না।"
+        });
         return;
       }
       const reader = new FileReader();
@@ -258,79 +254,101 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <main className="mx-auto max-w-7xl">
-        {/* SECTION: HERO / DIGITAL CLOCK (০। ডিজিটাল ক্লক ও কভার) */}
-        <section className="relative overflow-hidden bg-slate-950 py-16 px-6 lg:px-16 border-b border-slate-900">
+        {/* SECTION: HERO / INSTITUTION WELCOME BANNER (১। প্রধান পরিচিতি ও ভর্তি আহ্বান) */}
+        <section id="sec-hero" className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 py-16 sm:py-20 px-6 lg:px-16 border-b border-slate-800 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/25 via-transparent to-transparent pointer-events-none"></div>
           <div className="max-w-6xl mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-              <div className="flex-1 text-center md:text-left">
-                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-2">স্বাগতম ডিলিকন ডিজিটাল প্যানেল</span>
-                <h1 className="text-3xl md:text-4.5xl font-black text-white leading-tight">স্মার্ট ক্যাম্পাসের ডিজিটাল ইন্টারেক্টিভ কুপন ও এটেনডেন্স ম্যানেজমেন্ট সিস্টেম</h1>
-                <p className="text-slate-400 text-xs mt-3 leading-relaxed max-w-lg">
-                  শিক্ষা ও প্রযুক্তির এক অনবদ্য মেলবন্ধন। কুপন পাঞ্চ কার্ড গেটওয়ে, অভিভাবক এসএমএস এলার্ট এবং অটোমেশন সফটওয়্যারের সমন্বয়ে আমাদের ডিজিটাল রূপান্তর।
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-10">
+              <div className="flex-1 text-center lg:text-left space-y-4">
+                <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 px-3.5 py-1.5 rounded-full">
+                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
+                  <span className="text-xs font-bold text-amber-300 tracking-wide uppercase font-sans">
+                    নতুন শিক্ষাবর্ষে ভর্তি চলছে
+                  </span>
+                </div>
+                
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight font-sans tracking-tight">
+                  {schoolName || 'ডিলিকন মডেল একাডেমী'}
+                </h1>
+                
+                <p className="text-amber-300/90 text-sm sm:text-base font-medium leading-relaxed max-w-2xl font-sans">
+                  "{schoolSlogan || 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়'}"
                 </p>
+
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
+                  জ্ঞান, নৈতিকতা ও আধুনিক প্রযুক্তির অনন্য মেলবন্ধনে প্রতিটি শিক্ষার্থীর অন্তর্নিহিত প্রতিভার সুষম বিকাশ। ডিজিটাল স্মার্ট ক্লাসরুম, পরম স্নেহে পাঠদান এবং শারীরিক ও মানসিক সুরক্ষার এক অনন্য বিদ্যাপীঠ।
+                </p>
+
+                {/* Lead Action Buttons */}
+                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <a
+                    href="#sec-lead-form"
+                    className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3 rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <span>📝 অনলাইনে ভর্তি আবেদন করুন</span>
+                  </a>
+                  <a
+                    href="#sec-merit-students"
+                    className="inline-flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition-all"
+                  >
+                    <span>🏆 সাফল্যের গল্প ও কৃতি শিক্ষার্থী</span>
+                  </a>
+                  <button
+                    onClick={onOpenAuth}
+                    className="inline-flex items-center gap-1.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700/50 font-bold px-4 py-3 rounded-xl text-xs transition-all cursor-pointer"
+                  >
+                    <span>🔑 অভিভাবক ও শিক্ষক সাইন-ইন</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Digital Clock with futuristic visual effects */}
-              <div className="bg-slate-900 border-2 border-amber-500/35 p-6 rounded-3xl text-center shadow-2xl shadow-amber-500/5 min-w-[240px] relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent opacity-50"></div>
-                <Clock className="h-6 w-6 text-amber-400 mx-auto mb-2 animate-spin-slow" />
-                <span className="text-slate-500 text-[10px] font-mono tracking-widest block uppercase">REALTIME DIGITAL TIMER</span>
-                <span className="text-2xl md:text-3.5xl font-mono font-extrabold text-white block tracking-widest mt-1.5 drop-shadow-[0_2px_4px_rgba(245,158,11,0.25)]">
-                  {formatTimeBn(currentDateTime)}
-                </span>
-                <span className="text-slate-400 text-[10px] block mt-1 font-bold">
-                  {currentDateTime.toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
+              {/* Campus Highlights Stat Card */}
+              <div className="w-full lg:w-auto shrink-0">
+                <div className="bg-slate-900/90 border border-slate-800 p-6 sm:p-7 rounded-3xl shadow-2xl backdrop-blur-sm min-w-[280px] max-w-sm mx-auto text-left space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">CAMPUS OVERVIEW</span>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> সক্রিয় ক্যাম্পাস
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80">
+                      <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono">১০০%</span>
+                      <span className="block text-[10px] text-slate-400 mt-1 font-sans">পাস ও সাফল্য</span>
+                    </div>
+                    <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80">
+                      <span className="text-xl sm:text-2xl font-black text-indigo-400 font-mono">১:১৫</span>
+                      <span className="block text-[10px] text-slate-400 mt-1 font-sans">শিক্ষক অনুপাত</span>
+                    </div>
+                    <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80">
+                      <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">স্মার্ট</span>
+                      <span className="block text-[10px] text-slate-400 mt-1 font-sans">ডিজিটাল মনিটরিং</span>
+                    </div>
+                    <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80">
+                      <span className="text-xl sm:text-2xl font-black text-rose-400 font-mono">০%</span>
+                      <span className="block text-[10px] text-slate-400 mt-1 font-sans">শারীরিক শাসনমুক্ত</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 text-center border-t border-slate-800/70">
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      📅 বর্তমান সেশন: <strong className="text-slate-200">২০২৬ শিক্ষাবর্ষ</strong>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* live marquee updates and reminders */}
-            <div className="mt-8 bg-slate-950 border-2 border-red-500 p-6 rounded-2xl flex flex-col md:flex-row gap-5 items-center shadow-2xl shadow-red-500/10">
-              <span className="bg-red-600 border border-red-550 text-white text-xs md:text-sm font-black px-4 py-2.5 rounded-xl tracking-wider shrink-0 uppercase animate-pulse shadow-md flex items-center gap-1.5">
-                📢 জরুরি ফ্লো নোটিশ:
+            {/* School Campus Notice / Announcement Ticker */}
+            <div className="mt-8 bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-3 sm:gap-4 items-center shadow-lg">
+              <span className="bg-blue-600 text-white text-xs font-black px-3 py-1.5 rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm">
+                📢 ক্যাম্পাস বুলেটিন:
               </span>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-rose-200 leading-relaxed text-center md:text-left drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.6)]">
-                "আজ বিকাল ৪.০০ টায় ৬ষ্ঠ শ্রেণীর বিশেষ অনলাইন অভিভাবক কুইজ অনুষ্ঠিত হবে। সংশ্লিষ্ট সকল শিক্ষার্থীদের যথাসময়ে আইডি পাঞ্চ করে লগইন থাকার অনুরোধ করা হলো।"
+              <p className="text-xs sm:text-sm font-semibold text-slate-200 text-center sm:text-left leading-relaxed">
+                নতুন শিক্ষাবর্ষে প্লে থেকে দশম শ্রেণি পর্যন্ত সীমিত আসনে ভর্তি কার্যক্রম চলমান। অনলাইনে ফরম পূরণ করে দ্রুত আসন নিশ্চিত করুন।
               </p>
             </div>
-          </div>
-        </section>
-
-        {/* SECTION: ADMISSION CAMPAIGN & RECRUITMENT POSTER GENERATOR */}
-        <section id="sec-recruitment-poster" className="bg-slate-900 border-b border-slate-950 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-          {/* Custom print CSS for zero-margin perfect A4 print */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            @media print {
-              body * {
-                visibility: hidden !important;
-              }
-              #recruitment-poster-canvas, #recruitment-poster-canvas * {
-                visibility: visible !important;
-              }
-              #recruitment-poster-canvas {
-                position: fixed !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 210mm !important;
-                height: 297mm !important;
-                margin: 0 !important;
-                padding: 10mm !important;
-                box-sizing: border-box !important;
-                z-index: 9999999 !important;
-              }
-              @page {
-                size: A4 portrait;
-                margin: 0;
-              }
-            }
-          `}} />
-
-          {/* Background Ambient Glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
-
-          <div className="max-w-7xl mx-auto relative z-10">
-            <RecruitmentPosterGenerator />
           </div>
         </section>
 
@@ -539,10 +557,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </span>
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-snug">শাসন নয়, ভালোবাসার জাদুতে শিশুর সুপ্ত প্রতিভাকে সত্যের আলোয় বিকশিত করার একনিষ্ঠ কারিগর আমাদের শিক্ষকমণ্ডলী।</h2>
                 <p className="text-slate-650 text-xs mt-1.5 max-w-xl">
-                  ডিলিকন মডেল একাডেমীর আসল চালিকাশক্তি ও আমাদের গর্ব। আধুনিক বিজ্ঞান মনস্ক শিক্ষা ও উন্নত সুনাগরিক গড়ে তোলার মহৎ সংগ্রামে নিয়োজিত বিজয়ী বীরসৈনিকবৃন্দ। 
-                  <span className="block mt-2 font-bold text-amber-800 bg-amber-50/70 border border-amber-200/50 px-2 py-1 rounded inline-flex items-center gap-1.5">
-                    📷 শিক্ষকদের ছবি আপলোড করতে প্রতি কার্ডে থাকা ক্যামেরা আইকনটি ক্লিক করুন।
-                  </span>
+                  ডিলিকন মডেল একাডেমীর আসল চালিকাশক্তি ও আমাদের গর্ব। আধুনিক বিজ্ঞানমনস্ক শিক্ষা, মানবিক মূল্যবোধ ও উন্নত সুনাগরিক গড়ে তোলার মহৎ ব্রতে নিয়োজিত একনিষ্ঠ শিক্ষকমণ্ডলী।
                 </p>
               </div>
 
@@ -645,11 +660,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     return filtered.map((teacher, idx) => (
                       <div key={teacher.id || idx} className="bg-white p-5 rounded-2xl border border-slate-200/90 hover:-translate-y-2 hover:shadow-2xl hover:border-amber-300/60 transition-all duration-300 ease-out text-center flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-900 via-amber-500 to-indigo-950"></div>
-                        {teacher.isDynamic && (
-                          <span className="absolute top-2.5 right-2.5 bg-emerald-50 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full border border-emerald-250 uppercase tracking-widest leading-none font-sans">
-                            সরাসরি ডাটা এন্ট্রি
-                          </span>
-                        )}
                         <div>
                           <div className="relative h-16 w-16 mx-auto mb-4">
                             <div className="h-full w-full bg-gradient-to-tr from-blue-900 via-indigo-950 to-amber-500 rounded-full flex items-center justify-center font-bold text-white text-base shadow-sm group-hover:scale-105 transition-transform duration-300">
@@ -669,7 +679,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           <div className="opacity-0 max-h-0 group-hover:opacity-100 group-hover:max-h-12 group-hover:mt-3.5 transition-all duration-350 ease-in-out overflow-hidden flex justify-center gap-2 items-center">
                             <button 
                               type="button"
-                              onClick={() => alert(`🎥 জনাব/মিস ${teacher.name} এর লাইভ ক্লাস পারফরমেন্স ভিডিও দেখতে শীঘ্রই ফাইল এডিটর থেকে এটি আপডেট করা হবে।`)}
+                              onClick={() => setTeacherModalNotice({
+                                title: `${teacher.name} - লাইভ ক্লাস ভিডিও`,
+                                message: `জনাব/মিস ${teacher.name}-এর লাইভ ও রেকর্ডেড ক্লাস লেকচার শিগগিরই ডিটিউব ভিডিও কর্নারে যুক্ত হচ্ছে।`
+                              })}
                               className="h-7 w-7 rounded-full bg-red-50 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center border border-red-100 shadow-xs transition-colors duration-200 cursor-pointer"
                               title="ক্লাস পারফরমেন্স ভিডিও"
                             >
@@ -678,7 +691,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                             <button 
                               type="button"
-                              onClick={() => alert(`📘 জনাব/মিস ${teacher.name} এর অফিশিয়াল ফেসবুক পেজ ও গ্রুপ লিংক দেখতে শীঘ্রই এখানে লিংক সেট করা হবে।`)}
+                              onClick={() => setTeacherModalNotice({
+                                title: `${teacher.name} - সামাজিক যোগাযোগ`,
+                                message: `শিক্ষকের সাথে সরাসরি অ্যাকাডেমিক যোগাযোগের জন্য স্কুল হেল্পলাইন বা অভিভাবক পোর্টাল ব্যবহার করুন।`
+                              })}
                               className="h-7 w-7 rounded-full bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white flex items-center justify-center border border-blue-100 shadow-xs transition-colors duration-200 cursor-pointer"
                               title="ফেসবুক পেজ"
                             >
@@ -687,7 +703,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                             <button 
                               type="button"
-                              onClick={() => alert(`📺 জনাব/মিস ${teacher.name} এর ডিজিটাল টিউটোরিয়াল ইউটিউব চ্যানেল লিংক শীঘ্রই যুক্ত করা হচ্ছে।`)}
+                              onClick={() => setTeacherModalNotice({
+                                title: `${teacher.name} - ডিজিটাল ক্লাস`,
+                                message: `ডিজিটাল ক্লাসরুম ও স্টাডি মেটেরিয়ালের জন্য লগইন করে সংশ্লিষ্ট বিষয়ের ডায়েরী চেক করুন।`
+                              })}
                               className="h-7 w-7 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white flex items-center justify-center border border-rose-100 shadow-xs transition-colors duration-200 cursor-pointer"
                               title="ইউটিউব চ্যানেল"
                             >
@@ -696,16 +715,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                             <button 
                               type="button"
-                              onClick={() => alert(`🌐 জনাব/মিস ${teacher.name} এর ব্যক্তিগত ওয়েবসাইট ও স্টাডি মেটেরিয়াল পোর্টাল শীঘ্রই চালু হবে।`)}
-                              className="h-7 w-7 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center border border-emerald-100 shadow-xs transition-colors duration-200 cursor-pointer"
-                              title="নিজস্ব ওয়েবসাইট"
-                            >
-                              <Globe className="h-3.5 w-3.5" />
-                            </button>
-
-                            <button 
-                              type="button"
-                              onClick={() => alert(`ℹ️ শিক্ষক পরিচিতি:\nনাম: ${teacher.name}\nপদবী: ${teacher.title}\nযোগ্যতা: ${teacher.qual}\nফোন: ${teacher.phone}`)}
+                              onClick={() => setTeacherModalNotice({
+                                title: `শিক্ষক পরিচিতি: ${teacher.name}`,
+                                message: `পদবী: ${teacher.title} | যোগ্যতা: ${teacher.qual} | ফোন: ${teacher.phone}`
+                              })}
                               className="h-7 w-7 rounded-full bg-slate-50 hover:bg-slate-700 text-slate-600 hover:text-white flex items-center justify-center border border-slate-100 shadow-xs transition-colors duration-200 cursor-pointer"
                               title="বিস্তারিত প্রোফাইল"
                             >
@@ -715,15 +728,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </div>
                         
                         <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col gap-1.5 text-[10px]/normal text-left">
-                          <div className="flex justify-between items-center text-slate-450 gap-1 flex-wrap">
-                            <span>যোগাযোগ: <span className="font-mono text-slate-750 font-semibold">{teacher.phone}</span></span>
-                            {teacher.isDynamic && teacher.salary && (
-                              <span className="font-mono font-bold text-emerald-700 bg-emerald-50/40 border border-emerald-100 px-1 rounded">৳{teacher.salary}</span>
-                            )}
+                          <div className="flex justify-between items-center text-slate-500 gap-1 flex-wrap">
+                            <span>যোগাযোগ: <span className="font-mono text-slate-800 font-semibold">{teacher.phone}</span></span>
+                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-150">সক্রিয় শিক্ষক</span>
                           </div>
                           <button 
                             type="button"
-                            onClick={() => alert(`জনাব ${teacher.name} কে মেসেজ পাঠাতে সার্ভিস পোর্টালে শিক্ষক হিসেবে সাইন ইন করুন।`)}
+                            onClick={() => setTeacherModalNotice({
+                              title: `বার্তা প্রেরণ - ${teacher.name}`,
+                              message: `শিক্ষককে ব্যক্তিগত প্রাতিষ্ঠানিক বার্তা পাঠাতে অভিভাবক বা শিক্ষার্থী পোর্টালে সাইন-ইন করুন।`
+                            })}
                             className="w-full bg-slate-50 hover:bg-blue-900 group-hover:bg-blue-900 hover:text-white group-hover:text-white text-slate-700 font-bold py-1.5 rounded-lg transition-all text-center cursor-pointer"
                           >
                             বার্তা পাঠান
@@ -1072,8 +1086,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <span>{blogLikes[blog.id]} ভালবাসা প্রকাশ করুন</span>
                     </button>
                     <button 
-                      onClick={() => alert(`নিবন্ধের সম্পূর্ণ সংস্করণ ও ডাউনলোড লিঙ্ক দেখতে আপনার ছাত্র পোর্টালে সাইন-ইন নিশ্চিত করুন।`)}
-                      className="text-indigo-600 hover:text-indigo-855 text-[11px] font-bold"
+                      onClick={() => setTeacherModalNotice({
+                        title: "একাডেমিক ব্লগ প্রবন্ধ",
+                        message: "সম্পূর্ণ প্রবন্ধ ও শিক্ষা সহায়ক স্টাডি ম্যাটেরিয়াল পড়তে আপনার স্টুডেন্ট বা অভিভাবক পোর্টালে সাইন-ইন করুন।"
+                      })}
+                      className="text-indigo-600 hover:text-indigo-855 text-[11px] font-bold cursor-pointer"
                     >
                       আরো পড়ুন →
                     </button>
@@ -2440,6 +2457,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
         </footer>
+
+        {/* Teacher Card Notification Modal */}
+        {teacherModalNotice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
+            <div className="bg-white text-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center font-bold text-lg shrink-0">
+                  ℹ️
+                </div>
+                <h4 className="font-extrabold text-sm text-slate-800 leading-tight">
+                  {teacherModalNotice.title}
+                </h4>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                {teacherModalNotice.message}
+              </p>
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setTeacherModalNotice(null)}
+                  className="bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                >
+                  ঠিক আছে
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>

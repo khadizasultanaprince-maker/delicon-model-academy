@@ -91,9 +91,37 @@ function AppContent() {
         )}
 
         {activeView === 'poster' && (
-          <div className="min-h-screen bg-slate-900 py-8 px-4 sm:px-6">
-            <RecruitmentPosterGenerator onClose={() => setActiveView('home')} />
-          </div>
+          loggedInRole === 'Admin' || loggedInRole === 'Developer' ? (
+            <div className="min-h-screen bg-slate-900 py-8 px-4 sm:px-6">
+              <RecruitmentPosterGenerator onClose={() => setActiveView('home')} />
+            </div>
+          ) : (
+            <div className="mx-auto max-w-4xl px-4 py-16 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 shadow-sm mb-6">
+                <Shield className="h-7 w-7" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 md:text-3xl">
+                ভর্তি পোস্টার ও প্রচার স্টুডিও (এডমিন এক্সেস প্রয়োজন)
+              </h2>
+              <p className="text-xs text-slate-500 max-w-md mx-auto mt-2 leading-relaxed">
+                এই প্রচার স্টুডিও মডিউলটি শুধুমাত্র প্রতিষ্ঠানের এডমিন ও অনুমোদিত শিক্ষকদের জন্য নির্ধারিত।
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold px-5 py-2.5 text-xs transition shadow cursor-pointer"
+                >
+                  এডমিন লগইন করুন
+                </button>
+                <button
+                  onClick={() => setActiveView('home')}
+                  className="rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold px-5 py-2.5 text-xs transition cursor-pointer"
+                >
+                  হোম পেইজে ফিরে যান
+                </button>
+              </div>
+            </div>
+          )
         )}
         
         {activeView === 'portal' && (

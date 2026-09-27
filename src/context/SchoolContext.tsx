@@ -976,8 +976,9 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const purgeDemoStudents = () => {
     const demoIds = ['s1', 's2', 's3', 's4'];
+    const demoNames = ['Afifa Rahman', 'Tanvir Ahmed', 'Raisa Yasmin', 'Tahsin Islam'];
     setStudents(prev => {
-      const cleaned = prev.filter(s => !s.isDemo && !demoIds.includes(s.id));
+      const cleaned = prev.filter(s => !s.isDemo && !demoIds.includes(s.id) && !demoNames.includes(s.name || ''));
       localStorage.setItem('delicon_students', JSON.stringify(cleaned));
       fetch('/api/db/save', {
         method: 'POST',

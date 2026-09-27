@@ -102,25 +102,70 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     };
   });
 
+  // Toast & Modal Notification State (in-app, avoiding window.alert/confirm)
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; title: string; message: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const [showDetailedMatrixTable, setShowDetailedMatrixTable] = useState(false);
+
+  const showToast = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    setToast({ type, title, message });
+    setTimeout(() => {
+      setToast(prev => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
+
   const handlePurgeAllDemoData = () => {
-    if (confirm(`আপনি কি নিশ্চিত যে সমস্ত প্রাথমিক ডেমো শিক্ষার্থী (${demoStudentsCount} জন) স্থায়ীভাবে মুছে ফেলতে চান?\n\nআপনার নিজস্ব এন্ট্রি করা কোনো আসল শিক্ষার্থীর তথ্য ডিলিট হবে না।`)) {
-      purgeDemoStudents();
-      alert(`সমস্ত ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে!\n\nবর্তমানে ডাটাবেজে মূল শিক্ষার্থীর সংখ্যা: ${realStudentsCount} জন।`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'সব ডেমো ডাটা মুছে ফেলার নিশ্চিতকরণ',
+      message: `আপনি কি নিশ্চিত যে সমস্ত প্রাথমিক ডেমো শিক্ষার্থী (${demoStudentsCount} জন) স্থায়ীভাবে ডাটাবেজ থেকে মুছে ফেলতে চান?\n\nআপনার নিজস্ব এন্ট্রি করা কোনো আসল শিক্ষার্থীর তথ্য ডিলিট হবে না।`,
+      confirmText: `হ্যাঁ, সব ডেমো ডাটা মুছে ফেলুন (${demoStudentsCount} জন)`,
+      isDestructive: true,
+      onConfirm: () => {
+        purgeDemoStudents();
+        setConfirmDialog(null);
+        showToast('success', 'ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে', `সমস্ত ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে! বর্তমানে ডাটাবেজে আপনার মূল শিক্ষার্থীর সংখ্যা: ${realStudentsCount} জন।`);
+      }
+    });
   };
 
   const handleRestoreDemoData = () => {
-    if (confirm(`আপনি কি প্রাথমিক ডেমো শিক্ষার্থী ডাটা রিস্টোর করতে চান?`)) {
-      restoreDemoStudents();
-      alert(`ডেমো ডাটা সফলভাবে রিস্টোর করা হয়েছে।`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'প্রাথমিক ডেমো শিক্ষার্থী রিস্টোর',
+      message: 'আপনি কি নমুনা বা টেস্টিংয়ের প্রয়োজনে প্রাথমিক ডেমো শিক্ষার্থী ডাটা রিস্টোর করতে চান?',
+      confirmText: 'হ্যাঁ, ডেমো রিস্টোর করুন',
+      isDestructive: false,
+      onConfirm: () => {
+        restoreDemoStudents();
+        setConfirmDialog(null);
+        showToast('info', 'ডেমো ডাটা রিস্টোর সম্পন্ন', 'প্রাথমিক ডেমো শিক্ষার্থী ডাটা সফলভাবে রিস্টোর করা হয়েছে।');
+      }
+    });
   };
 
   const handleImportMeritStudents = () => {
-    if (confirm(`কৃতি শিক্ষার্থী প্রদর্শনীতে থাকা ১১ জন কৃতি শিক্ষার্থীকে মূল শিক্ষার্থী ডিরেক্টরিতে স্বয়ংক্রিয়ভাবে ইম্পোর্ট করতে চান?\n\nএতে তাদের নাম, ছবি ও শ্রেণী অনুযায়ী প্রাথমিক প্রোফাইল তৈরি হবে, যা আপনি পরবর্তীতে আরও তথ্য দিয়ে আপডেট করতে পারবেন।`)) {
-      const added = importMeritStudentsToDirectory();
-      alert(`সাফল্য! ${added} জন শিক্ষার্থীকে কৃতি তালিকা থেকে মূল ডাটাবেজে সফলভাবে যুক্ত করা হয়েছে!`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'কৃতি শিক্ষার্থী প্রদর্শনী থেকে ইম্পোর্ট',
+      message: `কৃতি শিক্ষার্থী প্রদর্শনীতে থাকা ${meritStudents?.length || 11} জন কৃতি শিক্ষার্থীকে মূল শিক্ষার্থী ডিরেক্টরিতে স্বয়ংক্রিয়ভাবে যুক্ত করতে চান?\n\nএতে তাদের নাম, ছবি ও শ্রেণী অনুযায়ী প্রাথমিক প্রোফাইল তৈরি হবে, যা পরবর্তীতে যেকোনো সময় পরিপূরক তথ্য দিয়ে আপডেট করতে পারবেন।`,
+      confirmText: 'হ্যাঁ, ইম্পোর্ট করুন',
+      isDestructive: false,
+      onConfirm: () => {
+        const added = importMeritStudentsToDirectory();
+        setConfirmDialog(null);
+        showToast('success', 'ইম্পোর্ট সম্পন্ন হয়েছে', `${added} জন কৃতি শিক্ষার্থীকে কৃতি তালিকা থেকে মূল ডাটাবেজে সফলভাবে যুক্ত করা হয়েছে!`);
+      }
+    });
   };
 
   // Search and Filter states
@@ -442,11 +487,11 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
 
     if (editingStudentId) {
       updateStudent(editingStudentId, studentPayload);
-      alert(`শিক্ষার্থী "${effectiveBanglaName}"-এর তথ্য সফলভাবে হালনাগাদ (Update) করা হয়েছে!`);
+      showToast('success', 'তথ্য হালনাগাদ সফল', `শিক্ষার্থী "${effectiveBanglaName}"-এর তথ্য সফলভাবে হালনাগাদ (Update) করা হয়েছে!`);
       setEditingStudentId(null);
     } else {
       addStudent(studentPayload);
-      alert(`শিক্ষার্থী "${effectiveBanglaName}"-এর তথ্য সফলভাবে ডাটাবেজে যুক্ত করা হয়েছে!`);
+      showToast('success', 'নতুন শিক্ষার্থী যুক্ত হয়েছে', `শিক্ষার্থী "${effectiveBanglaName}"-এর তথ্য সফলভাবে ডাটাবেজে যুক্ত করা হয়েছে!`);
     }
 
     // Reset Form to initial clean state
@@ -1592,7 +1637,19 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setShowDetailedMatrixTable(prev => !prev)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border shadow-2xs ${
+                  showDetailedMatrixTable 
+                    ? 'bg-blue-900 border-blue-900 text-white' 
+                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>{showDetailedMatrixTable ? 'কার্ড গ্রিড দেখুন' : 'পূর্ণাঙ্গ বিস্তারিত টেবিল ভিউ'}</span>
+              </button>
+
               <button
                 onClick={() => setFilterClass('All')}
                 className={`rounded-lg px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${
@@ -1606,56 +1663,187 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
             </div>
           </div>
 
-          {/* 13 Class Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-            {classBreakdown.map((item) => {
-              const isSelected = filterClass === item.className || filterClass === normalizeClassKey(item.className);
-              const hasData = item.total > 0;
+          {showDetailedMatrixTable ? (
+            /* DETAILED TABULAR MATRIX BREAKDOWN */
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
+                    <th className="p-3 w-12 text-center">ক্রমিক</th>
+                    <th className="p-3">শ্রেণির নাম</th>
+                    <th className="p-3 text-center">মোট শিক্ষার্থী</th>
+                    <th className="p-3 text-center">মূল শিক্ষার্থী</th>
+                    <th className="p-3 text-center">ডেমো ডাটা</th>
+                    <th className="p-3 text-center">সম্পূর্ণ প্রোফাইল</th>
+                    <th className="p-3 text-center">পরিপূরক করণীয় (আংশিক)</th>
+                    <th className="p-3">এন্ট্রি পূর্ণতার হার</th>
+                    <th className="p-3 text-right">পদক্ষেপ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {classBreakdown.map((item, idx) => {
+                    const isSelected = filterClass === item.className || filterClass === normalizeClassKey(item.className);
+                    const pctComplete = item.total > 0 ? Math.round((item.completeCount / item.total) * 100) : 0;
 
-              return (
-                <div
-                  key={item.className}
-                  onClick={() => setFilterClass(item.className)}
-                  className={`relative rounded-xl p-3 border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected 
-                      ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm' 
-                      : hasData 
-                        ? 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300' 
-                        : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400'
-                  }`}
-                >
-                  <div>
-                    <span className="text-[11px] font-black text-slate-800 block truncate" title={item.className}>
-                      {item.className}
-                    </span>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className={`text-xl font-black ${hasData ? 'text-blue-950' : 'text-slate-300'}`}>
-                        {item.total}
+                    return (
+                      <tr 
+                        key={item.className}
+                        className={`hover:bg-blue-50/40 transition-colors ${
+                          isSelected ? 'bg-blue-50/80 font-semibold' : ''
+                        }`}
+                      >
+                        <td className="p-3 text-center font-mono text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="p-3">
+                          <span className="font-extrabold text-slate-800">{item.className}</span>
+                          {isSelected && (
+                            <span className="ml-2 inline-block rounded bg-blue-100 text-blue-900 px-1.5 py-0.2 text-[9px] font-bold">ফিল্টার চালু</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-extrabold text-slate-900 text-sm">
+                          {item.total > 0 ? item.total : <span className="text-slate-300 font-normal">০</span>}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            item.realCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-slate-300'
+                          }`}>
+                            {item.realCount} জন
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          {item.demoCount > 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                              {item.demoCount} জন
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 text-xs font-mono">০</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="text-emerald-700 font-bold text-xs">{item.completeCount} জন</span>
+                        </td>
+                        <td className="p-3 text-center">
+                          {item.partialCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-bold">
+                              <AlertCircle className="h-3 w-3 text-amber-600" />
+                              <span>{item.partialCount} জন বাকি</span>
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 text-xs font-bold">✓ নেই</span>
+                          )}
+                        </td>
+                        <td className="p-3 min-w-[130px]">
+                          <div className="flex items-center gap-2">
+                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all ${
+                                  pctComplete === 100 ? 'bg-emerald-500' : pctComplete > 50 ? 'bg-blue-600' : 'bg-amber-500'
+                                }`}
+                                style={{ width: `${item.total === 0 ? 0 : pctComplete}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-slate-600 shrink-0">
+                              {item.total === 0 ? '০%' : `${pctComplete}%`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setFilterClass(item.className)}
+                              className="rounded-md border border-slate-300 bg-white hover:bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700 cursor-pointer shadow-2xs"
+                              title="এই শ্রেণীর শিক্ষার্থীদের ফিল্টার করুন"
+                            >
+                              তালিকা দেখুন
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleResetForm();
+                                setFormData(prev => ({ ...prev, className: item.className }));
+                                window.scrollTo({ top: 300, behavior: 'smooth' });
+                              }}
+                              className="rounded-md bg-blue-900 hover:bg-blue-950 px-2 py-1 text-[11px] font-bold text-white cursor-pointer shadow-2xs"
+                              title="এই শ্রেণীতে নতুন শিক্ষার্থী এন্ট্রি করুন"
+                            >
+                              + এন্ট্রি
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-50 font-black text-slate-800 border-t border-slate-300">
+                    <td className="p-3 text-center">সর্বমোট</td>
+                    <td className="p-3">১৩টি শিক্ষাবর্ষ শ্রেণি</td>
+                    <td className="p-3 text-center text-sm font-black text-blue-900">{students.length} জন</td>
+                    <td className="p-3 text-center text-sm font-black text-emerald-800">{realStudentsCount} জন</td>
+                    <td className="p-3 text-center text-sm font-black text-rose-700">{demoStudentsCount} জন</td>
+                    <td className="p-3 text-center text-xs font-bold text-emerald-700">
+                      {classBreakdown.reduce((sum, c) => sum + c.completeCount, 0)} জন
+                    </td>
+                    <td className="p-3 text-center text-xs font-bold text-amber-800">
+                      {classBreakdown.reduce((sum, c) => sum + c.partialCount, 0)} জন
+                    </td>
+                    <td colSpan={2} className="p-3 text-right text-[11px] text-slate-500 font-normal">
+                      পরিপূরক কাজ সম্পন্ন করার জন্য যেকোনো আংশিক রেকর্ডে '✏️ তথ্য হালনাগাদ' বাটনে চাপ দিন
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          ) : (
+            /* 13 Class Cards Grid */
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {classBreakdown.map((item) => {
+                const isSelected = filterClass === item.className || filterClass === normalizeClassKey(item.className);
+                const hasData = item.total > 0;
+
+                return (
+                  <div
+                    key={item.className}
+                    onClick={() => setFilterClass(item.className)}
+                    className={`relative rounded-xl p-3 border transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected 
+                        ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm' 
+                        : hasData 
+                          ? 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300' 
+                          : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[11px] font-black text-slate-800 block truncate" title={item.className}>
+                        {item.className}
                       </span>
-                      <span className="text-[10px] text-slate-500">জন</span>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className={`text-xl font-black ${hasData ? 'text-blue-950' : 'text-slate-300'}`}>
+                          {item.total}
+                        </span>
+                        <span className="text-[10px] text-slate-500">জন</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1 text-[9px]">
+                      {hasData ? (
+                        <>
+                          <span className="rounded bg-emerald-100 text-emerald-800 px-1 py-0.5 font-bold">
+                            মূল: {item.realCount}
+                          </span>
+                          {item.demoCount > 0 && (
+                            <span className="rounded bg-rose-100 text-rose-800 px-1 py-0.5 font-bold">
+                              ডেমো: {item.demoCount}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[9.5px] text-slate-400 italic">খালি (০)</span>
+                      )}
                     </div>
                   </div>
-
-                  <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1 text-[9px]">
-                    {hasData ? (
-                      <>
-                        <span className="rounded bg-emerald-100 text-emerald-800 px-1 py-0.5 font-bold">
-                          মূল: {item.realCount}
-                        </span>
-                        {item.demoCount > 0 && (
-                          <span className="rounded bg-rose-100 text-rose-800 px-1 py-0.5 font-bold">
-                            ডেমো: {item.demoCount}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-[9.5px] text-slate-400 italic">খালি (০)</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Quick Summary Pill Bar */}
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -1908,9 +2096,18 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                           {/* Delete */}
                           <button
                             onClick={() => {
-                              if (confirm(`আপনি কি নিশ্চিত যে "${student.banglaName || student.name}" এর এন্ট্রি মুছে ফেলতে চান?`)) {
-                                deleteStudent(student.id);
-                              }
+                              setConfirmDialog({
+                                isOpen: true,
+                                title: 'শিক্ষার্থী তথ্য মুছে ফেলার নিশ্চিতকরণ',
+                                message: `আপনি কি নিশ্চিত যে "${student.banglaName || student.name}" (শ্রেণী: ${student.className}, রোল: ${student.roll}) এর রেকর্ড মুছে ফেলতে চান?`,
+                                confirmText: 'হ্যাঁ, মুছে ফেলুন',
+                                isDestructive: true,
+                                onConfirm: () => {
+                                  deleteStudent(student.id);
+                                  setConfirmDialog(null);
+                                  showToast('info', 'শিক্ষার্থী মুছে ফেলা হয়েছে', `"${student.banglaName || student.name}" এর রেকর্ড মুছে ফেলা হয়েছে।`);
+                                }
+                              });
                             }}
                             className="rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-400 p-1.5 transition-all cursor-pointer"
                             title="মুছে ফেলুন"
@@ -1965,7 +2162,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
-                  alert('ইমেজটি লোড করা সম্ভব হয়নি। লিংকটি সঠিক আছে কিনা যাচাই করুন।');
+                  showToast('error', 'ইমেজ লোড ব্যর্থ', 'ইমেজটি লোড করা সম্ভব হয়নি। লিংকটি সঠিক আছে কিনা যাচাই করুন।');
                 }}
               />
             </div>
@@ -2153,6 +2350,81 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
             <div className="bg-slate-950 p-4 rounded-xl flex justify-center">
               <DigitalStudentIdCard student={showIdCardModalStudent} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: IN-APP CONFIRMATION DIALOG (avoids window.confirm/alert) */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="relative max-w-md w-full bg-white rounded-2xl shadow-2xl p-6 border border-slate-200">
+            <div className="flex items-start gap-3">
+              <div className={`h-11 w-11 shrink-0 rounded-2xl flex items-center justify-center ${
+                confirmDialog.isDestructive ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-900'
+              }`}>
+                {confirmDialog.isDestructive ? <Trash2 className="h-5 w-5" /> : <HelpCircle className="h-5 w-5" />}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-black text-slate-900">{confirmDialog.title}</h3>
+                <p className="mt-2 text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                className="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 cursor-pointer transition-all"
+              >
+                {confirmDialog.cancelText || 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDialog.onConfirm}
+                className={`rounded-xl px-4 py-2 text-xs font-black text-white shadow-sm cursor-pointer transition-all ${
+                  confirmDialog.isDestructive 
+                    ? 'bg-rose-600 hover:bg-rose-700 active:scale-98' 
+                    : 'bg-blue-900 hover:bg-blue-950 active:scale-98'
+                }`}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION POPUP */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md w-full">
+          <div className={`rounded-2xl border p-4 shadow-xl flex items-start gap-3 backdrop-blur-md ${
+            toast.type === 'success' 
+              ? 'bg-emerald-950/95 text-white border-emerald-500/40' 
+              : toast.type === 'error'
+                ? 'bg-rose-950/95 text-white border-rose-500/40'
+                : 'bg-slate-900/95 text-white border-slate-700'
+          }`}>
+            <div className="shrink-0 mt-0.5">
+              {toast.type === 'success' ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              ) : toast.type === 'error' ? (
+                <AlertCircle className="h-5 w-5 text-rose-400" />
+              ) : (
+                <Sparkles className="h-5 w-5 text-blue-400" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h5 className="text-xs font-black tracking-wide">{toast.title}</h5>
+              <p className="mt-0.5 text-[11px] text-slate-200 leading-snug">{toast.message}</p>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="text-slate-400 hover:text-white shrink-0 p-1"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}

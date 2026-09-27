@@ -99,17 +99,31 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* User Sign In controls & Poster CTA */}
           <div className="hidden lg:flex items-center gap-2.5">
-            <button
-              onClick={() => handleNavClick('poster')}
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                activeView === 'poster'
-                  ? 'bg-amber-400 text-blue-950 font-black shadow-md'
-                  : 'bg-blue-800 hover:bg-blue-750 text-amber-300 border border-amber-400/30'
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              <span>পোস্টার জেনারেটর (AI)</span>
-            </button>
+            {!loggedInRole && (
+              <a
+                href="#sec-lead-form"
+                onClick={() => {
+                  if (activeView !== 'home') setActiveView('home');
+                }}
+                className="flex items-center gap-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-blue-950 font-black px-3.5 py-2 text-xs transition-all shadow-sm cursor-pointer"
+              >
+                <span>📝 ভর্তি আবেদন</span>
+              </a>
+            )}
+
+            {showAdminTabs && (
+              <button
+                onClick={() => handleNavClick('poster')}
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                  activeView === 'poster'
+                    ? 'bg-amber-400 text-blue-950 font-black shadow-md'
+                    : 'bg-blue-800 hover:bg-blue-750 text-amber-300 border border-amber-400/30'
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>পোস্টার জেনারেটর (AI)</span>
+              </button>
+            )}
 
             {loggedInRole ? (
               <div className="flex items-center gap-3">
@@ -127,9 +141,9 @@ export const Navigation: React.FC<NavigationProps> = ({
             ) : (
               <button
                 onClick={onOpenAuth}
-                className="flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-blue-950 font-bold px-4 py-2 text-xs transition-all shadow-md shadow-amber-500/15 cursor-pointer"
+                className="flex items-center gap-1.5 rounded-lg bg-blue-800 hover:bg-blue-750 border border-white/20 text-white font-bold px-4 py-2 text-xs transition-all shadow-md cursor-pointer"
               >
-                <KeyRound className="h-4 w-4" />
+                <KeyRound className="h-4 w-4 text-amber-300" />
                 <span>সার্ভিস লগইন</span>
               </button>
             )}
@@ -137,17 +151,30 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Mobile hamburger menu toggle */}
           <div className="lg:hidden flex items-center gap-2">
-            <button
-              onClick={() => handleNavClick('poster')}
-              className="flex items-center justify-center rounded-lg bg-blue-800 hover:bg-blue-750 p-2 text-amber-300 border border-amber-400/40 shadow-sm"
-              title="পোস্টার জেনারেটর"
-            >
-              <Sparkles className="h-4.5 w-4.5 text-amber-300" />
-            </button>
+            {!loggedInRole && (
+              <a
+                href="#sec-lead-form"
+                onClick={() => {
+                  if (activeView !== 'home') setActiveView('home');
+                }}
+                className="flex items-center justify-center rounded-lg bg-amber-400 hover:bg-amber-300 px-2.5 py-2 text-blue-950 text-xs font-black shadow-sm"
+              >
+                <span>ভর্তি</span>
+              </a>
+            )}
+            {showAdminTabs && (
+              <button
+                onClick={() => handleNavClick('poster')}
+                className="flex items-center justify-center rounded-lg bg-blue-800 hover:bg-blue-750 p-2 text-amber-300 border border-amber-400/40 shadow-sm"
+                title="পোস্টার জেনারেটর"
+              >
+                <Sparkles className="h-4.5 w-4.5 text-amber-300" />
+              </button>
+            )}
             {!loggedInRole && (
               <button
                 onClick={onOpenAuth}
-                className="flex items-center justify-center rounded-lg bg-amber-500 hover:bg-amber-400 p-2 text-blue-950 shadow-sm"
+                className="flex items-center justify-center rounded-lg bg-blue-800 hover:bg-blue-750 border border-white/20 p-2 text-amber-300 shadow-sm"
               >
                 <KeyRound className="h-4.5 w-4.5" />
               </button>
