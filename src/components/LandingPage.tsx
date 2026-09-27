@@ -105,6 +105,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     stationery,
     schoolName,
     schoolSlogan,
+    schoolLogoVal,
+    schoolLogoType,
     campusPhotos
   } = useSchool();
 
@@ -272,25 +274,120 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div className="bg-slate-900 text-slate-100 min-h-screen">
       <main className="mx-auto max-w-7xl">
         {/* SECTION: HERO / INSTITUTION WELCOME BANNER (১। প্রধান পরিচিতি ও ভর্তি আহ্বান) */}
-        <section id="sec-hero" className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 py-16 sm:py-20 px-6 lg:px-16 border-b border-slate-800 text-white">
+        <section id="sec-hero" className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 py-14 sm:py-20 px-6 lg:px-16 border-b border-slate-800 text-white">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/25 via-transparent to-transparent pointer-events-none"></div>
           <div className="max-w-6xl mx-auto relative z-10">
             <div className="flex flex-col lg:flex-row justify-between items-center gap-10">
-              <div className="flex-1 text-center lg:text-left space-y-4">
-                <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 px-3.5 py-1.5 rounded-full">
-                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
-                  <span className="text-xs font-bold text-amber-300 tracking-wide uppercase font-sans">
-                    নতুন শিক্ষাবর্ষে ভর্তি চলছে
-                  </span>
+              <div className="flex-1 text-center lg:text-left space-y-5">
+                
+                {/* Brand Showcase: Radiant Rising Sun + Rotating Circular Text Insignia + Institution Titles */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-6 text-center sm:text-left">
+                  
+                  {/* Solar Insignia with Rotating Text & Undistorted Logo */}
+                  <div className="relative shrink-0 flex items-center justify-center w-48 h-48 sm:w-52 sm:h-52 select-none group">
+                    {/* Deep Ambient Solar Aura Glow */}
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/20 to-yellow-400/30 blur-2xl animate-sun-radiance pointer-events-none"></div>
+
+                    {/* Radiant Solar Rays (উদীমান সূর্যের আলোক রশ্মি) */}
+                    <svg className="absolute inset-0 w-full h-full animate-spin-slow-reverse pointer-events-none" viewBox="0 0 240 240">
+                      <defs>
+                        <radialGradient id="sunRayGrad" cx="50%" cy="50%" r="50%">
+                          <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95" />
+                          <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.75" />
+                          <stop offset="85%" stopColor="#ea580c" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#c2410c" stopOpacity="0" />
+                        </radialGradient>
+                      </defs>
+                      {/* 16 Solar Beams Emanating Outwards */}
+                      {Array.from({ length: 16 }).map((_, i) => {
+                        const angle = (i * 22.5 * Math.PI) / 180;
+                        const r1 = 58;
+                        const r2 = 98;
+                        const x1 = 120 + r1 * Math.cos(angle);
+                        const y1 = 120 + r1 * Math.sin(angle);
+                        const x2 = 120 + r2 * Math.cos(angle);
+                        const y2 = 120 + r2 * Math.sin(angle);
+                        return (
+                          <line
+                            key={i}
+                            x1={x1}
+                            y1={y1}
+                            x2={x2}
+                            y2={y2}
+                            stroke="url(#sunRayGrad)"
+                            strokeWidth={i % 2 === 0 ? "2.5" : "1.5"}
+                            strokeLinecap="round"
+                            className="opacity-75"
+                          />
+                        );
+                      })}
+                      {/* Outer concentric subtle golden rings */}
+                      <circle cx="120" cy="120" r="108" fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.6" />
+                      <circle cx="120" cy="120" r="80" fill="none" stroke="#f59e0b" strokeWidth="0.8" opacity="0.5" />
+                    </svg>
+
+                    {/* Rotating Circular Animated Text Wheel (চারপাশে চাকার মতো ঘুরছে লেখা) */}
+                    <div className="absolute inset-0 w-full h-full animate-spin-slow pointer-events-none">
+                      <svg className="w-full h-full" viewBox="0 0 240 240">
+                        <defs>
+                          <path
+                            id="sunEmblemTextPath"
+                            d="M 120, 120 m -94, 0 a 94,94 0 1,1 188,0 a 94,94 0 1,1 -188,0"
+                            fill="none"
+                          />
+                        </defs>
+                        <text className="font-sans font-black text-[9.8px] fill-amber-300 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] tracking-[0.14em]">
+                          <textPath href="#sunEmblemTextPath" startOffset="0%">
+                            মমতার স্পর্শে বিকশিত হোক সুপ্ত প্রতিভা ★ হবে সার্টিফাইড, হবে জাস্টিফাইড ★ 
+                          </textPath>
+                        </text>
+                      </svg>
+                    </div>
+
+                    {/* Central Undistorted Delicon Logo Container */}
+                    <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white p-2.5 shadow-2xl border-2 border-amber-400 flex items-center justify-center overflow-hidden ring-4 ring-amber-500/20 group-hover:scale-105 transition-transform duration-300">
+                      {/* Solar Core Background glow inside container */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-amber-100/50 via-white to-amber-50/70 pointer-events-none"></div>
+                      
+                      {/* Undistorted Logo Image (object-contain ensures zero distortion) */}
+                      <img
+                        src={schoolLogoVal || 'https://i.postimg.cc/prHZW6n3/logo-1.png'}
+                        alt={schoolName || 'ডিলিকন মডেল একাডেমী'}
+                        className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:rotate-3 select-none"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentNode as HTMLElement;
+                          if (parent && !parent.querySelector('.logo-fallback-badge')) {
+                            const fb = document.createElement('div');
+                            fb.className = 'logo-fallback-badge text-blue-950 font-black text-2xl font-sans';
+                            fb.innerText = 'D';
+                            parent.appendChild(fb);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Institution Details & Slogans */}
+                  <div className="flex-1 space-y-2 text-center sm:text-left">
+                    <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 px-3.5 py-1.5 rounded-full">
+                      <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
+                      <span className="text-xs font-bold text-amber-300 tracking-wide uppercase font-sans">
+                        নতুন শিক্ষাবর্ষে ভর্তি চলছে
+                      </span>
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4.5xl lg:text-5xl font-black text-white leading-tight font-sans tracking-tight">
+                      {schoolName || 'ডিলিকন মডেল একাডেমী'}
+                    </h1>
+
+                    <p className="text-amber-300 text-sm sm:text-base font-bold leading-relaxed font-sans drop-shadow-sm">
+                      "{schoolSlogan || 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়'}"
+                    </p>
+                  </div>
                 </div>
-                
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight font-sans tracking-tight">
-                  {schoolName || 'ডিলিকন মডেল একাডেমী'}
-                </h1>
-                
-                <p className="text-amber-300/90 text-sm sm:text-base font-medium leading-relaxed max-w-2xl font-sans">
-                  "{schoolSlogan || 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়'}"
-                </p>
 
                 <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
                   জ্ঞান, নৈতিকতা ও আধুনিক প্রযুক্তির অনন্য মেলবন্ধনে প্রতিটি শিক্ষার্থীর অন্তর্নিহিত প্রতিভার সুষম বিকাশ। ডিজিটাল স্মার্ট ক্লাসরুম, পরম স্নেহে পাঠদান এবং শারীরিক ও মানসিক সুরক্ষার এক অনন্য বিদ্যাপীঠ।
