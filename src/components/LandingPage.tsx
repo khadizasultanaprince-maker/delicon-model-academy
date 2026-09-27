@@ -104,7 +104,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     routes,
     stationery,
     schoolName,
-    schoolSlogan
+    schoolSlogan,
+    campusPhotos
   } = useSchool();
 
   // Helper functions for section visibility and titles
@@ -125,6 +126,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [videoViews, setVideoViews] = useState<Record<string, number>>({});
   const [leadSuccess, setLeadSuccess] = useState(false);
   const [teacherModalNotice, setTeacherModalNotice] = useState<{ title: string; message: string } | null>(null);
+
+  // Large Campus Photo Slider States
+  const [campusSlideIndex, setCampusSlideIndex] = useState(0);
+  const [isCampusSlideHovered, setIsCampusSlideHovered] = useState(false);
+  const [photoErrorMap, setPhotoErrorMap] = useState<Record<number, boolean>>({});
 
   // Calculator State
   const [calcClass, setCalcClass] = useState('Play-KG');
@@ -203,6 +209,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }, 14000);
     return () => clearInterval(interval);
   }, [isMeritHovered, meritStudents]);
+
+  // Auto-slide interval for Large Campus Photos Slider
+  useEffect(() => {
+    if (isCampusSlideHovered) return;
+    const list = campusPhotos || [];
+    if (list.length <= 1) return;
+    const interval = setInterval(() => {
+      setCampusSlideIndex((prev) => (prev + 1) % list.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [isCampusSlideHovered, campusPhotos]);
 
   // Handler for uploading teacher photos
   const handleTeacherPhotoUpload = (teacherId: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -349,6 +366,176 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 নতুন শিক্ষাবর্ষে প্লে থেকে দশম শ্রেণি পর্যন্ত সীমিত আসনে ভর্তি কার্যক্রম চলমান। অনলাইনে ফরম পূরণ করে দ্রুত আসন নিশ্চিত করুন।
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* SECTION: LARGE CAMPUS PHOTO SLIDER (ক্যাম্পাস ফটো স্লাইডার ও জীবন্ত মুহূর্ত) */}
+        <section id="sec-today-campus-dash" className={`bg-slate-950 py-16 px-4 sm:px-6 lg:px-12 border-b border-slate-900 relative overflow-hidden ${!isSecVisible('sec-today-campus-dash') ? 'hidden' : ''}`}>
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+          <div className="max-w-6xl mx-auto relative z-10">
+            {/* Header with Title and Slide Counter */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 border-b border-slate-800/80 pb-5">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 px-3 py-1 rounded-full mb-2">
+                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span className="text-[10px] font-black uppercase text-amber-300 font-sans tracking-wider">
+                    ক্যাম্পাস জীবন্ত মুহূর্ত ও ফটো অ্যালবাম
+                  </span>
+                </div>
+                <h2 className="text-2xl md:text-3.5xl font-black text-white leading-tight font-sans">
+                  {getSecTitle('sec-today-campus-dash', 'মন ছুঁয়ে যাক মুগ্ধতায়: ক্যাম্পাস ফটো স্লাইডার')}
+                </h2>
+                <p className="text-slate-400 text-xs sm:text-sm mt-1.5 font-sans max-w-xl">
+                  আমাদের আনন্দমুখর শিক্ষাঙ্গন, আধুনিক ভবন, বিজ্ঞান ল্যাব, পুরস্কার বিতরণী ও শিক্ষার্থীদের বর্ণিল প্রতিচ্ছবি।
+                </p>
+              </div>
+
+              {/* Navigation Controls */}
+              {campusPhotos && campusPhotos.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-xs">
+                    ছবি: <strong className="text-amber-400 text-sm font-bold">{campusSlideIndex + 1}</strong> / {campusPhotos.length}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCampusSlideIndex((prev) => (prev - 1 + campusPhotos.length) % campusPhotos.length)}
+                      className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
+                      title="পূর্ববর্তী ছবি"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCampusSlideIndex((prev) => (prev + 1) % campusPhotos.length)}
+                      className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
+                      title="পরবর্তী ছবি"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* MAIN LARGE SLIDER FRAME */}
+            {campusPhotos && campusPhotos.length > 0 ? (
+              <div 
+                className="relative rounded-3xl overflow-hidden border-2 border-slate-800/90 shadow-2xl bg-slate-900 group"
+                onMouseEnter={() => setIsCampusSlideHovered(true)}
+                onMouseLeave={() => setIsCampusSlideHovered(false)}
+              >
+                {/* Active Slide Image */}
+                <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-[16/8] max-h-[520px] w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                  <img
+                    key={campusSlideIndex}
+                    src={campusPhotos[campusSlideIndex]?.url}
+                    alt={campusPhotos[campusSlideIndex]?.title || 'Campus Slide'}
+                    className="w-full h-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                    onError={() => setPhotoErrorMap(prev => ({ ...prev, [campusSlideIndex]: true }))}
+                  />
+
+                  {/* Gradient Overlay for Text Readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent"></div>
+
+                  {/* Slide Content Caption Overlay at Bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex flex-col justify-end text-left space-y-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md font-sans shadow-md">
+                        স্লাইড #{campusSlideIndex + 1}
+                      </span>
+                      <span className="bg-slate-900/80 backdrop-blur-sm border border-white/20 text-slate-200 text-[10px] font-bold px-2.5 py-0.5 rounded-md font-sans">
+                        ক্যাম্পাস দৃশ্য
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-snug drop-shadow-md">
+                      {campusPhotos[campusSlideIndex]?.title}
+                    </h3>
+
+                    {campusPhotos[campusSlideIndex]?.caption && (
+                      <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed max-w-3xl drop-shadow-sm font-sans line-clamp-3 sm:line-clamp-none">
+                        {campusPhotos[campusSlideIndex]?.caption}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Left & Right floating arrows on image */}
+                  <button
+                    type="button"
+                    onClick={() => setCampusSlideIndex((prev) => (prev - 1 + campusPhotos.length) % campusPhotos.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-2xl bg-black/50 hover:bg-black/80 text-white backdrop-blur-sm border border-white/20 flex items-center justify-center text-2xl font-bold transition opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg active:scale-95"
+                    title="পূর্ববর্তী"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCampusSlideIndex((prev) => (prev + 1) % campusPhotos.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-2xl bg-black/50 hover:bg-black/80 text-white backdrop-blur-sm border border-white/20 flex items-center justify-center text-2xl font-bold transition opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg active:scale-95"
+                    title="পরবর্তী"
+                  >
+                    ›
+                  </button>
+
+                  {/* Pause Indicator overlay on hover */}
+                  {isCampusSlideHovered && (
+                    <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-xs text-amber-300 border border-amber-400/30 text-[9px] font-black uppercase px-2.5 py-1 rounded-full font-sans tracking-widest">
+                      ⏸ স্লাইড পজ করা হয়েছে
+                    </div>
+                  )}
+                </div>
+
+                {/* Animated Progress Bar */}
+                <div className="h-1 bg-slate-800 w-full overflow-hidden">
+                  <motion.div
+                    key={`${campusSlideIndex}-${isCampusSlideHovered}`}
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={isCampusSlideHovered ? { duration: 0 } : { duration: 6, ease: "linear" }}
+                    className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-indigo-500"
+                  />
+                </div>
+
+                {/* THUMBNAIL STRIP BELOW MAIN IMAGE */}
+                <div className="bg-slate-950/95 border-t border-slate-800 p-3 sm:p-4 overflow-x-auto">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-max mx-auto justify-center">
+                    {campusPhotos.map((thumb, tIdx) => (
+                      <button
+                        key={tIdx}
+                        type="button"
+                        onClick={() => setCampusSlideIndex(tIdx)}
+                        className={`group/thumb relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer shrink-0 border-2 ${
+                          campusSlideIndex === tIdx
+                            ? 'border-amber-400 scale-105 shadow-md shadow-amber-400/20'
+                            : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-600'
+                        }`}
+                        style={{ width: '84px', height: '52px' }}
+                      >
+                        <img
+                          src={thumb.url}
+                          alt={thumb.title}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className={`absolute inset-0 bg-slate-950/20 ${campusSlideIndex === tIdx ? 'ring-1 ring-inset ring-amber-400' : ''}`} />
+                        <span className="absolute bottom-0.5 right-1 text-[8px] font-mono font-bold text-white bg-black/70 px-1 rounded">
+                          {tIdx + 1}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-12 text-center bg-slate-900 rounded-3xl border border-slate-800 text-slate-400">
+                <p className="text-sm font-sans">ক্যাম্পাসের কোনো ছবি আপলোড করা হয়নি। এডমিন প্যানেল থেকে ছবি যোগ করুন।</p>
+              </div>
+            )}
           </div>
         </section>
 
