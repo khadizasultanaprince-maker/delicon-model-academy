@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Notice } from '../types';
 import { useSchool } from '../context/SchoolContext';
+import { isNoticeExpired } from './NoticeBoard';
 
 interface LatestCampusNewsProps {
   loggedInRole?: string | null;
@@ -57,8 +58,10 @@ export const LatestCampusNews: React.FC<LatestCampusNewsProps> = ({ loggedInRole
 
   const isAdmin = loggedInRole === 'Admin' || loggedInRole === 'Developer' || isSandboxAdmin;
 
-  // Filter & Search notices
+  // Filter & Search notices (hide expired notices from public campus news)
   const filteredNotices = notices.filter(item => {
+    if (isNoticeExpired(item)) return false;
+
     const term = searchTerm.toLowerCase();
     const matchesSearch = 
       item.title.toLowerCase().includes(term) ||

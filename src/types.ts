@@ -25,6 +25,7 @@ export interface Student {
   totalFees: number;
   attendancePct: number;
   homeworkStatus: 'Completed' | 'Pending' | 'Needs-Motivation';
+  isDemo?: boolean;               // ডেমো/নমুনা ডাটা ফ্ল্যাগ
 
   // Extended Comprehensive Data Entry Fields (All Optional for Partial/Progressive Entry):
   section?: string;               // শাখা (ক, খ, A, B)
@@ -133,8 +134,14 @@ export interface Notice {
   title: string;
   banglaTitle: string;
   date: string;
-  category: 'General' | 'Exam' | 'Holiday' | 'Event';
+  category: 'General' | 'Exam' | 'Holiday' | 'Event' | 'Urgent';
   content: string;
+  isUrgent?: boolean;
+  priority?: 'Urgent' | 'High' | 'Normal';
+  publishedBy?: string;
+  targetAudience?: 'All' | 'Students' | 'Guardians' | 'Teachers';
+  pinned?: boolean;
+  expiryDate?: string; // Optional expiry date (YYYY-MM-DD) - auto-hides once date has passed
 }
 
 export interface StationeryItem {

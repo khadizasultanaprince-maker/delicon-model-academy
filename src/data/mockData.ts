@@ -5,7 +5,7 @@
 
 import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject, AcademicEvent, LibraryResource } from '../types';
 
-export const initialStudents: Student[] = [
+export const demoSampleStudents: Student[] = [
   {
     id: 's1',
     name: 'Afifa Rahman',
@@ -18,6 +18,7 @@ export const initialStudents: Student[] = [
     totalFees: 18000,
     attendancePct: 94,
     homeworkStatus: 'Completed',
+    isDemo: true,
   },
   {
     id: 's2',
@@ -31,6 +32,7 @@ export const initialStudents: Student[] = [
     totalFees: 18000,
     attendancePct: 88,
     homeworkStatus: 'Pending',
+    isDemo: true,
   },
   {
     id: 's3',
@@ -44,6 +46,7 @@ export const initialStudents: Student[] = [
     totalFees: 18000,
     attendancePct: 98,
     homeworkStatus: 'Completed',
+    isDemo: true,
   },
   {
     id: 's4',
@@ -54,11 +57,15 @@ export const initialStudents: Student[] = [
     guardianName: 'Aminul Islam',
     guardianPhone: '01545678901',
     feesPaid: 9000,
-totalFees: 15000,
+    totalFees: 15000,
     attendancePct: 79,
     homeworkStatus: 'Needs-Motivation',
+    isDemo: true,
   },
 ];
+
+// সমস্ত ডেমো ডাটা মুছে ফেলা হয়েছে — পরিপূরক ও নিখুঁত কাজের সুবিধার্থে ফ্রেশ প্রাথমিক অ্যারে
+export const initialStudents: Student[] = [];
 
 export const initialEmployees: Employee[] = [
   {
@@ -110,12 +117,26 @@ export const initialEmployees: Employee[] = [
 
 export const initialNotices: Notice[] = [
   {
+    id: 'n0',
+    title: 'Urgent Academic Advisory: Special Class Schedule and Safety Guidelines',
+    banglaTitle: '🚨 জরুরি আবহাওয়া সতর্কতা: বিশেষ ক্লাস সূচি ও প্রবেশপত্র বিতরণ সংক্রান্ত বিজ্ঞপ্তি',
+    date: '২০২৬-০৬-১২',
+    category: 'Urgent',
+    isUrgent: true,
+    priority: 'Urgent',
+    targetAudience: 'All',
+    publishedBy: 'অধ্যক্ষ মহোদয়ের কার্যালয়',
+    content: 'সকল শিক্ষার্থী ও সম্মানিত অভিভাবকদের অবগতির জন্য জানানো যাচ্ছে যে, বৈরী আবহাওয়ার কারণে আগামীকালের প্রভাতী ও দিবা শিফটের ক্লাস সকাল ১০:০০ টায় শুরু হবে। একই সাথে আসন্ন প্রথম সাময়িক পরীক্ষার প্রবেশপত্র নির্ধারিত বুথ থেকে সংগ্রহ করার জন্য বিশেষ অনুরোধ করা হলো।',
+    expiryDate: '2026-12-31',
+  },
+  {
     id: 'n1',
     title: 'Upcoming Term-1 Examination',
     banglaTitle: 'আসন্ন প্রথম সাময়িক পরীক্ষা ২০২৬',
     date: '২০২৬-০৬-১০',
     category: 'Exam',
     content: 'প্রথম সাময়িক পরীক্ষা আগামী ১৫ই জুন ২০২৬ থেকে শুরু হতে যাচ্ছে। সকল শিক্ষার্থীকে বকেয়া বেতন পরিশোধ করে পরীক্ষার প্রবেশপত্র গ্রহণ করার অনুরোধ করা হলো।',
+    expiryDate: '2026-11-30',
   },
   {
     id: 'n2',
@@ -132,6 +153,20 @@ export const initialNotices: Notice[] = [
     date: '২০২৬-০৫-০১',
     category: 'General',
     content: 'প্লে থেকে নবম শ্রেণী পর্যন্ত সীমিত আসনে ছাত্র-ছাত্রী ভর্তি চলছে। বিস্তারিত জানতে স্কুল অফিসে যোগাযোগ করুন অথবা আমাদের অনলাইন পোর্টালের মাধ্যমে আবেদন করুন।',
+    expiryDate: '2026-12-31',
+  },
+  {
+    id: 'n_sample_expired',
+    title: 'Expired Urgent Advisory Notice Sample',
+    banglaTitle: 'সাবেক জরুরি বিজ্ঞপ্তি (মেয়াদ অতিক্রান্ত নমুনা)',
+    date: '২০২৬-০৯-১০',
+    category: 'Urgent',
+    isUrgent: true,
+    priority: 'Urgent',
+    targetAudience: 'All',
+    publishedBy: 'পরীক্ষা নিয়ন্ত্রণ কমিটি',
+    content: 'এই নোটিশটির মেয়াদ ২০২৬ সালের ২০ই সেপ্টেম্বর পর্যন্ত নির্ধারিত ছিল। মেয়াদ অতিক্রান্ত হওয়ায় এটি সাধারণ ড্যাশবোর্ড ও নোটিশবোর্ড থেকে স্বয়ংক্রিয়ভাবে অদৃশ্য (Auto-hidden) হয়ে গেছে। শুধুমাত্র অ্যাডমিন কন্ট্রোলে এক্সপায়ার্ড ট্যাবে এটি প্রদর্শনযোগ্য ও মেয়াদ বাড়িয়ে পুনঃসক্রিয় করা সম্ভব।',
+    expiryDate: '2026-09-20',
   },
 ];
 

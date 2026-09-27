@@ -10,7 +10,8 @@ import {
   Sparkles, Upload, Link as LinkIcon, Camera, Eye, EyeOff, Check, AlertCircle, 
   Trash2, Edit3, Plus, Search, Filter, Printer, FileText, UserCheck, 
   RefreshCw, CheckCircle2, Clock, ShieldCheck, ChevronDown, ChevronUp,
-  Image, ExternalLink, HelpCircle, Save, X, Phone, User, QrCode
+  Image, ExternalLink, HelpCircle, Save, X, Phone, User, QrCode,
+  Layers, Award, RotateCcw
 } from 'lucide-react';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 
@@ -23,7 +24,104 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
   currentRole = 'Developer',
   onOpenIdCard
 }) => {
-  const { students, addStudent, updateStudent, deleteStudent, schoolName, schoolSlogan, schoolLogoVal } = useSchool();
+  const { 
+    students, 
+    addStudent, 
+    updateStudent, 
+    deleteStudent, 
+    purgeDemoStudents, 
+    restoreDemoStudents, 
+    importMeritStudentsToDirectory,
+    meritStudents,
+    schoolName, 
+    schoolSlogan, 
+    schoolLogoVal 
+  } = useSchool();
+
+  // Standard academic classes list
+  const ALL_CLASSES = [
+    'প্লে (Play)',
+    'নার্সারী (Nursery)',
+    'কেজি (KG)',
+    'Class 1',
+    'Class 2',
+    'Class 3',
+    'Class 4',
+    'Class 5',
+    'Class 6',
+    'Class 7',
+    'Class 8',
+    'Class 9',
+    'Class 10',
+  ];
+
+  // Helper to normalize class identifiers
+  const normalizeClassKey = (clsName: string): string => {
+    const c = (clsName || '').toLowerCase().trim();
+    if (c.includes('প্লে') || c.includes('play')) return 'প্লে (Play)';
+    if (c.includes('নার্সারী') || c.includes('nursery')) return 'নার্সারী (Nursery)';
+    if (c.includes('কেজি') || c.includes('kg')) return 'কেজি (KG)';
+    if (c.includes('1') || c.includes('১ম') || c.includes('প্রথম')) return 'Class 1';
+    if (c.includes('2') || c.includes('২য়') || c.includes('দ্বিতীয়')) return 'Class 2';
+    if (c.includes('3') || c.includes('৩য়') || c.includes('তৃতীয়')) return 'Class 3';
+    if (c.includes('4') || c.includes('৪র্থ') || c.includes('চতুর্থ')) return 'Class 4';
+    if (c.includes('5') || c.includes('৫ম') || c.includes('পঞ্চম')) return 'Class 5';
+    if (c.includes('6') || c.includes('৬ষ্ঠ') || c.includes('ষষ্ঠ')) return 'Class 6';
+    if (c.includes('7') || c.includes('৭ম') || c.includes('সপ্তম')) return 'Class 7';
+    if (c.includes('8') || c.includes('৮ম') || c.includes('অষ্টম')) return 'Class 8';
+    if (c.includes('9') || c.includes('৯ম') || c.includes('নবম')) return 'Class 9';
+    if (c.includes('10') || c.includes('১০ম') || c.includes('দশম')) return 'Class 10';
+    return clsName;
+  };
+
+  // Helper to detect initial demo/mock student entries
+  const isDemoStudent = (st: Student): boolean => {
+    if (st.isDemo) return true;
+    if (['s1', 's2', 's3', 's4'].includes(st.id)) return true;
+    if (['Afifa Rahman', 'Tanvir Ahmed', 'Raisa Yasmin', 'Tahsin Islam'].includes(st.name || '')) return true;
+    return false;
+  };
+
+  const demoStudents = students.filter(isDemoStudent);
+  const realStudents = students.filter(s => !isDemoStudent(s));
+  const realStudentsCount = realStudents.length;
+  const demoStudentsCount = demoStudents.length;
+
+  // Breakdown statistics per class
+  const classBreakdown = ALL_CLASSES.map(cls => {
+    const inClass = students.filter(s => normalizeClassKey(s.className) === normalizeClassKey(cls) || s.className === cls);
+    const realInClass = inClass.filter(s => !isDemoStudent(s));
+    const demoInClass = inClass.filter(s => isDemoStudent(s));
+    return {
+      className: cls,
+      total: inClass.length,
+      realCount: realInClass.length,
+      demoCount: demoInClass.length,
+      completeCount: inClass.filter(s => s.entryStatus === 'Complete' || calculateCompleteness(s) >= 80).length,
+      partialCount: inClass.filter(s => s.entryStatus !== 'Complete' && calculateCompleteness(s) < 80).length,
+    };
+  });
+
+  const handlePurgeAllDemoData = () => {
+    if (confirm(`আপনি কি নিশ্চিত যে সমস্ত প্রাথমিক ডেমো শিক্ষার্থী (${demoStudentsCount} জন) স্থায়ীভাবে মুছে ফেলতে চান?\n\nআপনার নিজস্ব এন্ট্রি করা কোনো আসল শিক্ষার্থীর তথ্য ডিলিট হবে না।`)) {
+      purgeDemoStudents();
+      alert(`সমস্ত ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে!\n\nবর্তমানে ডাটাবেজে মূল শিক্ষার্থীর সংখ্যা: ${realStudentsCount} জন।`);
+    }
+  };
+
+  const handleRestoreDemoData = () => {
+    if (confirm(`আপনি কি প্রাথমিক ডেমো শিক্ষার্থী ডাটা রিস্টোর করতে চান?`)) {
+      restoreDemoStudents();
+      alert(`ডেমো ডাটা সফলভাবে রিস্টোর করা হয়েছে।`);
+    }
+  };
+
+  const handleImportMeritStudents = () => {
+    if (confirm(`কৃতি শিক্ষার্থী প্রদর্শনীতে থাকা ১১ জন কৃতি শিক্ষার্থীকে মূল শিক্ষার্থী ডিরেক্টরিতে স্বয়ংক্রিয়ভাবে ইম্পোর্ট করতে চান?\n\nএতে তাদের নাম, ছবি ও শ্রেণী অনুযায়ী প্রাথমিক প্রোফাইল তৈরি হবে, যা আপনি পরবর্তীতে আরও তথ্য দিয়ে আপডেট করতে পারবেন।`)) {
+      const added = importMeritStudentsToDirectory();
+      alert(`সাফল্য! ${added} জন শিক্ষার্থীকে কৃতি তালিকা থেকে মূল ডাটাবেজে সফলভাবে যুক্ত করা হয়েছে!`);
+    }
+  };
 
   // Search and Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -481,21 +579,27 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
         </div>
 
         {/* Quick Statistics Bar */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/10 text-xs">
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-white/10 text-xs">
           <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
             <span className="text-slate-400 block text-[10px] font-bold">মোট নিবন্ধিত শিক্ষার্থী</span>
             <span className="text-lg font-black text-white">{students.length} জন</span>
           </div>
-          <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-            <span className="text-emerald-300 block text-[10px] font-bold">সম্পূর্ণ এন্ট্রি (Complete)</span>
-            <span className="text-lg font-black text-emerald-400">
-              {students.filter(s => s.entryStatus === 'Complete' || calculateCompleteness(s) >= 80).length} জন
-            </span>
+          <div className="rounded-xl bg-emerald-500/20 border border-emerald-400/30 p-3 backdrop-blur-sm">
+            <span className="text-emerald-300 block text-[10px] font-bold">মূল শিক্ষার্থী (Real)</span>
+            <span className="text-lg font-black text-emerald-300">{realStudentsCount} জন</span>
+          </div>
+          <div className={`rounded-xl p-3 backdrop-blur-sm border ${
+            demoStudentsCount > 0 
+              ? 'bg-rose-500/20 border-rose-400/40 text-rose-300' 
+              : 'bg-white/10 border-white/10 text-slate-300'
+          }`}>
+            <span className="block text-[10px] font-bold">ডেমো ডাটা (Demo)</span>
+            <span className="text-lg font-black">{demoStudentsCount} জন</span>
           </div>
           <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-            <span className="text-amber-300 block text-[10px] font-bold">আংশিক / খসড়া এন্ট্রি (Partial)</span>
+            <span className="text-amber-300 block text-[10px] font-bold">সম্পূর্ণ এন্ট্রি (Complete)</span>
             <span className="text-lg font-black text-amber-300">
-              {students.filter(s => s.entryStatus !== 'Complete' && calculateCompleteness(s) < 80).length} জন
+              {students.filter(s => s.entryStatus === 'Complete' || calculateCompleteness(s) >= 80).length} জন
             </span>
           </div>
           <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
@@ -1394,6 +1498,191 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
 
       </div>
 
+      {/* 2.5 CLASS-WISE ENTRY BREAKDOWN & DEMO DATA MANAGEMENT */}
+      <div className="space-y-4">
+        
+        {/* A. Demo Data Notification & Cleaning Control */}
+        <div className={`rounded-2xl border p-5 shadow-sm transition-all ${
+          demoStudentsCount > 0 
+            ? 'border-amber-300 bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90' 
+            : 'border-emerald-200 bg-gradient-to-r from-emerald-50/80 via-teal-50/60 to-slate-50'
+        }`}>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className={`h-11 w-11 shrink-0 rounded-2xl flex items-center justify-center shadow-xs text-white ${
+                demoStudentsCount > 0 ? 'bg-amber-600' : 'bg-emerald-600'
+              }`}>
+                {demoStudentsCount > 0 ? <AlertCircle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm md:text-base font-black text-slate-900">
+                    {demoStudentsCount > 0 
+                      ? `সিস্টেমে ${demoStudentsCount} জন প্রাথমিক ডেমো শিক্ষার্থী রেকর্ড বিদ্যমান আছে` 
+                      : `সমস্ত ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে (১০০% ক্লিন ডাটাবেজ)`}
+                  </h3>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
+                    demoStudentsCount > 0 
+                      ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                  }`}>
+                    {demoStudentsCount > 0 ? `ডেমো ডাটা: ${demoStudentsCount} জন` : 'জিরো ডেমো ডাটা'}
+                  </span>
+                  <span className="rounded-full bg-blue-100 text-blue-900 border border-blue-200 px-2.5 py-0.5 text-[10px] font-black">
+                    মূল এন্ট্রি: {realStudentsCount} জন
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-3xl">
+                  {demoStudentsCount > 0 
+                    ? `প্রাথমিক ডেমো শিক্ষার্থীরা হলো: আফিফা রহমান (৫ম), তানভীর আহমেদ (৫ম), রাইসা ইয়াসমিন (৪র্থ) ও তাহসিন ইসলাম (৩য়)। আপনার আসল কাজের হিসাব নিখুঁত ও পরিপূরক রাখতে নিচের বোতামে ক্লিক করে এক ক্লিকেই সব ডেমো ডাটা মুছে ফেলতে পারেন।`
+                    : `বর্তমানে সিস্টেমে কোনো কৃত্রিম বা ডেমো শিক্ষার্থী নেই। আপনি যে শিক্ষার্থী এন্ট্রি করবেন শুধুমাত্র সেটিই থাকবে। এছাড়া আপনার ওয়েবসাইটে পূর্বে সেভ করা ১১ জন কৃতি শিক্ষার্থীকে চাইলে এক ক্লিকে মূল শিক্ষার্থী তালিকায় ইম্পোর্ট করে নিতে পারেন।`}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
+              {demoStudentsCount > 0 ? (
+                <button
+                  onClick={handlePurgeAllDemoData}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white px-5 py-2.5 text-xs font-black shadow-md cursor-pointer transition-all w-full sm:w-auto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>সব ডেমো ডাটা ডিলিট করুন ({demoStudentsCount} জন)</span>
+                </button>
+              ) : (
+                <>
+                  {meritStudents && meritStudents.length > 0 && (
+                    <button
+                      onClick={handleImportMeritStudents}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-black shadow-xs cursor-pointer transition-all w-full sm:w-auto"
+                      title="কৃতি শিক্ষার্থীর নাম ও ছবি মূল শিক্ষার্থী ডিরেক্টরিতে ইম্পোর্ট করুন"
+                    >
+                      <Award className="h-4 w-4 text-amber-300" />
+                      <span>কৃতি শিক্ষার্থী তালিকা থেকে ইম্পোর্ট ({meritStudents.length} জন)</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleRestoreDemoData}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 px-3 py-2.5 text-[11px] font-bold cursor-pointer transition-all"
+                    title="প্রয়োজনে ডেমো ডাটা রিস্টোর করুন"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>ডেমো রিস্টোর</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* B. Class-Wise Student Breakdown Matrix & Filter Cards */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-4 mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-blue-100 text-blue-900">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <h3 className="font-black text-slate-800 text-base">
+                  শ্রেণি ভিত্তিক শিক্ষার্থী এন্ট্রি তথ্য ও পরিসংখ্যান
+                </h3>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                প্রতিটি শ্রেণীর কার্ডে ক্লিক করে সরাসরি সেই শ্রেণীর শিক্ষার্থীদের তালিকা ফিল্টার করে দেখতে পারেন:
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFilterClass('All')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${
+                  filterClass === 'All' 
+                    ? 'bg-blue-900 text-white shadow-xs' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                সকল শ্রেণী ({students.length} জন)
+              </button>
+            </div>
+          </div>
+
+          {/* 13 Class Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+            {classBreakdown.map((item) => {
+              const isSelected = filterClass === item.className || filterClass === normalizeClassKey(item.className);
+              const hasData = item.total > 0;
+
+              return (
+                <div
+                  key={item.className}
+                  onClick={() => setFilterClass(item.className)}
+                  className={`relative rounded-xl p-3 border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected 
+                      ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm' 
+                      : hasData 
+                        ? 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300' 
+                        : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400'
+                  }`}
+                >
+                  <div>
+                    <span className="text-[11px] font-black text-slate-800 block truncate" title={item.className}>
+                      {item.className}
+                    </span>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className={`text-xl font-black ${hasData ? 'text-blue-950' : 'text-slate-300'}`}>
+                        {item.total}
+                      </span>
+                      <span className="text-[10px] text-slate-500">জন</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1 text-[9px]">
+                    {hasData ? (
+                      <>
+                        <span className="rounded bg-emerald-100 text-emerald-800 px-1 py-0.5 font-bold">
+                          মূল: {item.realCount}
+                        </span>
+                        {item.demoCount > 0 && (
+                          <span className="rounded bg-rose-100 text-rose-800 px-1 py-0.5 font-bold">
+                            ডেমো: {item.demoCount}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-[9.5px] text-slate-400 italic">খালি (০)</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Quick Summary Pill Bar */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
+              <span>মোট শ্রেণী: <strong className="text-slate-900">{ALL_CLASSES.length}টি</strong></span>
+              <span>•</span>
+              <span>এন্ট্রি সম্পন্ন শ্রেণী: <strong className="text-emerald-700">{classBreakdown.filter(c => c.total > 0).length}টি</strong></span>
+              <span>•</span>
+              <span>সর্বোচ্চ এন্ট্রি: <strong className="text-blue-900">
+                {classBreakdown.slice().sort((a,b) => b.total - a.total)[0]?.className} ({classBreakdown.slice().sort((a,b) => b.total - a.total)[0]?.total} জন)
+              </strong></span>
+            </div>
+
+            {filterClass !== 'All' && (
+              <button
+                onClick={() => setFilterClass('All')}
+                className="text-blue-900 hover:underline text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <span>ফিল্টার মুছুন (সব দেখুন)</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+      </div>
+
       {/* 3. REGISTERED STUDENTS DIRECTORY (তালিকা ও আপডেট কন্ট্রোল) */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
         
@@ -1489,7 +1778,20 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                             )}
                           </div>
                           <div>
-                            <span className="font-extrabold text-slate-850 block text-xs">{student.banglaName || student.name}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-extrabold text-slate-850 text-xs">{student.banglaName || student.name}</span>
+                              {isDemoStudent(student) ? (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-black text-rose-700">
+                                  <AlertCircle className="h-2.5 w-2.5" />
+                                  <span>ডেমো ডাটা</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-black text-emerald-800">
+                                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                                  <span>মূল শিক্ষার্থী</span>
+                                </span>
+                              )}
+                            </div>
                             <span className="text-[10px] text-slate-400 block font-sans uppercase">{student.name || '---'}</span>
                             {student.birthRegNo && (
                               <span className="text-[9.5px] text-slate-400 block font-mono">BRC: {student.birthRegNo}</span>

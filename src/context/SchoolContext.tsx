@@ -27,6 +27,7 @@ import {
 } from '../types';
 import { 
   initialStudents, 
+  demoSampleStudents,
   initialEmployees, 
   initialNotices, 
   initialStationery, 
@@ -86,6 +87,9 @@ interface SchoolContextProps {
   addStudent: (student: Omit<Student, 'id' | 'attendancePct' | 'homeworkStatus'>) => void;
   updateStudent: (id: string, updatedFields: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
+  purgeDemoStudents: () => void;
+  restoreDemoStudents: () => void;
+  importMeritStudentsToDirectory: () => number;
   addEmployee: (employee: Omit<Employee, 'id' | 'paymentStatus'>) => void;
   updateStudentHomework: (id: string, status: 'Completed' | 'Pending' | 'Needs-Motivation') => void;
   receiveFees: (studentId: string, amount: number) => void;
@@ -261,7 +265,21 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [notices, setNotices] = useState<Notice[]>(() => {
     const saved = localStorage.getItem('delicon_notices');
-    return saved ? JSON.parse(saved) : initialNotices;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasUrgent = parsed.some((n: any) => n.isUrgent || n.category === 'Urgent');
+          if (!hasUrgent && initialNotices[0]?.isUrgent) {
+            return [initialNotices[0], ...parsed];
+          }
+          return parsed;
+        }
+      } catch (e) {
+        console.warn('Failed parsing delicon_notices', e);
+      }
+    }
+    return initialNotices;
   });
 
   const [stationery, setStationery] = useState<StationeryItem[]>(() => {
@@ -956,6 +974,95 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setStudents(prev => prev.filter(s => s.id !== id));
   };
 
+  const purgeDemoStudents = () => {
+    const demoIds = ['s1', 's2', 's3', 's4'];
+    setStudents(prev => {
+      const cleaned = prev.filter(s => !s.isDemo && !demoIds.includes(s.id));
+      localStorage.setItem('delicon_students', JSON.stringify(cleaned));
+      fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'delicon_students', data: JSON.stringify(cleaned) })
+      }).catch(err => console.warn('[Sync] purgeDemoStudents save failed:', err));
+      return cleaned;
+    });
+  };
+
+  const restoreDemoStudents = () => {
+    setStudents(prev => {
+      const existingIds = new Set(prev.map(s => s.id));
+      const toAdd = demoSampleStudents.filter(d => !existingIds.has(d.id));
+      const merged = [...prev, ...toAdd];
+      localStorage.setItem('delicon_students', JSON.stringify(merged));
+      fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'delicon_students', data: JSON.stringify(merged) })
+      }).catch(err => console.warn('[Sync] restoreDemoStudents save failed:', err));
+      return merged;
+    });
+  };
+
+  const importMeritStudentsToDirectory = (): number => {
+    let count = 0;
+    setStudents(prev => {
+      const existingNames = new Set(prev.map(s => (s.banglaName || s.name || '').trim().toLowerCase()));
+      const newEntries: Student[] = [];
+
+      meritStudents.forEach((m, idx) => {
+        const cleanName = (m.name || '').trim();
+        if (cleanName && !existingNames.has(cleanName.toLowerCase())) {
+          existingNames.add(cleanName.toLowerCase());
+          count++;
+          let standardClass = 'Class 5';
+          const rawCls = (m.className || m.class || '').toLowerCase();
+          if (rawCls.includes('প্লে') || rawCls.includes('play')) standardClass = 'প্লে (Play)';
+          else if (rawCls.includes('নার্সারী') || rawCls.includes('nursery')) standardClass = 'নার্সারী (Nursery)';
+          else if (rawCls.includes('কেজি') || rawCls.includes('kg')) standardClass = 'কেজি (KG)';
+          else if (rawCls.includes('১ম') || rawCls.includes('প্রথম') || rawCls.includes('class 1')) standardClass = 'Class 1';
+          else if (rawCls.includes('২য়') || rawCls.includes('দ্বিতীয়') || rawCls.includes('class 2')) standardClass = 'Class 2';
+          else if (rawCls.includes('৩য়') || rawCls.includes('তৃতীয়') || rawCls.includes('class 3')) standardClass = 'Class 3';
+          else if (rawCls.includes('৪র্থ') || rawCls.includes('চতুর্থ') || rawCls.includes('class 4')) standardClass = 'Class 4';
+          else if (rawCls.includes('৫ম') || rawCls.includes('পঞ্চম') || rawCls.includes('class 5')) standardClass = 'Class 5';
+          else if (rawCls.includes('৬ষ্ঠ') || rawCls.includes('ষষ্ঠ') || rawCls.includes('class 6')) standardClass = 'Class 6';
+          else if (rawCls.includes('৭ম') || rawCls.includes('সপ্তম') || rawCls.includes('class 7')) standardClass = 'Class 7';
+          else if (rawCls.includes('৮ম') || rawCls.includes('অষ্টম') || rawCls.includes('class 8')) standardClass = 'Class 8';
+          else if (rawCls.includes('৯ম') || rawCls.includes('নবম') || rawCls.includes('class 9')) standardClass = 'Class 9';
+          else if (rawCls.includes('১০ম') || rawCls.includes('দশম') || rawCls.includes('class 10')) standardClass = 'Class 10';
+
+          newEntries.push({
+            id: 's_merit_' + Date.now() + '_' + idx,
+            name: cleanName,
+            banglaName: cleanName,
+            className: standardClass,
+            roll: String(idx + 1).padStart(2, '0'),
+            guardianName: 'অভিভাবক',
+            guardianPhone: '01700000000',
+            feesPaid: 15000,
+            totalFees: 15000,
+            attendancePct: 98,
+            homeworkStatus: 'Completed',
+            photoUrl: m.photoUrl || '',
+            entryStatus: 'Partial',
+            entryNotes: `[কৃতি শিক্ষার্থী তালিকা থেকে যুক্ত]: ${m.achievement || ''} (${m.award || ''})`,
+            lastUpdated: new Date().toISOString()
+          });
+        }
+      });
+
+      const updated = [...prev, ...newEntries];
+      localStorage.setItem('delicon_students', JSON.stringify(updated));
+      fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'delicon_students', data: JSON.stringify(updated) })
+      }).catch(err => console.warn('[Sync] importMeritStudents save failed:', err));
+
+      return updated;
+    });
+    return count;
+  };
+
   const updateStudentHomework = (id: string, status: Student['homeworkStatus']) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, homeworkStatus: status } : s));
   };
@@ -1255,6 +1362,9 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       addStudent,
       updateStudent,
       deleteStudent,
+      purgeDemoStudents,
+      restoreDemoStudents,
+      importMeritStudentsToDirectory,
       addEmployee,
       updateStudentHomework,
       receiveFees,

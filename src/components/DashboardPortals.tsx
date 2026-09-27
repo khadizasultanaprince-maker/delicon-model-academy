@@ -14,12 +14,14 @@ import { DigitalLibrary } from './DigitalLibrary';
 import { AcademicAiAssistant } from './AcademicAiAssistant';
 import { StudentProgressTracker } from './StudentProgressTracker';
 import { StudentDataEntryManager } from './StudentDataEntryManager';
+import { NoticeBoard, isNoticeExpired } from './NoticeBoard';
 import { UserRole, Student } from '../types';
 import { 
   Plus, Trash2, Check, BookOpen, Clock, AlertTriangle, 
   CreditCard, MessageSquare, Save, Edit3, Send, ShieldAlert,
   UserCheck, Receipt, GraduationCap, ChevronRight, Volume2,
-  Users, QrCode, Sparkles, Award, BarChart3, Bot, ShieldCheck
+  Users, QrCode, Sparkles, Award, BarChart3, Bot, ShieldCheck,
+  Megaphone
 } from 'lucide-react';
 
 interface DashboardPortalsProps {
@@ -70,7 +72,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
   const targetStudent = students.find(s => s.id === selectedStudentId) || students[0];
 
   // Dedicated Student Portal Active Tab
-  const [studentActiveTab, setStudentActiveTab] = useState<'idcard' | 'progress' | 'attendance' | 'fees' | 'library' | 'ai'>('idcard');
+  const [studentActiveTab, setStudentActiveTab] = useState<'idcard' | 'progress' | 'attendance' | 'fees' | 'library' | 'ai' | 'notices'>('idcard');
   const [showAdvancedDataEntry, setShowAdvancedDataEntry] = useState(false);
 
   // Prospect Interactive Portal States
@@ -309,6 +311,37 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
           </h1>
         </div>
       </div>
+
+      {/* Global Urgent Notice Alert Ticker */}
+      {(() => {
+        const urgentNotices = notices.filter(n => !isNoticeExpired(n) && (n.isUrgent || n.category === 'Urgent' || n.priority === 'Urgent'));
+        if (urgentNotices.length === 0) return null;
+        return (
+          <div className="mb-6 rounded-2xl border-2 border-rose-500 bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 p-4 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-amber-200">
+                <AlertTriangle className="h-5 w-5 animate-bounce" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-200 block">
+                  🚨 জরুরি অ্যাকাডেমিক নোটিশ অ্যালার্ট ({urgentNotices.length} টি সক্রিয়)
+                </span>
+                <p className="text-xs sm:text-sm font-black text-white line-clamp-1">
+                  {urgentNotices[0].banglaTitle || urgentNotices[0].title}: {urgentNotices[0].content}
+                </p>
+              </div>
+            </div>
+            {role === 'Student' && (
+              <button
+                onClick={() => setStudentActiveTab('notices')}
+                className="shrink-0 rounded-xl bg-white text-rose-900 font-black px-4 py-1.5 text-xs shadow hover:bg-amber-100 transition-all cursor-pointer"
+              >
+                নোটিশবোর্ড দেখুন
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {role === 'Prospect' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -942,6 +975,11 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               </div>
             </div>
 
+            {/* Academy Live Notice Board for Prospect */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <NoticeBoard role="Prospect" audienceFilter="All" />
+            </div>
+
           </div>
 
         </div>
@@ -1075,6 +1113,23 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               <Bot className="h-4 w-4 text-amber-400" />
               <span>এআই স্টাডি হেল্পার</span>
             </button>
+
+            <button
+              onClick={() => setStudentActiveTab('notices')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 relative ${
+                studentActiveTab === 'notices'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Megaphone className="h-4 w-4 text-amber-400" />
+              <span>নোটিশবোর্ড ও জরুরি অ্যালার্ট</span>
+              {notices.filter(n => !isNoticeExpired(n)).length > 0 && (
+                <span className="ml-1 rounded-full bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 animate-pulse">
+                  {notices.filter(n => !isNoticeExpired(n)).length}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Student Tab 1: Digital ID Card & QR Generator */}
@@ -1189,6 +1244,13 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
           {studentActiveTab === 'ai' && targetStudent && (
             <div className="space-y-6">
               <AcademicAiAssistant student={targetStudent} examMarks={examMarks} />
+            </div>
+          )}
+
+          {/* Student Tab 7: Notice Board & Urgent Alerts */}
+          {studentActiveTab === 'notices' && (
+            <div className="space-y-6">
+              <NoticeBoard role="Student" audienceFilter="Students" />
             </div>
           )}
 
@@ -1333,6 +1395,9 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
               <StudentFeeManagement student={targetStudent} />
             )}
 
+            {/* Academic Notice Board & Live Alerts for Guardian */}
+            <NoticeBoard role="Guardian" audienceFilter="Guardians" />
+
             {/* Academic Event Calendar & Holidays Component */}
             <AcademicCalendar role={role} />
 
@@ -1371,19 +1436,19 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
                   <span className="text-[10px] font-bold text-slate-600 uppercase block mb-1.5">স্টেটাস পরিবর্তন করুন</span>
                   <div className="grid grid-cols-3 gap-1">
                     <button 
-                      onClick={() => updateStudentHomework(targetStudent.id, 'Completed')}
+                      onClick={() => targetStudent && updateStudentHomework(targetStudent.id, 'Completed')}
                       className="p-1 px-1.5 border rounded text-[9px] hover:bg-emerald-50 text-emerald-700 bg-white font-bold cursor-pointer"
                     >
                       সম্পন্ন
                     </button>
                     <button 
-                      onClick={() => updateStudentHomework(targetStudent.id, 'Pending')}
+                      onClick={() => targetStudent && updateStudentHomework(targetStudent.id, 'Pending')}
                       className="p-1 px-1.5 border rounded text-[9px] hover:bg-amber-50 text-amber-700 bg-white font-bold cursor-pointer"
                     >
                       পেন্ডিং
                     </button>
                     <button 
-                      onClick={() => updateStudentHomework(targetStudent.id, 'Needs-Motivation')}
+                      onClick={() => targetStudent && updateStudentHomework(targetStudent.id, 'Needs-Motivation')}
                       className="p-1 px-1.5 border rounded text-[9px] hover:bg-rose-50 text-rose-700 bg-white font-bold cursor-pointer"
                     >
                       সহায়তা চাই
@@ -1462,71 +1527,9 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
 
           </div>
 
-          {/* Notice announcement publisher */}
+          {/* Notice announcement publisher & Notice Board */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="border-b pb-3 mb-4">
-                <h3 className="font-bold text-slate-800 text-sm">নতুন নোটিশ বা এলার্ট প্রকাশ</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">প্রকাশিত নোটিশটি মূল ওয়েবসাইটের নোটিশবোর্ডে তাৎক্ষণিক যুক্ত হবে</p>
-              </div>
-
-              {pubSuccess ? (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center">
-                  <p className="text-xs text-blue-900 font-bold">নোটিশ সফলভাবে প্রকাশিত!</p>
-                </div>
-              ) : (
-                <form onSubmit={handlePostNotice} className="space-y-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">নোটিশ শিরোনাম (English)</label>
-                    <input 
-                      type="text" 
-                      value={newNoticeTitle} 
-                      onChange={(e) => setNewNoticeTitle(e.target.value)}
-                      placeholder="e.g. National Holiday Announcement" 
-                      required
-                      className="w-full rounded border border-slate-200 p-2 text-xs text-slate-800 focus:outline-blue-650 bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">নোটিশের বাংলা অনুবাদ</label>
-                    <input 
-                      type="text" 
-                      value={newNoticeBangla} 
-                      onChange={(e) => setNewNoticeBangla(e.target.value)}
-                      placeholder="যেমন: ছুটির সাধারণ ঘোষণা" 
-                      className="w-full rounded border border-slate-200 p-2 text-xs text-slate-800 focus:outline-blue-650 bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">ক্যাটাগরি</label>
-                    <select 
-                      value={newNoticeCat} 
-                      onChange={(e) => setNewNoticeCat(e.target.value as any)}
-                      className="w-full rounded border border-slate-200 p-2 text-xs text-blue-900 focus:outline-blue-655 bg-white font-semibold"
-                    >
-                      <option value="General">General (সাধারণ)</option>
-                      <option value="Exam">Exam (পরীক্ষা)</option>
-                      <option value="Holiday">Holiday (ছুটি)</option>
-                      <option value="Event">Event (ইভেন্ট)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">মূল বিবরণ / মূলবার্তা</label>
-                    <textarea 
-                      value={newNoticeContent} 
-                      onChange={(e) => setNewNoticeContent(e.target.value)}
-                      rows={3}
-                      placeholder="বিস্তারিত বিবৃতিটি এখানে লিখুন..."
-                      required
-                      className="w-full rounded border border-slate-200 p-2 text-xs text-slate-800 focus:outline-blue-650 bg-white"
-                    />
-                  </div>
-                  <button type="submit" className="w-full rounded-lg bg-blue-900 hover:bg-blue-800 p-2 text-xs font-bold text-white uppercase tracking-wider transition-all cursor-pointer">
-                    বিজ্ঞপ্তিটি পাবলিশ করুন
-                  </button>
-                </form>
-              )}
-            </div>
+            <NoticeBoard role="Teacher" />
 
             {/* Quick stats for Teacher */}
             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
@@ -2464,6 +2467,11 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
 
               </div>
 
+            </div>
+
+            {/* Notice Board with Admin Control for Assistant */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <NoticeBoard role="Assistant" />
             </div>
 
           </div>

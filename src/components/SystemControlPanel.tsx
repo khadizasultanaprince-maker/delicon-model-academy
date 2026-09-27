@@ -18,6 +18,7 @@ import { AcademicCalendar } from './AcademicCalendar';
 import { DigitalLibrary } from './DigitalLibrary';
 import { extractYouTubeId } from './VideoPlayer';
 import { StudentDataEntryManager } from './StudentDataEntryManager';
+import { NoticeBoard } from './NoticeBoard';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -4000,6 +4001,13 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* 13. ACADEMIC NOTICE BOARD & ADMIN CONTROL */}
+          {activeTab === 'notices' && (
+            <div className="space-y-6">
+              <NoticeBoard role={role} />
             </div>
           )}
 
