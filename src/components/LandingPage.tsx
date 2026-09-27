@@ -12,7 +12,8 @@ import {
   Tv, Compass, HelpCircle, Truck, Home, GraduationCap,
   MessageSquare, Briefcase, Mail, Send, Bell,
   Youtube, Facebook, Globe, Video, Info, Camera, Upload,
-  Printer, Copy
+  Printer, Copy, QrCode, Ticket, X, Check, Trash2, RotateCcw,
+  Smartphone, ExternalLink
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
@@ -107,7 +108,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     schoolSlogan,
     schoolLogoVal,
     schoolLogoType,
-    campusPhotos
+    campusPhotos,
+    updateCampusPhotos,
+    students,
+    simulateAttendanceScan
   } = useSchool();
 
   // Helper functions for section visibility and titles
@@ -133,6 +137,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [campusSlideIndex, setCampusSlideIndex] = useState(0);
   const [isCampusSlideHovered, setIsCampusSlideHovered] = useState(false);
   const [photoErrorMap, setPhotoErrorMap] = useState<Record<number, boolean>>({});
+  const [isPhotoUploadModalOpen, setIsPhotoUploadModalOpen] = useState(false);
+  const [photoUploadTab, setPhotoUploadTab] = useState<'upload' | 'manage'>('upload');
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+  const [newPhotoTitle, setNewPhotoTitle] = useState('');
+  const [newPhotoCaption, setNewPhotoCaption] = useState('');
+  const [newPhotoPreview, setNewPhotoPreview] = useState<string | null>(null);
+  const [sliderNotice, setSliderNotice] = useState<string | null>(null);
+  const [fullViewPhotoIndex, setFullViewPhotoIndex] = useState<number | null>(null);
+
+  // Attendance & Smart Interactive Coupon System States
+  const [isAttendanceHowItWorksOpen, setIsAttendanceHowItWorksOpen] = useState(false);
+  const [isCouponWalletModalOpen, setIsCouponWalletModalOpen] = useState(false);
+  const [selectedDemoStudentId, setSelectedDemoStudentId] = useState<string>('st_demo_1');
+  const [attendancePunchType, setAttendancePunchType] = useState<'Check-In' | 'Check-Out'>('Check-In');
+  const [isPunching, setIsPunching] = useState(false);
+  const [simulatedScanResult, setSimulatedScanResult] = useState<{
+    studentName: string;
+    studentClass: string;
+    roll: string;
+    time: string;
+    type: 'Check-In' | 'Check-Out';
+    smsText: string;
+    coupon?: {
+      code: string;
+      title: string;
+      discount: string;
+      badge: string;
+      validUntil: string;
+    };
+  } | null>(null);
+  const [copiedCouponCode, setCopiedCouponCode] = useState(false);
 
   // Calculator State
   const [calcClass, setCalcClass] = useState('Play-KG');
@@ -242,6 +277,121 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Handlers for Campus Photo Slider
+  const handleCampusPhotoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 3.5 * 1024 * 1024) {
+        setSliderNotice('ছবির ফাইল সাইজ ৩.৫ মেগাবাইটের বেশি হতে পারবে না।');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setNewPhotoPreview(reader.result);
+          setNewPhotoUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveCampusPhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalUrl = newPhotoPreview || newPhotoUrl.trim();
+    if (!finalUrl) {
+      setSliderNotice('দয়া করে ছবি আপলোড করুন অথবা ছবির একটি সক্রিয় লিঙ্ক (URL) দিন।');
+      return;
+    }
+    const finalTitle = newPhotoTitle.trim() || 'ক্যাম্পাস আনন্দ মুহূর্ত 📸';
+    const finalCaption = newPhotoCaption.trim() || 'ডিলিকন মডেল একাডেমীর আনন্দময় শিক্ষাঙ্গন ও শিক্ষার্থীদের পদচারণা।';
+    
+    const newPhoto = {
+      url: finalUrl,
+      title: finalTitle,
+      caption: finalCaption
+    };
+    
+    const updated = [newPhoto, ...(campusPhotos || [])];
+    updateCampusPhotos(updated);
+    setNewPhotoUrl('');
+    setNewPhotoTitle('');
+    setNewPhotoCaption('');
+    setNewPhotoPreview(null);
+    setCampusSlideIndex(0);
+    setSliderNotice('নতুন ক্যাম্পাস ছবি সফলভাবে স্লাইডারে আপলোড করা হয়েছে!');
+    setTimeout(() => setSliderNotice(null), 4000);
+  };
+
+  const handleDeleteCampusPhoto = (indexToDelete: number) => {
+    const current = campusPhotos || [];
+    if (current.length <= 1) {
+      setSliderNotice('স্লাইডারে কমপক্ষে একটি ছবি থাকা আবশ্যক।');
+      return;
+    }
+    const updated = current.filter((_, idx) => idx !== indexToDelete);
+    updateCampusPhotos(updated);
+    setCampusSlideIndex(prev => prev >= updated.length ? 0 : prev);
+    setSliderNotice('ছবিটি সফলভাবে অপসারণ করা হয়েছে।');
+    setTimeout(() => setSliderNotice(null), 3000);
+  };
+
+  const handleResetCampusPhotos = () => {
+    localStorage.removeItem('delicon_campus_photos');
+    window.location.reload();
+  };
+
+  // Handlers for Attendance & Smart Coupon Simulation
+  const handleTriggerAttendanceScan = () => {
+    setIsPunching(true);
+    
+    const fallbackList = [
+      { id: 'st_demo_1', name: 'আফিফা রহমান', class: 'Class 5', roll: '০১', guardianName: 'মো: খলিলুর রহমান', phone: '01712-345678' },
+      { id: 'st_demo_2', name: 'তানভীর হাসান', class: 'Class 8', roll: '০৫', guardianName: 'মো: হাসান আলী', phone: '01823-456789' },
+      { id: 'st_demo_3', name: 'সুমাইয়া আক্তার', class: 'Class 3', roll: '০২', guardianName: 'বেগম রাবেয়া সুলতানা', phone: '01934-567890' },
+      { id: 'st_demo_4', name: 'মারুফ হোসেন', class: 'Class 10', roll: '১২', guardianName: 'মো: আব্দুল মতিন', phone: '01645-678901' }
+    ];
+    
+    const matched = (students && students.length > 0)
+      ? students.find(s => s.id === selectedDemoStudentId) || students[0]
+      : null;
+      
+    const stName = matched ? matched.name : (fallbackList.find(s => s.id === selectedDemoStudentId)?.name || 'আফিফা রহমান');
+    const stClass = matched ? matched.class : (fallbackList.find(s => s.id === selectedDemoStudentId)?.class || 'Class 5');
+    const stRoll = matched ? matched.roll : (fallbackList.find(s => s.id === selectedDemoStudentId)?.roll || '০১');
+
+    setTimeout(() => {
+      setIsPunching(false);
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      const isEntry = attendancePunchType === 'Check-In';
+      const sms = isEntry
+        ? `সম্মানিত অভিভাবক, আপনার সন্তান ${stName} (${stClass}, রোল: ${stRoll}) আজ সকাল ${timeStr} মিনিটে নিরাপদে বিদ্যালয়ে প্রবেশ করেছে। ধন্যবাদ - ডিলিকন মডেল একাডেমী।`
+        : `সম্মানিত অভিভাবক, আপনার সন্তান ${stName} (${stClass}, রোল: ${stRoll}) আজ দুপুর ${timeStr} মিনিটে বিদ্যালয় ছুটি শেষে বাড়ির উদ্দেশ্যে রওয়ানা হয়েছে। দয়া করে নিরাপদ প্রত্যাবর্তনে নজর রাখুন।`;
+
+      if (simulateAttendanceScan) {
+        simulateAttendanceScan(selectedDemoStudentId, 'student', attendancePunchType);
+      }
+
+      setSimulatedScanResult({
+        studentName: stName,
+        studentClass: stClass,
+        roll: stRoll,
+        time: timeStr,
+        type: attendancePunchType,
+        smsText: sms,
+        coupon: {
+          code: isEntry ? `DELICON-ATTN-${Math.floor(100 + Math.random() * 900)}` : `DELICON-SAFE-${Math.floor(100 + Math.random() * 900)}`,
+          title: isEntry ? '🎉 ১০০% সাপ্তাহিক উপস্থিতি ও নিয়মানুবর্তিতা স্টার রিওয়ার্ড!' : '🌟 নিরাপদ স্কুল ডে কমপ্লিশন ও স্টুডেন্ট বোনাস কুপন!',
+          discount: isEntry ? 'ক্যাম্পাস ক্যান্টিন ও বুকশপে ১৫% সরাসরি ছাড় ভাউচার' : 'ডিজিটাল সায়েন্স ক্লাব ও লাইব্রেরি বিশেষ রিডিং পাস',
+          badge: 'যাচাইকৃত স্মার্ট কুপন',
+          validUntil: '৩১ অক্টোবর ২০২৬'
+        }
+      });
+    }, 600);
   };
 
   const [newsSuccess, setNewsSuccess] = useState(false);
@@ -490,33 +640,76 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </p>
               </div>
 
-              {/* Navigation Controls */}
-              {campusPhotos && campusPhotos.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-xs">
-                    ছবি: <strong className="text-amber-400 text-sm font-bold">{campusSlideIndex + 1}</strong> / {campusPhotos.length}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCampusSlideIndex((prev) => (prev - 1 + campusPhotos.length) % campusPhotos.length)}
-                      className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
-                      title="পূর্ববর্তী ছবি"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCampusSlideIndex((prev) => (prev + 1) % campusPhotos.length)}
-                      className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
-                      title="পরবর্তী ছবি"
-                    >
-                      ›
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Navigation Controls & Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {campusPhotos && campusPhotos.length > 0 && (
+                  <>
+                    <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
+                      ছবি: <strong className="text-amber-400 text-sm font-bold">{campusSlideIndex + 1}</strong> / {campusPhotos.length}
+                    </span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCampusSlideIndex((prev) => (prev - 1 + campusPhotos.length) % campusPhotos.length)}
+                        className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
+                        title="পূর্ববর্তী ছবি"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCampusSlideIndex((prev) => (prev + 1) % campusPhotos.length)}
+                        className="h-9 w-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-750 flex items-center justify-center font-bold text-lg transition active:scale-95 cursor-pointer shadow-sm"
+                        title="পরবর্তী ছবি"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Upload & Manage Photo Modal Buttons */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoUploadTab('upload');
+                    setIsPhotoUploadModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs shadow-md shadow-amber-500/15 transition active:scale-95 cursor-pointer font-sans"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>নতুন ছবি আপলোড</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoUploadTab('manage');
+                    setIsPhotoUploadModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 font-bold px-3 py-2 rounded-xl text-xs transition active:scale-95 cursor-pointer font-sans"
+                >
+                  <span>📂 অ্যালবাম ({campusPhotos?.length || 0})</span>
+                </button>
+              </div>
             </div>
+
+            {/* Slider Notice Banner */}
+            {sliderNotice && (
+              <div className="mb-4 bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between animate-fade-in font-sans">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                  {sliderNotice}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSliderNotice(null)}
+                  className="text-emerald-400 hover:text-emerald-200 text-sm font-bold ml-2 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* MAIN LARGE SLIDER FRAME */}
             {campusPhotos && campusPhotos.length > 0 ? (
@@ -548,6 +741,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <span className="bg-slate-900/80 backdrop-blur-sm border border-white/20 text-slate-200 text-[10px] font-bold px-2.5 py-0.5 rounded-md font-sans">
                         ক্যাম্পাস দৃশ্য
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFullViewPhotoIndex(campusSlideIndex);
+                        }}
+                        className="bg-black/60 hover:bg-black/90 backdrop-blur-sm border border-white/30 text-amber-300 hover:text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md font-sans transition flex items-center gap-1 cursor-pointer shadow-sm"
+                      >
+                        🔍 পূর্ণ স্ক্রিন দেখুন
+                      </button>
                     </div>
 
                     <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-snug drop-shadow-md">
