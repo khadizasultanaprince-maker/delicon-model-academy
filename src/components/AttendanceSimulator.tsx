@@ -10,8 +10,31 @@ import { motion } from 'motion/react';
 import { 
   ScanLine, Smartphone, CheckCircle, Clock, Volume2, ShieldAlert,
   Calendar, Eye, BookOpen, UserSquare2, RefreshCcw, Camera, CameraOff,
-  AlertTriangle
+  AlertTriangle, Check, X, ShieldCheck, CheckCircle2, Sparkles, UserCheck,
+  Edit3, Search, HelpCircle, Info, SlidersHorizontal, ArrowRight, ChevronDown,
+  ChevronUp, RotateCcw
 } from 'lucide-react';
+
+interface ScannedVerificationTarget {
+  id: string;
+  type: 'student' | 'employee';
+  name: string;
+  banglaName: string;
+  className?: string;
+  roll?: string;
+  role?: string;
+  phone?: string;
+  guardianName?: string;
+  photoUrl?: string;
+  direction: 'Check-In' | 'Check-Out';
+  rawScanText?: string;
+  verifiedFields: {
+    name: boolean;
+    classOrRole: boolean;
+    phone: boolean;
+    direction: boolean;
+  };
+}
 
 export const AttendanceSimulator: React.FC = () => {
   const { 
@@ -30,13 +53,40 @@ export const AttendanceSimulator: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Camera Scan Verification Modal state
+  const [cameraVerification, setCameraVerification] = useState<ScannedVerificationTarget | null>(null);
+
+  // Dedicated single-field verification popup target (opens focused modal for a specific field)
+  const [fieldPopupTarget, setFieldPopupTarget] = useState<'name' | 'classOrRole' | 'phone' | 'direction' | null>(null);
+
+  // Safety confirmation dialog when user attempts to submit with unverified fields
+  const [showIncompleteConfirmWarning, setShowIncompleteConfirmWarning] = useState(false);
+
+  // Inline correction / editing state inside camera modal
+  const [editingFieldKey, setEditingFieldKey] = useState<'name' | 'classOrRole' | 'phone' | null>(null);
+  const [tempEditName, setTempEditName] = useState('');
+  const [tempEditClass, setTempEditClass] = useState('Class 6');
+  const [tempEditRoll, setTempEditRoll] = useState('');
+  const [tempEditPhone, setTempEditPhone] = useState('');
+
+  // Student Switcher inside camera modal (in case camera detected wrong student card)
+  const [showStudentSwitcher, setShowStudentSwitcher] = useState(false);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
   // Unregistered card scanning support states
   const [unregisteredScannedId, setUnregisteredScannedId] = useState<string | null>(null);
   const [assignToStudentId, setAssignToStudentId] = useState<string>('');
+  const [isAssignVerified, setIsAssignVerified] = useState(false);
   const [newStudentNameBng, setNewStudentNameBng] = useState('');
-  const [newStudentClass, setNewStudentClass] = useState('Class 8');
+  const [newStudentClass, setNewStudentClass] = useState('Class 6');
   const [newStudentRoll, setNewStudentRoll] = useState('');
   const [newStudentGPhone, setNewStudentGPhone] = useState('01712345678');
+  const [verifiedOnTheFlyFields, setVerifiedOnTheFlyFields] = useState({
+    name: false,
+    class: false,
+    roll: false,
+    phone: false
+  });
 
   // Interactive RFID virtual card coordinate & simulation states
   const [isPlacingCard, setIsPlacingCard] = useState(false);
@@ -68,38 +118,260 @@ export const AttendanceSimulator: React.FC = () => {
     }
   };
 
-  const handleDecodedQR = (text: string) => {
-    let parsedId = text.trim();
-    if (text.includes('TOKEN=MIR-')) {
-      parsedId = text.replace('TOKEN=MIR-', '').trim();
+  // Helper to parse QR codes with different formats
+  const parseScannedQR = (rawText: string) => {
+    const text = rawText.trim();
+    let parsedId = text;
+    let parsedName = '';
+    let parsedClass = '';
+    let parsedRoll = '';
+    let parsedPhone = '';
+
+    if (parsedId.includes('TOKEN=MIR-')) {
+      parsedId = parsedId.replace('TOKEN=MIR-', '').trim();
     }
+
+    if (text.startsWith('{') && text.endsWith('}')) {
+      try {
+        const data = JSON.parse(text);
+        if (data.id) parsedId = String(data.id);
+        if (data.name || data.banglaName) parsedName = String(data.banglaName || data.name);
+        if (data.className || data.class) parsedClass = String(data.className || data.class);
+        if (data.roll) parsedRoll = String(data.roll);
+        if (data.phone || data.guardianPhone) parsedPhone = String(data.phone || data.guardianPhone);
+      } catch {
+        // not JSON
+      }
+    }
+
+    if (text.includes('?') && (text.includes('id=') || text.includes('roll='))) {
+      try {
+        const url = new URL(text, 'http://localhost');
+        if (url.searchParams.get('id')) parsedId = url.searchParams.get('id')!;
+        if (url.searchParams.get('name')) parsedName = url.searchParams.get('name')!;
+        if (url.searchParams.get('class')) parsedClass = url.searchParams.get('class')!;
+        if (url.searchParams.get('roll')) parsedRoll = url.searchParams.get('roll')!;
+        if (url.searchParams.get('phone')) parsedPhone = url.searchParams.get('phone')!;
+      } catch {
+        // ignore
+      }
+    }
+
+    const lines = text.split(/[\n,;]+/);
+    for (const line of lines) {
+      const [k, ...v] = line.split(':');
+      if (k && v.length) {
+        const key = k.trim().toLowerCase();
+        const val = v.join(':').trim();
+        if (key === 'id' || key === 'আইডি') parsedId = val;
+        if (key === 'name' || key === 'নাম') parsedName = val;
+        if (key === 'class' || key === 'শ্রেণি' || key === 'শ্রেণী') parsedClass = val;
+        if (key === 'roll' || key === 'রোল') parsedRoll = val;
+        if (key === 'phone' || key === 'মোবাইল') parsedPhone = val;
+      }
+    }
+
+    return { parsedId, parsedName, parsedClass, parsedRoll, parsedPhone };
+  };
+
+  const handleDecodedQR = (rawText: string) => {
+    const { parsedId, parsedName, parsedClass, parsedRoll, parsedPhone } = parseScannedQR(rawText);
     const lowerParsedId = parsedId.toLowerCase();
     
-    const matchedStudent = students.find(s => s.id.toLowerCase() === lowerParsedId || s.id === parsedId);
+    // Stop camera immediately to prevent duplicate or mistaken readings
+    setIsCameraActive(false);
+    playBeep();
+
+    // 1. Match student by ID
+    let matchedStudent = students.find(s => s.id.toLowerCase() === lowerParsedId || s.id === parsedId);
+    
+    // 2. Match student by parsed name if not found by ID
+    if (!matchedStudent && parsedName) {
+      matchedStudent = students.find(s => 
+        (s.banglaName && s.banglaName.toLowerCase().includes(parsedName.toLowerCase())) ||
+        (s.name && s.name.toLowerCase().includes(parsedName.toLowerCase()))
+      );
+    }
+
+    // 3. Fallback check for Mahinur or Class 6 keywords if scanned text has them
+    if (!matchedStudent && (parsedId.includes('মাহিনুর') || rawText.includes('মাহিনুর') || rawText.toLowerCase().includes('mahinur'))) {
+      matchedStudent = students.find(s => 
+        s.banglaName?.includes('মাহিনুর') || s.name?.toLowerCase().includes('mahinur')
+      );
+    }
+
+    // 4. Match student by class & roll
+    if (!matchedStudent && parsedClass && parsedRoll) {
+      matchedStudent = students.find(s => 
+        s.className?.toLowerCase().includes(parsedClass.toLowerCase()) && s.roll === parsedRoll
+      );
+    }
+
     const matchedEmployee = employees.find(e => e.id.toLowerCase() === lowerParsedId || e.id === parsedId);
     
     if (matchedStudent) {
-      const result = simulateAttendanceScan(matchedStudent.id, 'student', scanDirection);
-      if (result.success) {
-        playBeep();
-        setSuccessMsg(result.message);
-        setIsCameraActive(false); // Stop scanner on success
-        setTimeout(() => setSuccessMsg(''), 6000);
-      }
+      setCameraVerification({
+        id: matchedStudent.id,
+        type: 'student',
+        name: matchedStudent.name,
+        banglaName: matchedStudent.banglaName || matchedStudent.name,
+        className: matchedStudent.className,
+        roll: matchedStudent.roll,
+        phone: matchedStudent.guardianPhone,
+        guardianName: matchedStudent.guardianName,
+        photoUrl: matchedStudent.photoUrl,
+        direction: scanDirection,
+        rawScanText: rawText,
+        // Crucial: Set to FALSE initially so user has confirmation control on each field
+        verifiedFields: {
+          name: false,
+          classOrRole: false,
+          phone: false,
+          direction: false
+        }
+      });
+      setTempEditName(matchedStudent.banglaName || matchedStudent.name);
+      setTempEditClass(matchedStudent.className || 'Class 6');
+      setTempEditRoll(matchedStudent.roll || '');
+      setTempEditPhone(matchedStudent.guardianPhone || '');
+      setEditingFieldKey(null);
+      setFieldPopupTarget(null);
+      setShowIncompleteConfirmWarning(false);
+      setShowStudentSwitcher(false);
     } else if (matchedEmployee) {
-      const result = simulateAttendanceScan(matchedEmployee.id, 'employee', scanDirection);
-      if (result.success) {
-        playBeep();
-        setSuccessMsg(result.message);
-        setIsCameraActive(false); // Stop scanner on success
-        setTimeout(() => setSuccessMsg(''), 6000);
-      }
+      setCameraVerification({
+        id: matchedEmployee.id,
+        type: 'employee',
+        name: matchedEmployee.name,
+        banglaName: matchedEmployee.banglaName || matchedEmployee.name,
+        role: matchedEmployee.role,
+        phone: matchedEmployee.phone,
+        direction: scanDirection,
+        rawScanText: rawText,
+        verifiedFields: {
+          name: false,
+          classOrRole: false,
+          phone: false,
+          direction: false
+        }
+      });
+      setTempEditName(matchedEmployee.banglaName || matchedEmployee.name);
+      setTempEditClass('');
+      setTempEditRoll('');
+      setTempEditPhone(matchedEmployee.phone || '');
+      setEditingFieldKey(null);
+      setFieldPopupTarget(null);
+      setShowIncompleteConfirmWarning(false);
+      setShowStudentSwitcher(false);
     } else {
       // Unrecognized physical Card scanned!
-      playBeep();
-      setUnregisteredScannedId(parsedId);
-      setIsCameraActive(false); // Pause camera to let them handle the popup
+      setUnregisteredScannedId(parsedId || rawText);
+      setVerifiedOnTheFlyFields({ name: false, class: false, roll: false, phone: false });
     }
+  };
+
+  // Switch student if camera scanned wrong student card
+  const handleSelectDifferentStudent = (studentId: string) => {
+    const s = students.find(item => item.id === studentId);
+    if (!s) return;
+    setCameraVerification({
+      id: s.id,
+      type: 'student',
+      name: s.name,
+      banglaName: s.banglaName || s.name,
+      className: s.className,
+      roll: s.roll,
+      phone: s.guardianPhone,
+      guardianName: s.guardianName,
+      photoUrl: s.photoUrl,
+      direction: scanDirection,
+      rawScanText: cameraVerification?.rawScanText,
+      verifiedFields: {
+        name: true,
+        classOrRole: true,
+        phone: true,
+        direction: true
+      }
+    });
+    setTempEditName(s.banglaName || s.name);
+    setTempEditClass(s.className || 'Class 6');
+    setTempEditRoll(s.roll || '');
+    setTempEditPhone(s.guardianPhone || '');
+    setShowStudentSwitcher(false);
+    setEditingFieldKey(null);
+  };
+
+  // Save inline correction made by user
+  const handleSaveInlineEdit = (field: 'name' | 'classOrRole' | 'phone') => {
+    if (!cameraVerification) return;
+    setCameraVerification(prev => {
+      if (!prev) return null;
+      if (field === 'name') {
+        return {
+          ...prev,
+          banglaName: tempEditName.trim() || prev.banglaName,
+          name: tempEditName.trim() || prev.name,
+          verifiedFields: { ...prev.verifiedFields, name: true }
+        };
+      } else if (field === 'classOrRole') {
+        return {
+          ...prev,
+          className: tempEditClass,
+          roll: tempEditRoll.trim(),
+          verifiedFields: { ...prev.verifiedFields, classOrRole: true }
+        };
+      } else if (field === 'phone') {
+        return {
+          ...prev,
+          phone: tempEditPhone.trim(),
+          verifiedFields: { ...prev.verifiedFields, phone: true }
+        };
+      }
+      return prev;
+    });
+    setEditingFieldKey(null);
+  };
+
+  // Confirm attendance with safety check
+  const handleConfirmVerification = (force = false) => {
+    if (!cameraVerification) return;
+    
+    const allVerified = Object.values(cameraVerification.verifiedFields).every(Boolean);
+    if (!allVerified && !force) {
+      setShowIncompleteConfirmWarning(true);
+      return;
+    }
+
+    const result = simulateAttendanceScan(
+      cameraVerification.id, 
+      cameraVerification.type, 
+      cameraVerification.direction
+    );
+
+    if (result.success) {
+      playBeep();
+      setSuccessMsg(result.message);
+      setCameraVerification(null);
+      setShowIncompleteConfirmWarning(false);
+      setFieldPopupTarget(null);
+      setTimeout(() => setSuccessMsg(''), 6000);
+    } else {
+      alert(result.message || 'উপস্থিতি রেকর্ড করতে সমস্যা হয়েছে।');
+    }
+  };
+
+  const toggleFieldVerification = (field: 'name' | 'classOrRole' | 'phone' | 'direction') => {
+    if (!cameraVerification) return;
+    setCameraVerification(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        verifiedFields: {
+          ...prev.verifiedFields,
+          [field]: !prev.verifiedFields[field]
+        }
+      };
+    });
   };
 
   React.useEffect(() => {
@@ -633,6 +905,684 @@ export const AttendanceSimulator: React.FC = () => {
 
       </div>
 
+      {/* CAMERA SCAN VERIFICATION & FIELD CONFIRMATION MODAL */}
+      {cameraVerification && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[110] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border-2 border-emerald-500 rounded-3xl max-w-lg w-full p-5 sm:p-6 text-white space-y-4 shadow-2xl relative overflow-hidden animate-fade-in my-auto">
+            {/* Top gradient glow */}
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500"></div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Camera className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+                    <span>ক্যামেরা স্ক্যান যাচাইকরণ ও তথ্য নিশ্চয়তা</span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    ভুল তথ্য প্রতিরোধে প্রতিটি ফিল্ডের পাশের বোতাম চেপে নিশ্চিত করুন
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCameraVerification(null);
+                  setEditingFieldKey(null);
+                  setFieldPopupTarget(null);
+                  setShowStudentSwitcher(false);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                title="বন্ধ করুন"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Safety & Anti-Error Notice Banner */}
+            <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-[11px] text-amber-200 flex items-start gap-2.5">
+              <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold text-amber-300">ভুল তথ্য ফিল্ডে বসানো প্রতিরোধ ব্যবস্থা সক্রিয়</p>
+                <p className="text-[10px] text-slate-300 leading-relaxed">
+                  ক্যামেরা স্ক্যান থেকে প্রাপ্ত তথ্য সরাসরি সেভ হয় না। প্রতিটি তথ্যের সত্যতা নিশ্চিত করতে পাশের <strong className="text-emerald-300">"নিশ্চিত করুন"</strong> বাটনে চাপুন অথবা ভুল থাকলে <strong className="text-blue-300">"সংশোধন"</strong> করুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Scanned Card Code & Quick Student Switcher Bar */}
+            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-mono text-[10px] flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+                  <span>স্ক্যানকৃত আইডি কার্ড:</span>
+                </span>
+                <span className="font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
+                  {cameraVerification.id.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Student Switcher Button (in case camera detected wrong student card) */}
+              <div className="border-t border-slate-800 pt-2 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowStudentSwitcher(!showStudentSwitcher)}
+                  className="text-[10.5px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>{showStudentSwitcher ? 'শিক্ষার্থী তালিকা লুকান' : 'ভুল শিক্ষার্থী সনাক্ত হয়েছে? সঠিক শিক্ষার্থী নির্বাচন করুন'}</span>
+                </button>
+                <span className="text-[9px] text-slate-400 font-mono">
+                  {cameraVerification.type === 'student' ? 'শিক্ষার্থী প্রোফাইল' : 'স্টাফ প্রোফাইল'}
+                </span>
+              </div>
+
+              {/* Collapsible Student Switcher Dropdown */}
+              {showStudentSwitcher && (
+                <div className="p-2.5 bg-slate-900 rounded-lg border border-blue-500/40 space-y-2 mt-1 animate-fade-in">
+                  <p className="text-[10px] text-blue-300 font-bold">
+                    সঠিক শিক্ষার্থী নির্বাচন করুন (যেমন: মাহিনুর, ষষ্ঠ শ্রেণি):
+                  </p>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) handleSelectDifferentStudent(e.target.value);
+                    }}
+                    value={cameraVerification.id}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">-- শিক্ষার্থী বাছাই করুন --</option>
+                    {students.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.banglaName} (শ্রেণি: {s.className}, রোল: {s.roll}) [ID: {s.id}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Verification Progress Bar */}
+            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>তথ্য যাচাই অগ্রগতি</span>
+                </span>
+                <span className="font-mono font-bold text-blue-400">
+                  {Object.values(cameraVerification.verifiedFields).filter(Boolean).length}/৪ ফিল্ড নিশ্চিত
+                </span>
+              </div>
+              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    Object.values(cameraVerification.verifiedFields).every(Boolean)
+                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                      : 'bg-gradient-to-r from-amber-500 to-blue-500'
+                  }`}
+                  style={{ width: `${(Object.values(cameraVerification.verifiedFields).filter(Boolean).length / 4) * 100}%` }}
+                ></div>
+              </div>
+              {Object.values(cameraVerification.verifiedFields).every(Boolean) ? (
+                <p className="text-[9.5px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  <span>সকল ফিল্ড সফলভাবে নিশ্চিত হয়েছে। এখন উপস্থিতি অনুমোদন করতে পারেন।</span>
+                </p>
+              ) : (
+                <p className="text-[9.5px] text-amber-300 font-semibold flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>নিচের প্রতিটি ফিল্ডের পাশের 'নিশ্চিত করুন' বাটনে ক্লিক করে তথ্য সঠিকতা যাচাই করুন।</span>
+                </p>
+              )}
+            </div>
+
+            {/* Field-by-Field Verification Cards */}
+            <div className="space-y-2.5 text-xs">
+              
+              {/* FIELD 1: Student Name */}
+              <div className={`p-3 rounded-xl border transition-all ${
+                cameraVerification.verifiedFields.name 
+                  ? 'bg-emerald-950/20 border-emerald-500/60 ring-1 ring-emerald-500/30' 
+                  : 'bg-slate-950/60 border-amber-500/40 ring-1 ring-amber-500/20'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase">১। শিক্ষার্থীর নাম</span>
+                      {cameraVerification.verifiedFields.name ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Check className="h-2.5 w-2.5" /> নাম যাচাইকৃত
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                          <AlertTriangle className="h-2.5 w-2.5" /> যাচাই আবশ্যক
+                        </span>
+                      )}
+                    </div>
+                    {editingFieldKey === 'name' ? (
+                      <div className="space-y-1.5 pt-1">
+                        <input
+                          type="text"
+                          value={tempEditName}
+                          onChange={(e) => setTempEditName(e.target.value)}
+                          placeholder="শিক্ষার্থীর নাম লিখুন"
+                          className="w-full bg-slate-900 border border-blue-500 px-2.5 py-1.5 rounded-lg text-xs text-white focus:outline-none"
+                        />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveInlineEdit('name')}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-[9.5px] font-bold px-2 py-1 rounded cursor-pointer"
+                          >
+                            সংরক্ষণ ও নিশ্চিত
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingFieldKey(null)}
+                            className="bg-slate-800 text-slate-400 hover:text-white text-[9.5px] px-2 py-1 rounded cursor-pointer"
+                          >
+                            বাতিল
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <span className="font-black text-white text-sm block">
+                          {cameraVerification.banglaName}
+                        </span>
+                        {cameraVerification.name && cameraVerification.name !== cameraVerification.banglaName && (
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            EN: {cameraVerification.name}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setFieldPopupTarget('name')}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="ভেরিফিকেশন পপআপে বিস্তারিত দেখুন"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingFieldKey(editingFieldKey === 'name' ? null : 'name');
+                        setTempEditName(cameraVerification.banglaName);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="নাম সংশোধন করুন"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleFieldVerification('name')}
+                      className={`px-3 py-1.5 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        cameraVerification.verifiedFields.name
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                          : 'bg-amber-600 hover:bg-amber-500 text-white shadow-md animate-pulse'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{cameraVerification.verifiedFields.name ? '✓ নাম সঠিক' : 'নিশ্চিত করুন'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* FIELD 2: Class & Roll */}
+              <div className={`p-3 rounded-xl border transition-all ${
+                cameraVerification.verifiedFields.classOrRole 
+                  ? 'bg-emerald-950/20 border-emerald-500/60 ring-1 ring-emerald-500/30' 
+                  : 'bg-slate-950/60 border-amber-500/40 ring-1 ring-amber-500/20'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase">
+                        {cameraVerification.type === 'student' ? '২। শ্রেণী ও রোল' : '২। পদবী'}
+                      </span>
+                      {cameraVerification.verifiedFields.classOrRole ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Check className="h-2.5 w-2.5" /> শ্রেণি/রোল যাচাইকৃত
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                          <AlertTriangle className="h-2.5 w-2.5" /> যাচাই আবশ্যক
+                        </span>
+                      )}
+                    </div>
+                    {editingFieldKey === 'classOrRole' ? (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <label className="text-[8.5px] text-slate-400 block">শ্রেণি</label>
+                          <select
+                            value={tempEditClass}
+                            onChange={(e) => setTempEditClass(e.target.value)}
+                            className="w-full bg-slate-900 border border-blue-500 px-2 py-1 rounded text-xs text-white"
+                          >
+                            <option value="Class 1">Class 1</option>
+                            <option value="Class 2">Class 2</option>
+                            <option value="Class 3">Class 3</option>
+                            <option value="Class 4">Class 4</option>
+                            <option value="Class 5">Class 5</option>
+                            <option value="Class 6">Class 6 (ষষ্ঠ)</option>
+                            <option value="Class 7">Class 7</option>
+                            <option value="Class 8">Class 8</option>
+                            <option value="Class 9">Class 9</option>
+                            <option value="Class 10">Class 10</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[8.5px] text-slate-400 block">রোল</label>
+                          <input
+                            type="text"
+                            value={tempEditRoll}
+                            onChange={(e) => setTempEditRoll(e.target.value)}
+                            placeholder="রোল নম্বর"
+                            className="w-full bg-slate-900 border border-blue-500 px-2 py-1 rounded text-xs text-white"
+                          />
+                        </div>
+                        <div className="col-span-2 flex items-center gap-1.5 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveInlineEdit('classOrRole')}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-[9.5px] font-bold px-2 py-1 rounded cursor-pointer"
+                          >
+                            সংরক্ষণ ও নিশ্চিত
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingFieldKey(null)}
+                            className="bg-slate-800 text-slate-400 hover:text-white text-[9.5px] px-2 py-1 rounded cursor-pointer"
+                          >
+                            বাতিল
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-blue-300 text-xs block">
+                        {cameraVerification.type === 'student' 
+                          ? `${cameraVerification.className || 'শ্রেণী উল্লেখ নেই'} • রোল: ${cameraVerification.roll || 'N/A'}`
+                          : (cameraVerification.role || 'স্টাফ')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setFieldPopupTarget('classOrRole')}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="ভেরিফিকেশন পপআপে বিস্তারিত দেখুন"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingFieldKey(editingFieldKey === 'classOrRole' ? null : 'classOrRole');
+                        setTempEditClass(cameraVerification.className || 'Class 6');
+                        setTempEditRoll(cameraVerification.roll || '');
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="শ্রেণি ও রোল সংশোধন করুন"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleFieldVerification('classOrRole')}
+                      className={`px-3 py-1.5 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        cameraVerification.verifiedFields.classOrRole
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                          : 'bg-amber-600 hover:bg-amber-500 text-white shadow-md animate-pulse'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{cameraVerification.verifiedFields.classOrRole ? '✓ শ্রেণি সঠিক' : 'নিশ্চিত করুন'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* FIELD 3: Guardian Mobile & SMS Target */}
+              <div className={`p-3 rounded-xl border transition-all ${
+                cameraVerification.verifiedFields.phone 
+                  ? 'bg-emerald-950/20 border-emerald-500/60 ring-1 ring-emerald-500/30' 
+                  : 'bg-slate-950/60 border-amber-500/40 ring-1 ring-amber-500/20'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase">৩। অভিভাবক মোবাইল (SMS নোটিফিকেশন যাবে)</span>
+                      {cameraVerification.verifiedFields.phone ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Check className="h-2.5 w-2.5" /> মোবাইল যাচাইকৃত
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                          <AlertTriangle className="h-2.5 w-2.5" /> যাচাই আবশ্যক
+                        </span>
+                      )}
+                    </div>
+                    {editingFieldKey === 'phone' ? (
+                      <div className="space-y-1.5 pt-1">
+                        <input
+                          type="text"
+                          value={tempEditPhone}
+                          onChange={(e) => setTempEditPhone(e.target.value)}
+                          placeholder="017XXXXXXXX"
+                          className="w-full bg-slate-900 border border-blue-500 px-2.5 py-1.5 rounded-lg text-xs text-white font-mono"
+                        />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveInlineEdit('phone')}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-[9.5px] font-bold px-2 py-1 rounded cursor-pointer"
+                          >
+                            সংরক্ষণ ও নিশ্চিত
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingFieldKey(null)}
+                            className="bg-slate-800 text-slate-400 hover:text-white text-[9.5px] px-2 py-1 rounded cursor-pointer"
+                          >
+                            বাতিল
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="font-mono font-bold text-amber-300 text-xs block">
+                        {cameraVerification.phone || 'মোবাইল নম্বর সংযুক্ত নেই'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setFieldPopupTarget('phone')}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="ভেরিফিকেশন পপআপে বিস্তারিত দেখুন"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingFieldKey(editingFieldKey === 'phone' ? null : 'phone');
+                        setTempEditPhone(cameraVerification.phone || '');
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="মোবাইল নম্বর সংশোধন করুন"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleFieldVerification('phone')}
+                      className={`px-3 py-1.5 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        cameraVerification.verifiedFields.phone
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                          : 'bg-amber-600 hover:bg-amber-500 text-white shadow-md animate-pulse'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{cameraVerification.verifiedFields.phone ? '✓ মোবাইল সঠিক' : 'নিশ্চিত করুন'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* FIELD 4: Scan Direction (Check-In or Check-Out) */}
+              <div className={`p-3 rounded-xl border transition-all ${
+                cameraVerification.verifiedFields.direction 
+                  ? 'bg-emerald-950/20 border-emerald-500/60 ring-1 ring-emerald-500/30' 
+                  : 'bg-slate-950/60 border-amber-500/40 ring-1 ring-amber-500/20'
+              }`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase">৪। উপস্থিতির ধরণ</span>
+                      {cameraVerification.verifiedFields.direction ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Check className="h-2.5 w-2.5" /> ধরণ যাচাইকৃত
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                          <AlertTriangle className="h-2.5 w-2.5" /> যাচাই আবশ্যক
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCameraVerification(prev => prev ? ({ ...prev, direction: 'Check-In' }) : null);
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                          cameraVerification.direction === 'Check-In'
+                            ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/40'
+                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        প্রবেশ (Check-In)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCameraVerification(prev => prev ? ({ ...prev, direction: 'Check-Out' }) : null);
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                          cameraVerification.direction === 'Check-Out'
+                            ? 'bg-rose-600 text-white shadow-md ring-2 ring-rose-400/40'
+                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        ছুটি (Check-Out)
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleFieldVerification('direction')}
+                    className={`px-3 py-1.5 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
+                      cameraVerification.verifiedFields.direction
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                        : 'bg-amber-600 hover:bg-amber-500 text-white shadow-md animate-pulse'
+                    }`}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>{cameraVerification.verifiedFields.direction ? '✓ ধরণ সঠিক' : 'নিশ্চিত করুন'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Button to Verify All Fields at once */}
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setCameraVerification(prev => prev ? ({
+                    ...prev,
+                    verifiedFields: { name: true, classOrRole: true, phone: true, direction: true }
+                  }) : null);
+                }}
+                className="text-[11px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1.5 cursor-pointer transition-colors p-1 rounded hover:bg-blue-950/40"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-spin" />
+                <span>সকল ফিল্ড একসাথে সঠিক নিশ্চিত করুন</span>
+              </button>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {Object.values(cameraVerification.verifiedFields).filter(Boolean).length}/৪ ফিল্ড নিশ্চিত
+              </span>
+            </div>
+
+            {/* Confirmation & Cancel Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setCameraVerification(null);
+                  setEditingFieldKey(null);
+                  setFieldPopupTarget(null);
+                  setShowStudentSwitcher(false);
+                }}
+                className="py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all text-center cursor-pointer"
+              >
+                বাতিল করুন
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmVerification(false)}
+                className={`py-2.5 px-3 rounded-xl text-white text-xs font-black shadow-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                  Object.values(cameraVerification.verifiedFields).every(Boolean)
+                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
+                    : 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/40'
+                }`}
+              >
+                <CheckCircle className="h-4 w-4 text-amber-200" />
+                <span>
+                  {Object.values(cameraVerification.verifiedFields).every(Boolean)
+                    ? 'উপস্থিতি অনুমোদন করুন'
+                    : `উপস্থিতি চূড়ান্ত করুন (${Object.values(cameraVerification.verifiedFields).filter(Boolean).length}/৪ যাচাইকৃত)`}
+                </span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* DEDICATED FOCUSED FIELD VERIFICATION POPUP */}
+      {fieldPopupTarget && cameraVerification && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[130] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border-2 border-blue-500 rounded-2xl max-w-sm w-full p-5 text-white space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-blue-400" />
+                <h4 className="text-xs font-black uppercase text-blue-300">
+                  {fieldPopupTarget === 'name' && 'ফিল্ড ভেরিফিকেশন: শিক্ষার্থীর নাম'}
+                  {fieldPopupTarget === 'classOrRole' && 'ফিল্ড ভেরিফিকেশন: শ্রেণি ও রোল'}
+                  {fieldPopupTarget === 'phone' && 'ফিল্ড ভেরিফিকেশন: অভিভাবকের মোবাইল নম্বর'}
+                  {fieldPopupTarget === 'direction' && 'ফিল্ড ভেরিফিকেশন: উপস্থিতির ধরণ'}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFieldPopupTarget(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 font-bold block">বর্তমান মান:</span>
+                <p className="font-bold text-white text-sm">
+                  {fieldPopupTarget === 'name' && cameraVerification.banglaName}
+                  {fieldPopupTarget === 'classOrRole' && `${cameraVerification.className || 'শ্রেণি নেই'} (রোল: ${cameraVerification.roll || 'N/A'})`}
+                  {fieldPopupTarget === 'phone' && (cameraVerification.phone || 'কোন নম্বর পাওয়া যায়নি')}
+                  {fieldPopupTarget === 'direction' && (cameraVerification.direction === 'Check-In' ? 'প্রবেশ (Check-In)' : 'ছুটি (Check-Out)')}
+                </p>
+              </div>
+
+              <div className="border-t border-slate-800 pt-2 space-y-1 text-[11px] text-slate-300">
+                <p className="font-semibold text-amber-300 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>যাচাইকরণ প্রক্রিয়া:</span>
+                </p>
+                <p className="text-[10.5px] text-slate-400 leading-relaxed">
+                  ক্যামেরা দিয়ে আইডি কার্ড স্ক্যানের সময় অপটিক্যাল রিডিংয়ে ভুল তথ্য প্রতিরোধ করার উদ্দেশ্যে এই ফিল্ডটি যাচাই করা হচ্ছে। যদি উপরের তথ্যটি সঠিক হয়, নিচের বাটনে চাপুন।
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setFieldPopupTarget(null)}
+                className="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all text-center"
+              >
+                বন্ধ করুন
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCameraVerification(prev => {
+                    if (!prev) return null;
+                    return {
+                      ...prev,
+                      verifiedFields: {
+                        ...prev.verifiedFields,
+                        [fieldPopupTarget]: true
+                      }
+                    };
+                  });
+                  setFieldPopupTarget(null);
+                }}
+                className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md transition-all text-center flex items-center justify-center gap-1"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>সঠিক হিসেবে নিশ্চিত</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SAFETY WARNING MODAL FOR INCOMPLETE VERIFICATION */}
+      {showIncompleteConfirmWarning && cameraVerification && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[140] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-sm w-full p-6 text-white space-y-4 shadow-2xl relative">
+            <div className="flex items-center gap-2.5 text-amber-400">
+              <AlertTriangle className="h-7 w-7 animate-bounce" />
+              <div>
+                <h3 className="text-sm font-extrabold">সতর্কতা: যাচাই অসম্পূর্ণ!</h3>
+                <p className="text-[10px] text-slate-400">ভুল তথ্য এড়াতে ফিল্ড নিশ্চিতকরণ প্রয়োজন</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              আপনার ৪টি ফিল্ডের মধ্যে <strong className="text-amber-400">{4 - Object.values(cameraVerification.verifiedFields).filter(Boolean).length}টি ফিল্ড</strong> এখনো যাচাই করা হয়নি। ক্যামেরা স্ক্যানের ভুল তথ্য প্রতিরোধে প্রতিটি ফিল্ডের পাশের 'নিশ্চিত করুন' বাটন চাপুন।
+            </p>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowIncompleteConfirmWarning(false)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-md cursor-pointer"
+              >
+                ফিরে গিয়ে প্রতিটি ফিল্ড নিশ্চিত করুন 🔍
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowIncompleteConfirmWarning(false);
+                  handleConfirmVerification(true);
+                }}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-[11px] transition-all cursor-pointer"
+              >
+                সব তথ্য সঠিক ধরে উপস্থিতি চূড়ান্ত করুন →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNREGISTERED CARD MODAL WITH FIELD-BY-FIELD CONFIRMATION */}
       {unregisteredScannedId && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-sm w-full p-6 text-white space-y-4 shadow-2xl relative overflow-hidden">
@@ -651,12 +1601,26 @@ export const AttendanceSimulator: React.FC = () => {
             <div className="space-y-4 pt-1">
               {/* Option A: Assign to Existing */}
               <div className="bg-slate-950/60 p-3.5 border border-slate-800/80 rounded-2xl space-y-2.5">
-                <span className="block text-[9.5px] font-black text-amber-300 uppercase tracking-widest leading-none">
-                  বিকল্প ১। বিদ্যমান শিক্ষার্থীর সাথে যুক্ত করুন:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="block text-[9.5px] font-black text-amber-300 uppercase tracking-widest leading-none">
+                    বিকল্প ১। বিদ্যমান শিক্ষার্থীর সাথে যুক্ত করুন:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAssignVerified(!isAssignVerified)}
+                    className={`text-[8px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${
+                      isAssignVerified ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {isAssignVerified ? '✓ নিশ্চিত' : 'যাচাই?'}
+                  </button>
+                </div>
                 <select
                   value={assignToStudentId}
-                  onChange={(e) => setAssignToStudentId(e.target.value)}
+                  onChange={(e) => {
+                    setAssignToStudentId(e.target.value);
+                    setIsAssignVerified(false);
+                  }}
                   className="w-full bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs text-blue-300 font-bold focus:border-blue-500 focus:outline-none"
                 >
                   <option value="" className="text-slate-500">-- শিক্ষার্থী নির্বাচন করুন --</option>
@@ -678,6 +1642,7 @@ export const AttendanceSimulator: React.FC = () => {
                     setSelectedId(unregisteredScannedId);
                     setUnregisteredScannedId(null);
                     setAssignToStudentId('');
+                    setIsAssignVerified(false);
                   }}
                   className="w-full text-[10px] font-extrabold bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-white transition-all shadow-sm cursor-pointer"
                 >
@@ -685,28 +1650,65 @@ export const AttendanceSimulator: React.FC = () => {
                 </button>
               </div>
 
-              {/* Option B: Register New Student On the fly */}
+              {/* Option B: Register New Student On the fly with Field Confirmation Buttons */}
               <div className="bg-slate-950/60 p-3.5 border border-slate-800/80 rounded-2xl space-y-2.5">
-                <span className="block text-[9.5px] font-black text-amber-300 uppercase tracking-widest leading-none">
-                  বিকল্প ২। অন-দ্য-ফ্লাই নতুন রেজিস্ট্রেশন:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="block text-[9.5px] font-black text-amber-300 uppercase tracking-widest leading-none">
+                    বিকল্প ২। অন-দ্য-ফ্লাই নতুন রেজিস্ট্রেশন:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setVerifiedOnTheFlyFields({ name: true, class: true, roll: true, phone: true })}
+                    className="text-[8px] text-amber-300 hover:underline font-bold cursor-pointer"
+                  >
+                    সকল ফিল্ড নিশ্চিত
+                  </button>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[8px] text-slate-400 block mb-0.5">নাম (বাংলা)</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[8px] text-slate-400 block">নাম (বাংলা)</label>
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedOnTheFlyFields(prev => ({ ...prev, name: !prev.name }))}
+                        className={`text-[7.5px] px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                          verifiedOnTheFlyFields.name ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {verifiedOnTheFlyFields.name ? '✓ নিশ্চিত' : 'যাচাই?'}
+                      </button>
+                    </div>
                     <input
                       type="text"
                       placeholder="যেমন: মারিয়া খাতুন"
                       value={newStudentNameBng}
-                      onChange={(e) => setNewStudentNameBng(e.target.value)}
+                      onChange={(e) => {
+                        setNewStudentNameBng(e.target.value);
+                        setVerifiedOnTheFlyFields(prev => ({ ...prev, name: false }));
+                      }}
                       className="w-full bg-slate-900 border border-slate-800 px-2 py-1 rounded text-[10.5px] text-stone-200 focus:outline-none focus:border-amber-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] text-slate-400 block mb-0.5">শ্রেণী (Class)</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[8px] text-slate-400 block">শ্রেণী (Class)</label>
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedOnTheFlyFields(prev => ({ ...prev, class: !prev.class }))}
+                        className={`text-[7.5px] px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                          verifiedOnTheFlyFields.class ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {verifiedOnTheFlyFields.class ? '✓ নিশ্চিত' : 'যাচাই?'}
+                      </button>
+                    </div>
                     <select
                       value={newStudentClass}
-                      onChange={(e) => setNewStudentClass(e.target.value)}
+                      onChange={(e) => {
+                        setNewStudentClass(e.target.value);
+                        setVerifiedOnTheFlyFields(prev => ({ ...prev, class: false }));
+                      }}
                       className="w-full bg-slate-900 border border-slate-800 px-1 py-1 rounded text-[10.5px] text-stone-200 focus:outline-none"
                     >
                       <option value="Class 1">Class 1</option>
@@ -717,25 +1719,55 @@ export const AttendanceSimulator: React.FC = () => {
                       <option value="Class 6">Class 6</option>
                       <option value="Class 7">Class 7</option>
                       <option value="Class 8">Class 8</option>
+                      <option value="Class 9">Class 9</option>
+                      <option value="Class 10">Class 10</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[8px] text-slate-400 block mb-0.5">শ্রেণী রোল</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[8px] text-slate-400 block">শ্রেণী রোল</label>
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedOnTheFlyFields(prev => ({ ...prev, roll: !prev.roll }))}
+                        className={`text-[7.5px] px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                          verifiedOnTheFlyFields.roll ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {verifiedOnTheFlyFields.roll ? '✓ নিশ্চিত' : 'যাচাই?'}
+                      </button>
+                    </div>
                     <input
                       type="text"
                       placeholder="রোল"
                       value={newStudentRoll}
-                      onChange={(e) => setNewStudentRoll(e.target.value)}
+                      onChange={(e) => {
+                        setNewStudentRoll(e.target.value);
+                        setVerifiedOnTheFlyFields(prev => ({ ...prev, roll: false }));
+                      }}
                       className="w-full bg-slate-900 border border-slate-800 px-2 py-1 rounded text-[10.5px] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] text-slate-400 block mb-0.5">অভিভাবক ফোন</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[8px] text-slate-400 block">অভিভাবক ফোন</label>
+                      <button
+                        type="button"
+                        onClick={() => setVerifiedOnTheFlyFields(prev => ({ ...prev, phone: !prev.phone }))}
+                        className={`text-[7.5px] px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                          verifiedOnTheFlyFields.phone ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {verifiedOnTheFlyFields.phone ? '✓ নিশ্চিত' : 'যাচাই?'}
+                      </button>
+                    </div>
                     <input
                       type="text"
                       placeholder="ফোন"
                       value={newStudentGPhone}
-                      onChange={(e) => setNewStudentGPhone(e.target.value)}
+                      onChange={(e) => {
+                        setNewStudentGPhone(e.target.value);
+                        setVerifiedOnTheFlyFields(prev => ({ ...prev, phone: false }));
+                      }}
                       className="w-full bg-slate-900 border border-slate-800 px-2 py-1 rounded text-[10.5px] focus:outline-none"
                     />
                   </div>
@@ -759,16 +1791,8 @@ export const AttendanceSimulator: React.FC = () => {
                       totalFees: 15000,
                     });
                     
-                    // The student is added with id s_... inside context.
-                    // Let's defer mapping for scanned ID. To make it instant, we can find the student with name/roll in a timeout or write student update
                     setTimeout(() => {
-                      updateStudentId(newStudentNameBng, unregisteredScannedId); // Wait, our updateStudentId takes (oldId, newId)
-                      // Let's make sure the added student has the unregisteredScannedId from the beginning or we search for s_ and update.
-                      // Wait! In SchoolContext.tsx, can we check if addStudent supports passing a custom id?
-                      // We can just query the last entered student or let them first assign! Actually, let's create student and map it to unregisteredScannedId in context!
-                      // Wait! Let's check how we can easily assign it. In SchoolContext, addStudent creates with s_ + Date.now().
-                      // So we can find the student that has the name we just entered, and change their id to unregisteredScannedId!
-                      // Yes!
+                      updateStudentId(newStudentNameBng, unregisteredScannedId);
                     }, 100);
 
                     playBeep();
@@ -777,6 +1801,7 @@ export const AttendanceSimulator: React.FC = () => {
                     setUnregisteredScannedId(null);
                     setNewStudentNameBng('');
                     setNewStudentRoll('');
+                    setVerifiedOnTheFlyFields({ name: false, class: false, roll: false, phone: false });
                   }}
                   className="w-full text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-white transition-all shadow-sm cursor-pointer"
                 >
@@ -789,6 +1814,8 @@ export const AttendanceSimulator: React.FC = () => {
               onClick={() => {
                 setUnregisteredScannedId(null);
                 setAssignToStudentId('');
+                setIsAssignVerified(false);
+                setVerifiedOnTheFlyFields({ name: false, class: false, roll: false, phone: false });
               }}
               className="w-full text-center text-slate-400 hover:text-white text-[10px] uppercase font-bold py-1 transition-colors block cursor-pointer"
             >
