@@ -434,12 +434,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-6 text-center sm:text-left">
                   
                   {/* Solar Insignia with Rotating Text & Undistorted Logo */}
-                  <div className="relative shrink-0 flex items-center justify-center w-48 h-48 sm:w-52 sm:h-52 select-none group">
+                  <div className="relative shrink-0 flex items-center justify-center w-56 h-56 sm:w-64 sm:h-64 aspect-square min-w-[224px] min-h-[224px] sm:min-w-[256px] sm:min-h-[256px] select-none group">
                     {/* Deep Ambient Solar Aura Glow */}
-                    <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/20 to-yellow-400/30 blur-2xl animate-sun-radiance pointer-events-none"></div>
+                    <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/20 to-yellow-400/30 blur-2xl animate-sun-radiance pointer-events-none"></div>
 
                     {/* Radiant Solar Rays (উদীমান সূর্যের আলোক রশ্মি) */}
-                    <svg className="absolute inset-0 w-full h-full animate-spin-slow-reverse pointer-events-none" viewBox="0 0 240 240">
+                    <svg className="absolute inset-0 w-full h-full aspect-square animate-spin-slow-reverse pointer-events-none" viewBox="0 0 280 280">
                       <defs>
                         <radialGradient id="sunRayGrad" cx="50%" cy="50%" r="50%">
                           <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95" />
@@ -451,12 +451,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       {/* 16 Solar Beams Emanating Outwards */}
                       {Array.from({ length: 16 }).map((_, i) => {
                         const angle = (i * 22.5 * Math.PI) / 180;
-                        const r1 = 58;
-                        const r2 = 98;
-                        const x1 = 120 + r1 * Math.cos(angle);
-                        const y1 = 120 + r1 * Math.sin(angle);
-                        const x2 = 120 + r2 * Math.cos(angle);
-                        const y2 = 120 + r2 * Math.sin(angle);
+                        const r1 = 68;
+                        const r2 = 118;
+                        const x1 = 140 + r1 * Math.cos(angle);
+                        const y1 = 140 + r1 * Math.sin(angle);
+                        const x2 = 140 + r2 * Math.cos(angle);
+                        const y2 = 140 + r2 * Math.sin(angle);
                         return (
                           <line
                             key={i}
@@ -472,38 +472,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         );
                       })}
                       {/* Outer concentric subtle golden rings */}
-                      <circle cx="120" cy="120" r="108" fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.6" />
-                      <circle cx="120" cy="120" r="80" fill="none" stroke="#f59e0b" strokeWidth="0.8" opacity="0.5" />
+                      <circle cx="140" cy="140" r="130" fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.6" />
+                      <circle cx="140" cy="140" r="96" fill="none" stroke="#f59e0b" strokeWidth="0.8" opacity="0.5" />
                     </svg>
 
-                    {/* Rotating Circular Animated Text Wheel (চারপাশে চাকার মতো ঘুরছে লেখা) */}
-                    <div className="absolute inset-0 w-full h-full animate-spin-slow pointer-events-none">
-                      <svg className="w-full h-full" viewBox="0 0 240 240">
+                    {/* Rotating Circular Animated Text Wheel (চারপাশে চাকার মতো ঘুরছে স্পষ্ট পড়া যায় এমন লেখা) */}
+                    <div className="absolute inset-0 w-full h-full aspect-square animate-spin-slow pointer-events-none flex items-center justify-center">
+                      <svg className="w-full h-full aspect-square" viewBox="0 0 280 280">
                         <defs>
                           <path
                             id="sunEmblemTextPath"
-                            d="M 120, 120 m -94, 0 a 94,94 0 1,1 188,0 a 94,94 0 1,1 -188,0"
+                            d="M 140, 140 m -108, 0 a 108,108 0 1,1 216,0 a 108,108 0 1,1 -216,0"
                             fill="none"
                           />
                         </defs>
-                        <text className="font-sans font-black text-[9.8px] fill-amber-300 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] tracking-[0.14em]">
-                          <textPath href="#sunEmblemTextPath" startOffset="0%">
-                            মমতার স্পর্শে বিকশিত হোক সুপ্ত প্রতিভা ★ হবে সার্টিফাইড, হবে জাস্টিফাইড ★ 
+                        {/* Circular Text Band / Guideline Ring (টেক্সট লাইনের চাকা লেগে রিং) */}
+                        <circle cx="140" cy="140" r="108" fill="none" stroke="rgba(245, 158, 11, 0.22)" strokeWidth="28" />
+                        <circle cx="140" cy="140" r="122" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" opacity="0.75" />
+                        <circle cx="140" cy="140" r="94" fill="none" stroke="#f59e0b" strokeWidth="1.2" opacity="0.75" />
+                        
+                        <text className="font-sans font-black text-[13.5px] fill-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                          <textPath href="#sunEmblemTextPath" startOffset="0%" textLength="665" lengthAdjust="spacing">
+                            ⭐ ডিজিটাল শিক্ষায় এগিয়ে চলা ⭐ সৃজনশীলতা ও মূল্যবোধের বিকাশ ⭐
                           </textPath>
                         </text>
                       </svg>
                     </div>
 
-                    {/* Central Undistorted Delicon Logo Container */}
-                    <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white p-2.5 shadow-2xl border-2 border-amber-400 flex items-center justify-center overflow-hidden ring-4 ring-amber-500/20 group-hover:scale-105 transition-transform duration-300">
+                    {/* Central Undistorted Delicon Logo Container (সম্পূর্ণ গোল ও অবিকৃত) */}
+                    <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 aspect-square rounded-full bg-white p-3 shadow-2xl border-4 border-amber-400 flex items-center justify-center overflow-hidden ring-4 ring-amber-500/25 group-hover:scale-105 transition-transform duration-300 shrink-0">
                       {/* Solar Core Background glow inside container */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-amber-100/50 via-white to-amber-50/70 pointer-events-none"></div>
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-100/50 via-white to-amber-50/70 pointer-events-none"></div>
                       
                       {/* Undistorted Logo Image (object-contain ensures zero distortion) */}
                       <img
                         src={schoolLogoVal || 'https://i.postimg.cc/prHZW6n3/logo-1.png'}
                         alt={schoolName || 'ডিলিকন মডেল একাডেমী'}
-                        className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:rotate-3 select-none"
+                        className="w-full h-full object-contain aspect-square relative z-10 transition-transform duration-500 group-hover:rotate-3 select-none"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -534,7 +539,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </h1>
 
                     <p className="text-amber-300 text-sm sm:text-base font-bold leading-relaxed font-sans drop-shadow-sm">
-                      "{schoolSlogan || 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়'}"
+                      "{schoolSlogan || 'ডিজিটাল শিক্ষায় এগিয়ে থাকুন, সন্তানের ভবিষ্যৎ আজই নিশ্চিত করুন'}"
                     </p>
                   </div>
                 </div>

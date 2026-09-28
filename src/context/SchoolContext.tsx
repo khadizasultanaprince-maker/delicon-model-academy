@@ -150,8 +150,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [schoolSlogan, setSchoolSlogan] = useState<string>(() => {
     const saved = localStorage.getItem('delicon_school_slogan');
-    const defaultSlogan = 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়';
-    if (saved === 'খাতায় লিখে পাস নয়, পরম স্নেহে ও আদর্শে জাস্টিফাইড সুনাগরিক গড়ার বিশ্বস্ত আঙিনা') {
+    const defaultSlogan = 'ডিজিটাল শিক্ষায় এগিয়ে থাকুন, সন্তানের ভবিষ্যৎ আজই নিশ্চিত করুন';
+    if (!saved || saved === 'মন থেমে যাক মুগ্ধতায়, সন্তান হাসুক চিরন্তন শ্বাশত অমর শিক্ষায়' || saved === 'খাতায় লিখে পাস নয়, পরম স্নেহে ও আদর্শে জাস্টিফাইড সুনাগরিক গড়ার বিশ্বস্ত আঙিনা') {
       localStorage.setItem('delicon_school_slogan', defaultSlogan);
       return defaultSlogan;
     }
