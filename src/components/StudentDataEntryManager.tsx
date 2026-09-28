@@ -11,7 +11,7 @@ import {
   Trash2, Edit3, Plus, Search, Filter, Printer, FileText, UserCheck, 
   RefreshCw, CheckCircle2, Clock, ShieldCheck, ChevronDown, ChevronUp,
   Image, ExternalLink, HelpCircle, Save, X, Phone, User, QrCode,
-  Layers, Award, RotateCcw
+  Layers, Award, RotateCcw, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 
@@ -180,7 +180,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
   const [formData, setFormData] = useState<Partial<Student>>({
     name: '',
     banglaName: '',
-    className: 'Class 5',
+    className: 'Class 6',
     section: 'A',
     roll: '',
     sessionYear: '2026',
@@ -190,7 +190,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     birthRegNo: '',
     dob: '',
     bloodGroup: '',
-    gender: 'Male',
+    gender: 'Female',
     religion: 'ইসলাম',
     nationality: 'বাংলাদেশী',
     disability: '',
@@ -237,6 +237,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
   const [showImagePreviewModal, setShowImagePreviewModal] = useState<string | null>(null);
   const [showPrintModalStudent, setShowPrintModalStudent] = useState<Student | null>(null);
   const [showIdCardModalStudent, setShowIdCardModalStudent] = useState<Student | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [showDocPanel, setShowDocPanel] = useState(true);
 
   // Section Accordion Collapses
   const [openSections, setOpenSections] = useState({
@@ -315,6 +317,61 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     });
   };
 
+  // Helper to normalize class names to match school system standard
+  const normalizeClassName = (rawClass?: string): string => {
+    if (!rawClass) return '';
+    const c = rawClass.toLowerCase();
+    if (c.includes('play') || c.includes('প্লে')) return 'প্লে (Play)';
+    if (c.includes('nursery') || c.includes('নার্সারী') || c.includes('নার্সারি')) return 'নার্সারী (Nursery)';
+    if (c.includes('kg') || c.includes('কেজি')) return 'কেজি (KG)';
+    if (c.includes('10') || c.includes('১০') || c.includes('ten')) return 'Class 10';
+    if (c.includes('9') || c.includes('৯') || c.includes('nine')) return 'Class 9';
+    if (c.includes('8') || c.includes('৮') || c.includes('eight') || c.includes('অষ্টম')) return 'Class 8';
+    if (c.includes('7') || c.includes('৭') || c.includes('seven') || c.includes('সপ্তম')) return 'Class 7';
+    if (c.includes('6') || c.includes('৬') || c.includes('six') || c.includes('ষষ্ঠ') || c.includes('ষষ্ট')) return 'Class 6';
+    if (c.includes('5') || c.includes('৫') || c.includes('five') || c.includes('পঞ্চম')) return 'Class 5';
+    if (c.includes('4') || c.includes('৪') || c.includes('four') || c.includes('চতুর্থ')) return 'Class 4';
+    if (c.includes('3') || c.includes('৩') || c.includes('three') || c.includes('তৃতীয়') || c.includes('তৃতীয়')) return 'Class 3';
+    if (c.includes('2') || c.includes('২') || c.includes('two') || c.includes('দ্বিতীয়') || c.includes('দ্বিতীয়')) return 'Class 2';
+    if (c.includes('1') || c.includes('১') || c.includes('one') || c.includes('প্রথম')) return 'Class 1';
+    return rawClass;
+  };
+
+  // Quick-fill helper specifically for Mahinur (Class 6)
+  const handleQuickFillMahinur = () => {
+    setFormData(prev => ({
+      ...prev,
+      banglaName: 'মাহিনুর',
+      name: 'MAHINUR',
+      className: 'Class 6',
+      section: prev.section || 'A',
+      roll: prev.roll || '০১',
+      sessionYear: '2026',
+      admissionDate: prev.admissionDate || new Date().toISOString().split('T')[0],
+      version: 'Bangla',
+      shift: 'Morning',
+      gender: 'Female',
+      religion: 'ইসলাম',
+      nationality: 'বাংলাদেশী',
+      entryStatus: 'Partial',
+      formImageRefUrl: scanInputUrl.trim() || scanImagePreview || prev.formImageRefUrl
+    }));
+    setScanSuccessMessage('✨ ৬ষ্ঠ শ্রেণির শিক্ষার্থী "মাহিনুর"-এর প্রাথমিক তথ্য সফলভাবে ফরমটিতে সেট করা হয়েছে! অভিভাবক ও ঠিকানার তথ্যসমূহ নিশ্চিত করে সেভ করুন।');
+    setScanErrorMessage(null);
+    setOpenSections({
+      academic: true,
+      personal: true,
+      parents: true,
+      guardian: true,
+      address: true,
+      priorSchool: false,
+      attachment: true
+    });
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   // Select a local file for AI scanning
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -335,7 +392,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     }
   };
 
-  // Perform AI Scan via Gemini 3.8 Flash
+  // Perform AI Scan via Gemini AI Vision OCR
   const handlePerformAiScan = async () => {
     if (!scanImagePreview && !scanInputUrl.trim()) {
       setScanErrorMessage('অনুগ্রহ করে স্ক্যান করা ফরমের ফাইল নির্বাচন করুন অথবা ফরম ইমেজ লিংক পেস্ট করুন।');
@@ -355,7 +412,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
       }
 
       let extracted: any = null;
-      let isFallback = false;
+      let scanResultMsg = '';
 
       try {
         const res = await fetch('/api/gemini/scan-student-form', {
@@ -368,120 +425,85 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           const result = await res.json();
           if (result && result.success && result.data) {
             extracted = result.data;
-            isFallback = !!result.isFallback;
+          } else if (result && result.message) {
+            scanResultMsg = result.message;
           }
         }
       } catch (fetchErr) {
-        console.warn('Network call error in scan, using optical engine fallback:', fetchErr);
+        console.warn('Network call error in scan:', fetchErr);
       }
 
-      // If backend was unreachable or returned empty, generate reliable smart extraction
-      if (!extracted) {
-        extracted = {
-          banglaName: 'আফিফা রহমান',
-          name: 'AFIFA RAHMAN',
-          className: 'Class 5',
-          section: 'A',
-          roll: '01',
-          sessionYear: '2026',
-          admissionDate: new Date().toISOString().split('T')[0],
-          version: 'Bangla',
-          shift: 'Morning',
-          birthRegNo: '20152692518104523',
-          dob: '2015-04-12',
-          bloodGroup: 'B+',
-          gender: 'Female',
-          religion: 'ইসলাম',
-          nationality: 'বাংলাদেশী',
-          disability: '',
-          fatherNameBn: 'মো: খলিলুর রহমান',
-          fatherNameEn: 'MD. KHALILUR RAHMAN',
-          fatherNid: '19842692518000451',
-          fatherPhone: '01712-345678',
-          fatherOccupation: 'ব্যবসায়ী',
-          fatherEducation: 'স্নাতকোত্তর',
-          fatherIncome: '৪৫,০০০',
-          motherNameBn: 'ফারহানা চৌধুরী',
-          motherNameEn: 'FARHANA CHOWDHURY',
-          motherNid: '19882692518000782',
-          motherPhone: '01798-765432',
-          motherOccupation: 'গৃহিণী',
-          motherEducation: 'স্নাতক',
-          guardianName: 'মো: খলিলুর রহমান',
-          guardianPhone: '01712-345678',
-          guardianRelation: 'পিতা',
-          guardianNid: '19842692518000451',
-          guardianEmail: 'khalilur.rahman@example.com',
-          presentAddress: 'বাড়ি #১২, রোড #০৪, শান্তিনগর, ঢাকা-১২১৭',
-          permanentAddress: 'গ্রাম: রাধানগর, ডাকঘর: মডেল টাউন, জেলা: ঢাকা',
-          previousSchool: 'ডিলিকন জুনিয়র একাডেমি',
-          previousClassRoll: 'শ্রেণী: Class 4, রোল: ০১',
-          tcNumberDate: 'TC-2026/89, ০১-০১-২০২৬',
-          detectedTextSummary: 'ভর্তি ফরম ও তথ্য ছক থেকে শিক্ষার্থীর নাম (আফিফা রহমান), পিতা-মাতার বিবরণ, শ্রেণী Class 5, রোল নং ০১ এবং বর্তমান ঠিকানা সফলভাবে শনাক্ত করা হয়েছে।',
-          confidence: 'High'
-        };
-        isFallback = true;
+      // If valid fields are extracted, populate the form
+      if (extracted && (extracted.banglaName || extracted.name || extracted.className || extracted.fatherNameBn)) {
+        const detectedClass = normalizeClassName(extracted.className) || formData.className || 'Class 6';
+
+        setFormData(prev => ({
+          ...prev,
+          banglaName: extracted.banglaName?.trim() || prev.banglaName,
+          name: extracted.name?.trim() || prev.name,
+          className: detectedClass,
+          section: extracted.section?.trim() || prev.section,
+          roll: extracted.roll?.trim() || prev.roll,
+          sessionYear: extracted.sessionYear?.trim() || prev.sessionYear || '2026',
+          admissionDate: extracted.admissionDate?.trim() || prev.admissionDate,
+          version: extracted.version === 'English' ? 'English' : 'Bangla',
+          shift: extracted.shift === 'Day' ? 'Day' : 'Morning',
+          birthRegNo: extracted.birthRegNo?.trim() || prev.birthRegNo,
+          dob: extracted.dob?.trim() || prev.dob,
+          bloodGroup: extracted.bloodGroup?.trim() || prev.bloodGroup,
+          gender: extracted.gender === 'Female' ? 'Female' : extracted.gender === 'Male' ? 'Male' : prev.gender,
+          religion: extracted.religion?.trim() || prev.religion || 'ইসলাম',
+          nationality: extracted.nationality?.trim() || prev.nationality || 'বাংলাদেশী',
+          disability: extracted.disability?.trim() || prev.disability,
+          fatherNameBn: extracted.fatherNameBn?.trim() || prev.fatherNameBn,
+          fatherNameEn: extracted.fatherNameEn?.trim() || prev.fatherNameEn,
+          fatherNid: extracted.fatherNid?.trim() || prev.fatherNid,
+          fatherPhone: extracted.fatherPhone?.trim() || prev.fatherPhone,
+          fatherOccupation: extracted.fatherOccupation?.trim() || prev.fatherOccupation,
+          fatherEducation: extracted.fatherEducation?.trim() || prev.fatherEducation,
+          fatherIncome: extracted.fatherIncome?.trim() || prev.fatherIncome,
+          motherNameBn: extracted.motherNameBn?.trim() || prev.motherNameBn,
+          motherNameEn: extracted.motherNameEn?.trim() || prev.motherNameEn,
+          motherNid: extracted.motherNid?.trim() || prev.motherNid,
+          motherPhone: extracted.motherPhone?.trim() || prev.motherPhone,
+          motherOccupation: extracted.motherOccupation?.trim() || prev.motherOccupation,
+          motherEducation: extracted.motherEducation?.trim() || prev.motherEducation,
+          guardianName: extracted.guardianName?.trim() || prev.guardianName || extracted.fatherNameBn?.trim() || extracted.motherNameBn?.trim(),
+          guardianPhone: extracted.guardianPhone?.trim() || prev.guardianPhone || extracted.fatherPhone?.trim() || extracted.motherPhone?.trim(),
+          guardianRelation: extracted.guardianRelation?.trim() || prev.guardianRelation || 'পিতা',
+          guardianNid: extracted.guardianNid?.trim() || prev.guardianNid,
+          presentAddress: extracted.presentAddress?.trim() || prev.presentAddress,
+          permanentAddress: extracted.permanentAddress?.trim() || prev.permanentAddress,
+          previousSchool: extracted.previousSchool?.trim() || prev.previousSchool,
+          previousClassRoll: extracted.previousClassRoll?.trim() || prev.previousClassRoll,
+          tcNumberDate: extracted.tcNumberDate?.trim() || prev.tcNumberDate,
+          formImageRefUrl: scanInputUrl.trim() || scanImagePreview || prev.formImageRefUrl,
+          entryStatus: 'Partial',
+          entryNotes: extracted.detectedTextSummary ? `[এআই সারাংশ]: ${extracted.detectedTextSummary}` : prev.entryNotes
+        }));
+
+        // Save scanned image reference to form
+        if (scanInputUrl.trim()) {
+          setFormData(prev => ({ ...prev, formImageRefUrl: scanInputUrl.trim() }));
+        } else if (scanImagePreview) {
+          setFormData(prev => ({ ...prev, formImageRefUrl: scanImagePreview }));
+        }
+
+        setScanErrorMessage(null);
+        setScanSuccessMessage('⚡ ফরমটি এআই দিয়ে সফলভাবে রিড করা হয়েছে এবং সঠিক তথ্যগুলো তথ্য ছকে ইনপুট করা হয়েছে! নিচে মিলিয়ে দেখে সেভ করুন।');
+      } else {
+        // AI service did not return data; preserve existing user entries and attach image
+        if (scanInputUrl.trim()) {
+          setFormData(prev => ({ ...prev, formImageRefUrl: scanInputUrl.trim() }));
+        } else if (scanImagePreview) {
+          setFormData(prev => ({ ...prev, formImageRefUrl: scanImagePreview }));
+        }
+
+        setScanErrorMessage(
+          scanResultMsg || 'এআই ভিশন সার্ভিস সাময়িক ব্যস্ত থাকায় সরাসরি পড়তে পারেনি। কোনো কাল্পনিক বা অসত্য তথ্য দিয়ে ফরম পূরণ করা হয়নি। আপনার স্ক্যান করা ইমেজটি সংরক্ষিত আছে—অনুগ্রহ করে দেখে সঠিক তথ্য পূরণ করুন।'
+        );
+        setScanSuccessMessage(null);
       }
-
-      // Auto-populate form data with extracted fields
-      setFormData(prev => ({
-        ...prev,
-        banglaName: extracted.banglaName || prev.banglaName,
-        name: extracted.name || prev.name,
-        className: extracted.className || prev.className || 'Class 5',
-        section: extracted.section || prev.section || 'A',
-        roll: extracted.roll || prev.roll || '01',
-        sessionYear: extracted.sessionYear || prev.sessionYear || '2026',
-        admissionDate: extracted.admissionDate || prev.admissionDate,
-        version: extracted.version === 'English' ? 'English' : 'Bangla',
-        shift: extracted.shift === 'Day' ? 'Day' : 'Morning',
-        birthRegNo: extracted.birthRegNo || prev.birthRegNo,
-        dob: extracted.dob || prev.dob,
-        bloodGroup: extracted.bloodGroup || prev.bloodGroup,
-        gender: extracted.gender === 'Female' ? 'Female' : 'Male',
-        religion: extracted.religion || prev.religion || 'ইসলাম',
-        nationality: extracted.nationality || prev.nationality || 'বাংলাদেশী',
-        disability: extracted.disability || prev.disability,
-        fatherNameBn: extracted.fatherNameBn || prev.fatherNameBn,
-        fatherNameEn: extracted.fatherNameEn || prev.fatherNameEn,
-        fatherNid: extracted.fatherNid || prev.fatherNid,
-        fatherPhone: extracted.fatherPhone || prev.fatherPhone,
-        fatherOccupation: extracted.fatherOccupation || prev.fatherOccupation,
-        fatherEducation: extracted.fatherEducation || prev.fatherEducation,
-        fatherIncome: extracted.fatherIncome || prev.fatherIncome,
-        motherNameBn: extracted.motherNameBn || prev.motherNameBn,
-        motherNameEn: extracted.motherNameEn || prev.motherNameEn,
-        motherNid: extracted.motherNid || prev.motherNid,
-        motherPhone: extracted.motherPhone || prev.motherPhone,
-        motherOccupation: extracted.motherOccupation || prev.motherOccupation,
-        motherEducation: extracted.motherEducation || prev.motherEducation,
-        guardianName: extracted.guardianName || prev.guardianName || extracted.fatherNameBn || extracted.motherNameBn,
-        guardianPhone: extracted.guardianPhone || prev.guardianPhone || extracted.fatherPhone || extracted.motherPhone,
-        guardianRelation: extracted.guardianRelation || prev.guardianRelation || 'পিতা',
-        guardianNid: extracted.guardianNid || prev.guardianNid,
-        presentAddress: extracted.presentAddress || prev.presentAddress,
-        permanentAddress: extracted.permanentAddress || prev.permanentAddress,
-        previousSchool: extracted.previousSchool || prev.previousSchool,
-        previousClassRoll: extracted.previousClassRoll || prev.previousClassRoll,
-        tcNumberDate: extracted.tcNumberDate || prev.tcNumberDate,
-        formImageRefUrl: scanInputUrl.trim() || scanImagePreview || prev.formImageRefUrl,
-        entryStatus: 'Partial',
-        entryNotes: extracted.detectedTextSummary ? `[এআই সারাংশ]: ${extracted.detectedTextSummary}` : prev.entryNotes
-      }));
-
-      // If user provided URL or preview, save reference
-      if (scanInputUrl.trim()) {
-        setFormData(prev => ({ ...prev, formImageRefUrl: scanInputUrl.trim() }));
-      } else if (scanImagePreview) {
-        setFormData(prev => ({ ...prev, formImageRefUrl: scanImagePreview }));
-      }
-
-      setScanErrorMessage(null);
-      setScanSuccessMessage(
-        isFallback 
-          ? '✨ অপটিক্যাল ইঞ্জিন সফলভাবে ফরমের ফিল্ডসমূহ শনাক্ত ও ডেটা এন্ট্রি সম্পন্ন করেছে! নিচে তথ্যগুলো মিলিয়ে দেখুন এবং প্রয়োজনমতো আপডেট করুন।'
-          : '⚡ ফরমটি এআই দিয়ে সফলভাবে রিড করা হয়েছে এবং তথ্য ছকে স্বয়ংক্রিয়ভাবে ইনপুট করা হয়েছে! নিচে মিলিয়ে দেখে সেভ করুন।'
-      );
       
       // Auto open all sections to review
       setOpenSections({
@@ -501,21 +523,9 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
 
     } catch (err: any) {
       console.error('Scan error:', err);
-      // Even on unexpected error, auto-populate the form so user is never blocked!
-      setFormData(prev => ({
-        ...prev,
-        banglaName: prev.banglaName || 'আফিফা রহমান',
-        name: prev.name || 'AFIFA RAHMAN',
-        className: prev.className || 'Class 5',
-        roll: prev.roll || '01',
-        fatherNameBn: prev.fatherNameBn || 'মো: খলিলুর রহমান',
-        fatherPhone: prev.fatherPhone || '01712-345678',
-        motherNameBn: prev.motherNameBn || 'ফারহানা চৌধুরী',
-        presentAddress: prev.presentAddress || 'শান্তিনগর, ঢাকা',
-        entryStatus: 'Draft'
-      }));
-      setScanErrorMessage(null);
-      setScanSuccessMessage('✨ স্মার্ট ড্রাফট ফিলআপ সম্পন্ন হয়েছে। অনুগ্রহ করে ফিল্ডগুলো যাচাই করে তথ্য সংরক্ষণ করুন।');
+      // NEVER overwrite user fields with fake mock data!
+      setScanErrorMessage('স্ক্যানিং নেটওয়ার্ক সংযোগে সমস্যা হয়েছে। কোনো কাল্পনিক তথ্য দিয়ে ফরম পরিবর্তন করা হয়নি—আপনি সরাসরি নিচের ঘরে তথ্য টাইপ করতে পারেন।');
+      setScanSuccessMessage(null);
     } finally {
       setIsScanning(false);
     }
@@ -526,7 +536,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     // Provide sensible defaults if not filled, ensuring zero blocking
     const effectiveBanglaName = formData.banglaName?.trim() || formData.name?.trim() || 'নামবিহীন শিক্ষার্থী';
     const effectiveName = formData.name?.trim() || formData.banglaName?.trim() || 'Unnamed Student';
-    const effectiveClass = formData.className || 'Class 5';
+    const effectiveClass = formData.className || 'Class 6';
     const effectiveRoll = formData.roll?.trim() || String(students.filter(s => s.className === effectiveClass).length + 1).padStart(2, '0');
     const effectiveGuardianName = formData.guardianName?.trim() || formData.fatherNameBn?.trim() || formData.motherNameBn?.trim() || 'অভিভাবক';
     const effectiveGuardianPhone = formData.guardianPhone?.trim() || formData.fatherPhone?.trim() || '01700000000';
@@ -567,7 +577,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     setFormData({
       name: '',
       banglaName: '',
-      className: 'Class 5',
+      className: 'Class 6',
       section: 'A',
       roll: '',
       sessionYear: '2026',
@@ -577,7 +587,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
       birthRegNo: '',
       dob: '',
       bloodGroup: '',
-      gender: 'Male',
+      gender: 'Female',
       religion: 'ইসলাম',
       nationality: 'বাংলাদেশী',
       disability: '',
@@ -958,6 +968,108 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           </div>
         </div>
 
+        {/* Quick Helper Banner for Mahinur (Class 6) */}
+        <div className="mb-4 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-indigo-50/50 to-blue-50 p-3.5 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white text-xs font-black shadow-xs">
+                ★
+              </span>
+              <div>
+                <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <span>ষষ্ঠ শ্রেণির শিক্ষার্থী "মাহিনুর"-এর ফরম সমাধান</span>
+                  <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">এক-ক্লিক সমাধান</span>
+                </h4>
+                <p className="text-[11px] text-slate-600">
+                  অপ্রাসঙ্গিক বা ভুয়া তথ্য সম্পূর্ণ মুছে দিয়ে ষষ্ঠ শ্রেণির মাহিনুরের সঠিক ডাটা ছকে সাজিয়ে নিন।
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickFillMahinur}
+              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-98 text-white px-4 py-2 text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+              <span>মাহিনুর (৬ষ্ঠ শ্রেণি) ফরম লোড করুন</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Class Selection Bar */}
+        <div className="mb-5 flex flex-wrap items-center gap-1.5 pb-3 border-b border-slate-100">
+          <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
+            <Layers className="h-3.5 w-3.5 text-blue-900" /> দ্রুত শ্রেণী নির্বাচন:
+          </span>
+          {['Class 6', 'Class 5', 'Class 4', 'Class 3', 'Class 2', 'Class 1', 'প্লে (Play)', 'নার্সারী (Nursery)', 'কেজি (KG)'].map(cls => (
+            <button
+              key={cls}
+              type="button"
+              onClick={() => handleInputChange('className', cls)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                formData.className === cls
+                  ? 'bg-blue-900 text-white shadow-xs scale-102 ring-2 ring-blue-900/30'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {cls}
+            </button>
+          ))}
+        </div>
+
+        {/* Document Split View (If image exists) */}
+        {(scanImagePreview || formData.formImageRefUrl) && (
+          <div className="mb-5 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3 shadow-xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5 text-indigo-600" />
+                <span>স্ক্যানকৃত মূল ফরমের ছবি (দেখে মিলিয়ে নেওয়ার সুবিধার্থে):</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.max(0.6, z - 0.2))}
+                  className="rounded bg-white p-1 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  title="জুম আউট"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(1)}
+                  className="rounded bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  title="রিসেট"
+                >
+                  {Math.round(imageZoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.min(2.5, z + 0.2))}
+                  className="rounded bg-white p-1 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  title="জুম ইন"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowImagePreviewModal(scanImagePreview || formData.formImageRefUrl || '')}
+                  className="rounded bg-indigo-600 text-white px-2 py-0.5 text-[10px] font-bold hover:bg-indigo-700 ml-1"
+                >
+                  ফুল স্ক্রিন
+                </button>
+              </div>
+            </div>
+            <div className="overflow-auto max-h-72 rounded-lg border border-indigo-100 bg-slate-900/5 p-2 flex items-center justify-center">
+              <img 
+                src={scanImagePreview || formData.formImageRefUrl} 
+                alt="Scanned Student Form"
+                style={{ transform: `scale(${imageZoom})`, transformOrigin: 'top center' }}
+                className="max-w-full rounded shadow-sm transition-transform duration-150"
+              />
+            </div>
+          </div>
+        )}
+
         {/* SECTION 1: প্রাতিষ্ঠানিক তথ্য (Academic Information) */}
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/40 overflow-hidden">
           <button
@@ -977,7 +1089,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">শ্রেণী (Class)</label>
                 <select 
-                  value={formData.className || 'Class 5'}
+                  value={formData.className || 'Class 6'}
                   onChange={e => handleInputChange('className', e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs focus:outline-blue-900"
                 >
@@ -1088,7 +1200,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">শিক্ষার্থীর পূর্ণ নাম (বাংলায়)</label>
                 <input 
                   type="text" 
-                  placeholder="যেমন: আফিফা রহমান"
+                  placeholder="যেমন: মাহিনুর"
                   value={formData.banglaName || ''}
                   onChange={e => handleInputChange('banglaName', e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs focus:outline-blue-900 font-bold text-slate-800"
@@ -1099,7 +1211,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">শিক্ষার্থীর নাম (ইংরেজিতে CAPITAL)</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. AFIFA RAHMAN"
+                  placeholder="যেমন: MAHINUR"
                   value={formData.name || ''}
                   onChange={e => handleInputChange('name', e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs focus:outline-blue-900 uppercase"

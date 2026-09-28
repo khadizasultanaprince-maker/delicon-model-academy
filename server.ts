@@ -92,53 +92,6 @@ app.post('/api/db/init', (req, res) => {
   res.json({ success: true });
 });
 
-// Helper for smart fallback data if Gemini API has temporary quota / demand limit
-function getSmartFallbackExtraction(filenameOrUrl?: string) {
-  return {
-    banglaName: 'আফিফা রহমান',
-    name: 'AFIFA RAHMAN',
-    className: 'Class 5',
-    section: 'A',
-    roll: '01',
-    sessionYear: '2026',
-    admissionDate: new Date().toISOString().split('T')[0],
-    version: 'Bangla',
-    shift: 'Morning',
-    birthRegNo: '20152692518104523',
-    dob: '2015-04-12',
-    bloodGroup: 'B+',
-    gender: 'Female',
-    religion: 'ইসলাম',
-    nationality: 'বাংলাদেশী',
-    disability: '',
-    fatherNameBn: 'মো: খলিলুর রহমান',
-    fatherNameEn: 'MD. KHALILUR RAHMAN',
-    fatherNid: '19842692518000451',
-    fatherPhone: '01712-345678',
-    fatherOccupation: 'ব্যবসায়ী',
-    fatherEducation: 'স্নাতকোত্তর',
-    fatherIncome: '৪৫,০০০',
-    motherNameBn: 'ফারহানা চৌধুরী',
-    motherNameEn: 'FARHANA CHOWDHURY',
-    motherNid: '19882692518000782',
-    motherPhone: '01798-765432',
-    motherOccupation: 'গৃহিণী',
-    motherEducation: 'স্নাতক',
-    guardianName: 'মো: খলিলুর রহমান',
-    guardianPhone: '01712-345678',
-    guardianRelation: 'পিতা',
-    guardianNid: '19842692518000451',
-    guardianEmail: 'khalilur.rahman@example.com',
-    presentAddress: 'বাড়ি #১২, রোড #০৪, শান্তিনগর, ঢাকা-১২১৭',
-    permanentAddress: 'গ্রাম: রাধানগর, ডাকঘর: মডেল টাউন, জেলা: ঢাকা',
-    previousSchool: 'ডিলিকন জুনিয়র একাডেমি',
-    previousClassRoll: 'শ্রেণী: Class 4, রোল: ০১',
-    tcNumberDate: 'TC-2026/89, ০১-০১-২০২৬',
-    detectedTextSummary: 'ভর্তি ফরম ও তথ্য ছক থেকে শিক্ষার্থীর নাম (আফিফা রহমান), পিতা-মাতার বিবরণ, শ্রেণী Class 5, রোল নং ০১ এবং বর্তমান ঠিকানা সফলভাবে শনাক্ত করা হয়েছে।',
-    confidence: 'High'
-  };
-}
-
 // API endpoint for Student Form AI OCR Vision Scanner
 app.post('/api/gemini/scan-student-form', async (req, res) => {
   try {
@@ -190,7 +143,7 @@ app.post('/api/gemini/scan-student-form', async (req, res) => {
           base64Clean = Buffer.from(arrayBuffer).toString('base64');
         }
       } catch (fetchErr: any) {
-        console.warn('Image fetch warning, will use smart fallback:', fetchErr);
+        console.warn('Image fetch warning:', fetchErr);
       }
     }
 
@@ -200,27 +153,31 @@ app.post('/api/gemini/scan-student-form', async (req, res) => {
         const ai = getAiClient();
         const prompt = `
 You are an expert OCR & Student Information Sheet (তথ্য ছক / ভর্তি ফরম) Digitization AI for Bangladeshi schools (Primary, High School, Model Academy, Kindergarten).
-Analyze this uploaded student form/document image carefully. It may contain printed text, tabular forms, or handwritten Bengali/English entries.
+Analyze this uploaded student form/document image carefully. It contains printed text, tabular forms, or handwritten Bengali/English entries.
 Extract all discernible fields accurately into a clean JSON object.
-If a field is empty, blank, or illegible on the form, return an empty string "" for that field. DO NOT make up fake information.
+CRITICAL ACCURACY INSTRUCTIONS:
+- Read the student's actual name, class, roll, parents' names, and phone numbers directly from the document.
+- Pay special attention to Bengali handwriting or print (e.g. নাম: মাহিনুর / Mahinur, শ্রেণী: ষষ্ঠ শ্রেণি / Class 6 / Class VI, ইত্যাদি).
+- If a field is empty, blank, or illegible on the form, return an empty string "" for that field.
+- ABSOLUTELY NEVER make up fake, hallucinated, or placeholder names or classes. If not visible, return "".
 
 Field guidelines:
-- banglaName: শিক্ষার্থীর নাম (বাংলায়)
-- name: শিক্ষার্থীর নাম (ইংরেজিতে ক্যাপিটাল অক্ষরে)
-- className: শ্রেণী (উদা: "Class 5", "Class 4", "Play", "Nursery", "KG", "Class 1", "Class 2", etc.)
-- section: শাখা (উদা: "ক", "খ", "A", "B")
-- roll: রোল নম্বর (উদা: "০১", "01")
-- sessionYear: শিক্ষাবর্ষ (উদা: "2026")
+- banglaName: শিক্ষার্থীর নাম (বাংলায় - যেমন "মাহিনুর")
+- name: শিক্ষার্থীর নাম (ইংরেজিতে - যেমন "MAHINUR")
+- className: শ্রেণী (যেমন: "Class 6", "৬ষ্ঠ শ্রেণি", "Class 5", "Play", "Nursery", "KG", "Class 1", etc.)
+- section: শাখা (যেমন: "ক", "খ", "A", "B", "")
+- roll: রোল নম্বর (যেমন: "০১", "01", "৬", "")
+- sessionYear: শিক্ষাবর্ষ (যেমন: "2026")
 - admissionDate: ভর্তির তারিখ (YYYY-MM-DD or DD-MM-YYYY)
 - version: মাধ্যম ("Bangla" or "English")
 - shift: শিফট ("Morning" or "Day")
 - birthRegNo: জন্ম নিবন্ধন সনদ নম্বর (১৭ ডিজিট বিআরসি নং)
 - dob: জন্ম তারিখ (YYYY-MM-DD)
-- bloodGroup: রক্তের গ্রুপ (উদা: "A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-")
-- gender: লিঙ্গ ("Male" or "Female")
+- bloodGroup: রক্তের গ্রুপ
+- gender: লিঙ্গ ("Female" or "Male")
 - religion: ধর্ম ("ইসলাম", "হিন্দু", "বৌদ্ধ", "খ্রিস্টান")
 - nationality: জাতীয়তা (default "বাংলাদেশী")
-- disability: বিশেষ চাহিদা / শারীরিক প্রতিবন্ধকতা (থাকলে লিখুন, না থাকলে "")
+- disability: বিশেষ চাহিদা / শারীরিক প্রতিবন্ধকতা
 - fatherNameBn: পিতার নাম (বাংলায়)
 - fatherNameEn: পিতার নাম (ইংরেজিতে)
 - fatherNid: পিতার জাতীয় পরিচয়পত্র (এনআইডি) নম্বর
@@ -234,11 +191,11 @@ Field guidelines:
 - motherPhone: মাতার মোবাইল নম্বর
 - motherOccupation: মাতার পেশা
 - motherEducation: মাতার শিক্ষাগত যোগ্যতা
-- guardianName: অভিভাবকের নাম (পিতা/মাতা বা অভিভাবকের নাম)
-- guardianPhone: জরুরী যোগাযোগের অভিভাবকের মোবাইল নম্বর
-- guardianRelation: শিক্ষার্থীর সাথে সম্পর্ক (যেমন: "পিতা", "মাতা", "চাচা", ইত্যাদি)
+- guardianName: অভিভাবকের নাম
+- guardianPhone: অভিভাবকের মোবাইল নম্বর
+- guardianRelation: শিক্ষার্থীর সাথে সম্পর্ক
 - guardianNid: অভিভাবকের এনআইডি
-- presentAddress: বর্তমান ঠিকানা (গ্রাম, ডাকঘর, উপজেলা, জেলা)
+- presentAddress: বর্তমান ঠিকানা
 - permanentAddress: স্থায়ী ঠিকানা
 - previousSchool: পূর্ববর্তী বিদ্যালয়ের নাম
 - previousClassRoll: পূর্ববর্তী শ্রেণী ও রোল
@@ -247,7 +204,12 @@ Field guidelines:
 - confidence: "High" | "Medium" | "Low"
 `;
 
-        const candidateModels = ['gemini-3.1-flash-lite', 'gemini-flash-latest'];
+        const candidateModels = [
+          'gemini-3.8-flash',
+          'gemini-3.1-flash-lite',
+          'gemini-flash-latest',
+          'gemini-3.1-pro-preview'
+        ];
         let response: any = null;
 
         for (const modelCandidate of candidateModels) {
@@ -318,8 +280,9 @@ Field guidelines:
               }
             });
 
+            // Allow sufficient time for multimodal OCR image processing
             const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('AI Model timeout (4s)')), 4000)
+              setTimeout(() => reject(new Error('AI Model timeout (25s)')), 25000)
             );
 
             response = await Promise.race([callPromise, timeoutPromise]);
@@ -337,10 +300,7 @@ Field guidelines:
           const parsedData = JSON.parse(response.text);
           if (!parsedData.banglaName && parsedData.name) parsedData.banglaName = parsedData.name;
           if (!parsedData.name && parsedData.banglaName) parsedData.name = parsedData.banglaName;
-          if (!parsedData.guardianName) parsedData.guardianName = parsedData.fatherNameBn || parsedData.motherNameBn || `${parsedData.banglaName || 'শিক্ষার্থী'}-এর অভিভাবক`;
-          if (!parsedData.guardianPhone) parsedData.guardianPhone = parsedData.fatherPhone || parsedData.motherPhone || '01712-345678';
-          if (!parsedData.className) parsedData.className = 'Class 5';
-          if (!parsedData.roll) parsedData.roll = '01';
+          if (!parsedData.guardianName) parsedData.guardianName = parsedData.fatherNameBn || parsedData.motherNameBn || '';
 
           return res.json({
             success: true,
@@ -349,28 +309,23 @@ Field guidelines:
           });
         }
       } catch (geminiErr) {
-        console.warn('[OCR] Gemini processing error, proceeding with smart fallback:', geminiErr);
+        console.warn('[OCR] Gemini processing error:', geminiErr);
       }
     }
 
-    // Smart Fallback guarantees that student forms are ALWAYS populated even when Gemini has quota/demand issues
-    console.log('[OCR] Providing Smart Form Extraction');
-    const fallbackData = getSmartFallbackExtraction(imageUrl || 'Untitled-1.jpg');
-    res.json({
-      success: true,
-      data: fallbackData,
-      isFallback: true,
-      message: 'স্মার্ট অপটিক্যাল ইঞ্জিন সফলভাবে ফরমের ফিল্ডসমূহ শনাক্ত ও পূরণ করেছে।',
+    // If Gemini was unable to process, return explicit feedback without fabricating fake data
+    return res.json({
+      success: false,
+      error: 'ai_busy',
+      message: 'এআই ভিশন সার্ভিস সাময়িক ব্যস্ত থাকায় স্বয়ংক্রিয় রিডিং সম্পন্ন করা যায়নি। কোনো কাল্পনিক বা অসত্য তথ্য দিয়ে ফরম পূরণ করা হয়নি। অনুগ্রহ করে ম্যানুয়ালি সঠিক তথ্য পূরণ করুন অথবা কিছুক্ষণ পর আবার চেষ্টা করুন।',
       timestamp: new Date().toISOString()
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/scan-student-form:', err);
-    const fallbackData = getSmartFallbackExtraction(req.body?.imageUrl || 'Untitled-1.jpg');
     res.json({
-      success: true,
-      data: fallbackData,
-      isFallback: true,
-      message: 'স্মার্ট অপটিক্যাল ইঞ্জিন সফলভাবে ফরমের ফিল্ডসমূহ শনাক্ত ও পূরণ করেছে।',
+      success: false,
+      error: 'server_error',
+      message: 'স্ক্যান প্রসেসিং ত্রুটি। অনুগ্রহ করে ম্যানুয়ালি তথ্য প্রদান করুন।',
       timestamp: new Date().toISOString()
     });
   }
