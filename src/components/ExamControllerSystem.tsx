@@ -103,11 +103,24 @@ const DEFAULT_CLASS4_SUBJECTS: Array<{ name: string; totalMarks: number; default
   { name: 'ব্যবহারিক ড্রয়িং', totalMarks: 50, defaultWritten: 36, defaultClassTest: 9.3 },
 ];
 
+export interface ExamScheduleItem {
+  id: string;
+  examName: string;
+  className: string;
+  date: string;
+  dayName: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  roomNo: string;
+  paperCode: string;
+}
+
 export const ExamControllerSystem: React.FC = () => {
   const { students, schoolName, schoolSlogan, schoolLogoVal } = useSchool();
 
   // Active sub-tab in Exam Controller
-  const [activeSubTab, setActiveSubTab] = useState<'transcript' | 'marks_entry' | 'question_builder' | 'admit_card' | 'seat_plan' | 'syllabus_notes' | 'merit_analytics'>('transcript');
+  const [activeSubTab, setActiveSubTab] = useState<'transcript' | 'schedule_builder' | 'marks_entry' | 'question_builder' | 'admit_card' | 'seat_plan' | 'syllabus_notes' | 'merit_analytics'>('transcript');
 
   // Filters & State
   const [selectedClass, setSelectedClass] = useState<string>('চতুর্থ');
@@ -425,6 +438,121 @@ export const ExamControllerSystem: React.FC = () => {
   ]);
 
   // --------------------------------------------------------------------------
+  // Exam Schedule Builder State & Handlers
+  // --------------------------------------------------------------------------
+  const [examSchedules, setExamSchedules] = useState<ExamScheduleItem[]>(() => {
+    const saved = localStorage.getItem('delicon_exam_schedules');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to parse delicon_exam_schedules', e);
+      }
+    }
+    return [
+      { id: 'sch_1', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-10', dayName: 'শনিবার', startTime: '10:00', endTime: '12:30', subject: 'বাংলা ১ম ও ২য় পত্র', roomNo: '১০১, ১০২', paperCode: '১০১' },
+      { id: 'sch_2', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-10', dayName: 'শনিবার', startTime: '10:00', endTime: '12:30', subject: 'বাংলা ১ম ও ২য় পত্র', roomNo: '২০১, ২০২', paperCode: '১০১' },
+      { id: 'sch_3', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-12', dayName: 'সোমবার', startTime: '10:00', endTime: '12:30', subject: 'ইংরেজি ১ম ও ২য় পত্র', roomNo: '১০১, ১০২', paperCode: '১০২' },
+      { id: 'sch_4', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-12', dayName: 'সোমবার', startTime: '10:00', endTime: '12:30', subject: 'ইংরেজি ১ম ও ২য় পত্র', roomNo: '২০১, ২০২', paperCode: '১০২' },
+      { id: 'sch_5', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-14', dayName: 'বুধবার', startTime: '10:00', endTime: '12:30', subject: 'প্রাথমিক গণিত', roomNo: '১০১, ১০২', paperCode: '১০৩' },
+      { id: 'sch_6', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-14', dayName: 'বুধবার', startTime: '10:00', endTime: '12:30', subject: 'প্রাথমিক গণিত', roomNo: '২০১, ২০২', paperCode: '১০৩' },
+      { id: 'sch_7', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-16', dayName: 'শুক্রবার', startTime: '09:00', endTime: '11:30', subject: 'প্রাথমিক বিজ্ঞান', roomNo: '১০১, ১০২', paperCode: '১০৪' },
+      { id: 'sch_8', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-16', dayName: 'শুক্রবার', startTime: '09:00', endTime: '11:30', subject: 'প্রাথমিক বিজ্ঞান', roomNo: '২০১, ২০২', paperCode: '১০৪' },
+      { id: 'sch_9', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-18', dayName: 'রবিবার', startTime: '10:00', endTime: '12:30', subject: 'বাংলাদেশ ও বিশ্বপরিচয়', roomNo: '১০১, ১০২', paperCode: '১০৫' },
+      { id: 'sch_10', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-18', dayName: 'রবিবার', startTime: '10:00', endTime: '12:30', subject: 'বাংলাদেশ ও বিশ্বপরিচয়', roomNo: '২০১, ২০২', paperCode: '১০৫' },
+      { id: 'sch_11', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-20', dayName: 'মঙ্গলবার', startTime: '10:00', endTime: '12:30', subject: 'ধর্ম ও নৈতিক শিক্ষা / ড্রয়িং', roomNo: '১০১, ১০২', paperCode: '১০৬' },
+      { id: 'sch_12', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-20', dayName: 'মঙ্গলবার', startTime: '10:00', endTime: '12:30', subject: 'ধর্ম ও নৈতিক শিক্ষা', roomNo: '২০১, ২০২', paperCode: '১০৬' },
+    ];
+  });
+
+  const [schedExamName, setSchedExamName] = useState('২য় সাময়িক পরীক্ষা- ২০২৬');
+  const [schedClass, setSchedClass] = useState('চতুর্থ শ্রেণি');
+  const [schedDate, setSchedDate] = useState('2026-10-22');
+  const [schedStartTime, setSchedStartTime] = useState('10:00');
+  const [schedEndTime, setSchedEndTime] = useState('12:30');
+  const [schedSubject, setSchedSubject] = useState('সাধারণ জ্ঞান ও কম্পিউটার');
+  const [schedRoomNo, setSchedRoomNo] = useState('১০১, ১০২');
+  const [schedPaperCode, setSchedPaperCode] = useState('১০৭');
+  const [schedViewMode, setSchedViewMode] = useState<'matrix' | 'cards' | 'print'>('matrix');
+  const [schedFilterClass, setSchedFilterClass] = useState<string>('All');
+  const [editingSchedId, setEditingSchedId] = useState<string | null>(null);
+
+  const getBanglaDayName = (dateStr: string): string => {
+    const days = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 'রবিবার' : days[d.getDay()];
+  };
+
+  const handleSaveScheduleSlot = () => {
+    if (!schedSubject.trim() || !schedDate) {
+      showToast('বিষয় এবং তারিখ সঠিকভাবে পূরণ করুন');
+      return;
+    }
+    const day = getBanglaDayName(schedDate);
+    if (editingSchedId) {
+      setExamSchedules(prev => {
+        const updated = prev.map(item => item.id === editingSchedId ? {
+          ...item,
+          examName: schedExamName,
+          className: schedClass,
+          date: schedDate,
+          dayName: day,
+          startTime: schedStartTime,
+          endTime: schedEndTime,
+          subject: schedSubject.trim(),
+          roomNo: schedRoomNo.trim() || '১০১',
+          paperCode: schedPaperCode.trim() || '---'
+        } : item);
+        localStorage.setItem('delicon_exam_schedules', JSON.stringify(updated));
+        return updated;
+      });
+      setEditingSchedId(null);
+      showToast('পরীক্ষা রুটিন স্লট সফলভাবে আপডেট করা হয়েছে!');
+    } else {
+      const newItem: ExamScheduleItem = {
+        id: 'sch_' + Date.now(),
+        examName: schedExamName,
+        className: schedClass,
+        date: schedDate,
+        dayName: day,
+        startTime: schedStartTime,
+        endTime: schedEndTime,
+        subject: schedSubject.trim(),
+        roomNo: schedRoomNo.trim() || '১০১',
+        paperCode: schedPaperCode.trim() || '---'
+      };
+      setExamSchedules(prev => {
+        const updated = [...prev, newItem];
+        localStorage.setItem('delicon_exam_schedules', JSON.stringify(updated));
+        return updated;
+      });
+      showToast('নতুন পরীক্ষার বিষয় ও সময়সূচি সফলভাবে রুটিনে যোগ হয়েছে!');
+    }
+    setSchedSubject('');
+  };
+
+  const handleDeleteScheduleSlot = (id: string) => {
+    setExamSchedules(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem('delicon_exam_schedules', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('পরীক্ষার স্লট তালিকা থেকে মুছে ফেলা হয়েছে');
+  };
+
+  const handleStartEditSchedule = (slot: ExamScheduleItem) => {
+    setEditingSchedId(slot.id);
+    setSchedExamName(slot.examName);
+    setSchedClass(slot.className);
+    setSchedDate(slot.date);
+    setSchedStartTime(slot.startTime);
+    setSchedEndTime(slot.endTime);
+    setSchedSubject(slot.subject);
+    setSchedRoomNo(slot.roomNo);
+    setSchedPaperCode(slot.paperCode);
+  };
+
+  // --------------------------------------------------------------------------
   // 6. Teacher Mark Entry State
   // --------------------------------------------------------------------------
   const [markEntrySubject, setMarkEntrySubject] = useState('প্রাথমিক গণিত');
@@ -487,7 +615,7 @@ export const ExamControllerSystem: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="bg-amber-400 text-blue-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                <span className="bg-amber-400 text-blue-950 text-xs font-black px-3 py-1 rounded-full shadow-xs">
                   একাডেমিক পরীক্ষা নিয়ন্ত্রণ কেন্দ্র
                 </span>
                 <span className="text-xs text-blue-200">
@@ -514,16 +642,17 @@ export const ExamControllerSystem: React.FC = () => {
           </div>
         </div>
 
-        {/* 7 Modular Navigation Tabs */}
+        {/* 8 Modular Navigation Tabs */}
         <div className="mt-6 flex flex-wrap items-center gap-1.5 bg-white/10 p-1.5 rounded-xl backdrop-blur-md border border-white/15 overflow-x-auto">
           {[
             { id: 'transcript', label: '১। অফিসিয়াল ট্রান্সক্রিপ্ট ও মার্কশীট 📄', icon: FileSpreadsheet },
-            { id: 'marks_entry', label: '২। শিক্ষক খাতা মার্ক এন্ট্রি ফরম ✍️', icon: Edit3 },
-            { id: 'question_builder', label: '৩। প্রশ্নপত্র প্রণয়ন স্টুডিও 📝', icon: FileText },
-            { id: 'admit_card', label: '৪। প্রবেশপত্র (Admit Card) জেনারেটর 🎟️', icon: Award },
-            { id: 'seat_plan', label: '৫। সীট প্লান ও বেঞ্চ স্লিপ 🪑', icon: LayoutGrid },
-            { id: 'syllabus_notes', label: '৬। সিলেবাস, সাজেশন ও নোটস 📚', icon: BookOpen },
-            { id: 'merit_analytics', label: '৭। ফলাফল বিশ্লেষণ ও মেধাতালিকা 🏆', icon: BadgePercent },
+            { id: 'schedule_builder', label: '২। পরীক্ষার সময়সূচি ও রুটিন বিল্ডার 🗓️', icon: Calendar },
+            { id: 'marks_entry', label: '৩। শিক্ষক খাতা মার্ক এন্ট্রি ফরম ✍️', icon: Edit3 },
+            { id: 'question_builder', label: '৪। প্রশ্নপত্র প্রণয়ন স্টুডিও 📝', icon: FileText },
+            { id: 'admit_card', label: '৫। প্রবেশপত্র (Admit Card) জেনারেটর 🎟️', icon: Award },
+            { id: 'seat_plan', label: '৬। সীট প্লান ও বেঞ্চ স্লিপ 🪑', icon: LayoutGrid },
+            { id: 'syllabus_notes', label: '৭। সিলেবাস, সাজেশন ও নোটস 📚', icon: BookOpen },
+            { id: 'merit_analytics', label: '৮। ফলাফল বিশ্লেষণ ও মেধাতালিকা 🏆', icon: BadgePercent },
           ].map(tab => (
             <button
               key={tab.id}
@@ -627,7 +756,7 @@ export const ExamControllerSystem: React.FC = () => {
             {(isBatchPrinting ? examRecords : [activeTranscript]).map((rec, recordIndex) => (
               <div 
                 key={rec.studentId}
-                className="bg-white border-2 border-slate-400 p-6 sm:p-8 rounded-xl shadow-lg max-w-[800px] mx-auto text-slate-900 leading-normal page-break-after-always print:border-none print:shadow-none print:p-2 print:max-w-full font-serif"
+                className="bg-white border-2 border-slate-400 p-6 sm:p-8 rounded-xl shadow-lg max-w-[850px] mx-auto text-slate-900 leading-normal page-break-after-always print:border-none print:shadow-none print:p-2 print:max-w-full font-sans"
               >
                 {/* 1. Official School Header with Crest Logo */}
                 <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-3">
@@ -645,19 +774,19 @@ export const ExamControllerSystem: React.FC = () => {
 
                   {/* Center: School Branding Text */}
                   <div className="text-center flex-1 px-2">
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight font-serif">
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-950">
                       {schoolName || 'ডি-লিকন মডেল একাডেমী'}
                     </h1>
-                    <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-0.5">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-1">
                       দক্ষিণগাঁও, গণি মার্কেট, বরমী রোড, কাপাসিয়া, গাজীপুর।
                     </p>
-                    <p className="text-[11px] font-bold text-slate-700 mt-0.5">
+                    <p className="text-xs font-bold text-slate-700 mt-0.5">
                       স্থাপিত: ২০১৮
                     </p>
-                    <p className="text-[11px] font-mono font-bold text-slate-800">
+                    <p className="text-xs font-mono font-bold text-slate-800">
                       মোবাইল নম্বর: ০১৩১৩১১৯৬৫৮
                     </p>
-                    <p className="text-[10.5px] font-mono text-slate-700 underline">
+                    <p className="text-xs font-mono text-slate-700 underline">
                       ই-মেইল: contact.delikonmodelacademy@gmail.com
                     </p>
                   </div>
@@ -672,36 +801,36 @@ export const ExamControllerSystem: React.FC = () => {
                 {/* 2. Top Info Line (Left) & Grading Scale Table (Right) */}
                 <div className="flex items-start justify-between gap-4 mb-4">
                   {/* Left: Exam and Student Details */}
-                  <div className="space-y-1.5 flex-1 text-sm font-bold text-slate-900">
-                    <div className="text-base font-black text-slate-950 underline decoration-slate-400 underline-offset-4">
+                  <div className="space-y-2 flex-1 text-sm sm:text-base font-bold text-slate-900">
+                    <div className="text-lg sm:text-xl font-black text-slate-950 underline decoration-slate-400 underline-offset-4">
                       {rec.examName}
                     </div>
-                    <div className="pt-1">
-                      নাম: <span className="font-extrabold text-slate-950 font-serif">{rec.studentName}</span>, রোল:- <span className="font-mono">{toBanglaDigits(rec.roll)}</span>
+                    <div className="pt-1 text-base sm:text-lg">
+                      নাম: <span className="font-black text-slate-950">{rec.studentName}</span>, রোল:- <span className="font-mono font-black">{toBanglaDigits(rec.roll)}</span>
                     </div>
-                    <div>
-                      শ্রেণী: <span className="font-extrabold">{rec.className}</span>
+                    <div className="text-base font-extrabold text-slate-800">
+                      শ্রেণী: <span className="text-blue-950 font-black">{rec.className}</span>
                     </div>
                   </div>
 
                   {/* Right: Official Bangladesh 5.00 GPA Grading Scale Table */}
                   <div className="shrink-0">
-                    <table className="border-collapse border border-slate-900 text-[10px] sm:text-[11px] text-center font-mono">
+                    <table className="border-collapse border border-slate-900 text-xs sm:text-sm text-center font-mono font-semibold">
                       <thead>
                         <tr className="bg-slate-100 font-bold border-b border-slate-900">
-                          <th className="border border-slate-900 px-2 py-0.5">Number</th>
-                          <th className="border border-slate-900 px-2 py-0.5">Point</th>
-                          <th className="border border-slate-900 px-2 py-0.5">GPA</th>
+                          <th className="border border-slate-900 px-2.5 py-0.5 font-bold">Number</th>
+                          <th className="border border-slate-900 px-2.5 py-0.5 font-bold">Point</th>
+                          <th className="border border-slate-900 px-2.5 py-0.5 font-bold">GPA</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">80-100</td><td className="border border-slate-900 px-1">5.00</td><td className="border border-slate-900 px-1 font-bold">A+</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">70-79</td><td className="border border-slate-900 px-1">4.00</td><td className="border border-slate-900 px-1 font-bold">A</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">60-69</td><td className="border border-slate-900 px-1">3.50</td><td className="border border-slate-900 px-1 font-bold">A-</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">50-59</td><td className="border border-slate-900 px-1">3.00</td><td className="border border-slate-900 px-1 font-bold">B</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">40-49</td><td className="border border-slate-900 px-1">2.00</td><td className="border border-slate-900 px-1 font-bold">C</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">33-39</td><td className="border border-slate-900 px-1">1.00</td><td className="border border-slate-900 px-1 font-bold">D</td></tr>
-                        <tr><td className="border border-slate-900 px-1 py-0.2">0-32</td><td className="border border-slate-900 px-1">0.00</td><td className="border border-slate-900 px-1 font-bold text-rose-700">F</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">80-100</td><td className="border border-slate-900 px-2">5.00</td><td className="border border-slate-900 px-2 font-black text-emerald-800">A+</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">70-79</td><td className="border border-slate-900 px-2">4.00</td><td className="border border-slate-900 px-2 font-bold text-blue-900">A</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">60-69</td><td className="border border-slate-900 px-2">3.50</td><td className="border border-slate-900 px-2 font-bold text-blue-800">A-</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">50-59</td><td className="border border-slate-900 px-2">3.00</td><td className="border border-slate-900 px-2 font-bold text-amber-800">B</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">40-49</td><td className="border border-slate-900 px-2">2.00</td><td className="border border-slate-900 px-2 font-bold text-slate-800">C</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">33-39</td><td className="border border-slate-900 px-2">1.00</td><td className="border border-slate-900 px-2 font-bold text-slate-800">D</td></tr>
+                        <tr><td className="border border-slate-900 px-2 py-0.5">0-32</td><td className="border border-slate-900 px-2">0.00</td><td className="border border-slate-900 px-2 font-black text-rose-700">F</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -709,66 +838,66 @@ export const ExamControllerSystem: React.FC = () => {
 
                 {/* 3. Main Subject Marks Table */}
                 <div className="overflow-x-auto mb-4">
-                  <table className="w-full border-collapse border border-slate-900 text-xs text-left">
+                  <table className="w-full border-collapse border border-slate-900 text-sm sm:text-base text-left">
                     <thead>
-                      <tr className="bg-slate-100/90 font-black text-slate-900 border-b-2 border-slate-900 text-center">
-                        <th className="border border-slate-900 p-1.5 text-left w-44">বিষয়</th>
-                        <th className="border border-slate-900 p-1.5 w-16">মোট নম্বর</th>
-                        <th className="border border-slate-900 p-1.5 w-16">প্রাপ্ত নম্বর</th>
-                        <th className="border border-slate-900 p-1.5 w-20">৮০% নম্বর</th>
-                        <th className="border border-slate-900 p-1.5 w-24">শ্রেণি পরীক্ষা ২০%</th>
-                        <th className="border border-slate-900 p-1.5 w-24">মোট প্রাপ্ত নম্বর</th>
-                        <th className="border border-slate-900 p-1.5 w-16">লেটার গ্রেড</th>
+                      <tr className="bg-slate-100 font-black text-slate-900 border-b-2 border-slate-900 text-center">
+                        <th className="border border-slate-900 p-2 sm:p-2.5 text-left w-48">বিষয়</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-20">মোট নম্বর</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-20">প্রাপ্ত নম্বর</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-22">৮০% নম্বর</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-26">শ্রেণি পরীক্ষা ২০%</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-28">মোট প্রাপ্ত নম্বর</th>
+                        <th className="border border-slate-900 p-2 sm:p-2.5 w-18">লেটার গ্রেড</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rec.subjects.map((sub, sIdx) => (
                         <tr key={sIdx} className="hover:bg-slate-50/50">
-                          <td className="border border-slate-900 px-2 py-1.5 font-bold text-slate-900">
+                          <td className="border border-slate-900 px-3 py-2 font-bold text-slate-900">
                             {sub.name}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-semibold">
                             {toBanglaDigits(sub.totalMarks)}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono font-bold">
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-bold text-blue-950">
                             {toBanglaDigits(sub.writtenMarks)}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-semibold text-slate-700">
                             {toBanglaDigits(sub.eightyPct.toFixed(1))}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-semibold text-slate-700">
                             {toBanglaDigits(sub.classTestMarks)}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono font-black text-slate-950">
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-black text-slate-950 text-base">
                             {toBanglaDigits(sub.totalObtained.toFixed(1))}
                           </td>
-                          <td className="border border-slate-900 px-2 py-1.5 text-center font-mono font-black">
-                            {sub.grade}
+                          <td className="border border-slate-900 px-2.5 py-2 text-center font-mono font-black text-base">
+                            <span className={sub.grade === 'A+' ? 'text-emerald-800' : 'text-slate-900'}>{sub.grade}</span>
                           </td>
                         </tr>
                       ))}
 
                       {/* Total row matching image.png */}
-                      <tr className="bg-slate-100 font-black border-t-2 border-slate-900">
-                        <td className="border border-slate-900 px-2 py-1.5 text-left">
+                      <tr className="bg-slate-100 font-black border-t-2 border-slate-900 text-sm sm:text-base">
+                        <td className="border border-slate-900 px-3 py-2.5 text-left font-black">
                           মোট নম্বর
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono font-bold">
                           {toBanglaDigits(rec.totalFullMarks)}
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono">
                           -
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono">
                           -
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono">
                           -
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono font-black text-sm">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono font-black text-base sm:text-lg text-blue-950">
                           {toBanglaDigits(rec.totalObtainedMarks.toFixed(1))}
                         </td>
-                        <td className="border border-slate-900 px-2 py-1.5 text-center font-mono font-black">
+                        <td className="border border-slate-900 px-2.5 py-2.5 text-center font-mono font-black text-base sm:text-lg text-emerald-800">
                           {rec.grade}
                         </td>
                       </tr>
@@ -778,27 +907,27 @@ export const ExamControllerSystem: React.FC = () => {
 
                 {/* 4. Performance & Attendance Summary Table (Matching image.png) */}
                 <div className="mb-8">
-                  <table className="w-full border-collapse border border-slate-900 text-xs">
+                  <table className="w-full border-collapse border border-slate-900 text-sm sm:text-base">
                     <tbody>
                       <tr>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50 w-28">মোট কার্য দিবস</td>
-                        <td className="border border-slate-900 p-1.5 font-mono text-center w-20">{toBanglaDigits(rec.workingDays)}</td>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50 w-20">উপস্থিতি</td>
-                        <td className="border border-slate-900 p-1.5 font-mono text-center w-20">{toBanglaDigits(rec.presentDays)}</td>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50 w-20">অনুপস্থিতি</td>
-                        <td className="border border-slate-900 p-1.5 font-mono text-center w-20">{toBanglaDigits(rec.absentDays)}</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50 w-32">মোট কার্য দিবস</td>
+                        <td className="border border-slate-900 p-2 font-mono text-center w-24 font-bold">{toBanglaDigits(rec.workingDays)}</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50 w-24">উপস্থিতি</td>
+                        <td className="border border-slate-900 p-2 font-mono text-center w-24 font-bold text-emerald-800">{toBanglaDigits(rec.presentDays)}</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50 w-24">অনুপস্থিতি</td>
+                        <td className="border border-slate-900 p-2 font-mono text-center w-24 font-bold text-rose-700">{toBanglaDigits(rec.absentDays)}</td>
                       </tr>
                       <tr>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50">মোট নম্বর</td>
-                        <td className="border border-slate-900 p-1.5 font-mono font-black text-center">{toBanglaDigits(rec.totalObtainedMarks.toFixed(1))}</td>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50">জি.পি.এ</td>
-                        <td className="border border-slate-900 p-1.5 font-mono font-black text-center">{rec.gpa.toFixed(2)}({rec.grade})</td>
-                        <td className="border border-slate-900 p-1.5 font-bold bg-slate-50">মেধাক্রম</td>
-                        <td className="border border-slate-900 p-1.5 font-mono font-black text-center">{toBanglaDigits(rec.meritPosition)}র্থ</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50">মোট নম্বর</td>
+                        <td className="border border-slate-900 p-2 font-mono font-black text-center text-blue-950">{toBanglaDigits(rec.totalObtainedMarks.toFixed(1))}</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50">জি.পি.এ</td>
+                        <td className="border border-slate-900 p-2 font-mono font-black text-center text-emerald-800">{rec.gpa.toFixed(2)} ({rec.grade})</td>
+                        <td className="border border-slate-900 p-2 font-bold bg-slate-50">মেধাক্রম</td>
+                        <td className="border border-slate-900 p-2 font-mono font-black text-center text-amber-700">{toBanglaDigits(rec.meritPosition)}র্থ</td>
                       </tr>
                       <tr>
-                        <td colSpan={6} className="border border-slate-900 p-2 text-xs font-semibold">
-                          <span className="font-bold">শিক্ষকের মন্তব্য:</span> {rec.teacherRemarks}
+                        <td colSpan={6} className="border border-slate-900 p-2.5 text-sm sm:text-base font-semibold leading-relaxed">
+                          <span className="font-black text-slate-950">শিক্ষকের মন্তব্য:</span> {rec.teacherRemarks}
                         </td>
                       </tr>
                     </tbody>
@@ -806,17 +935,17 @@ export const ExamControllerSystem: React.FC = () => {
                 </div>
 
                 {/* 5. Signature Lines (Bottom) */}
-                <div className="pt-8 grid grid-cols-3 text-center text-xs font-bold text-slate-800">
+                <div className="pt-8 grid grid-cols-3 text-center text-sm font-bold text-slate-800">
                   <div>
-                    <div className="border-t border-slate-900 w-36 mx-auto mb-1" />
+                    <div className="border-t-2 border-slate-900 w-40 mx-auto mb-1.5" />
                     <span>শ্রেণি শিক্ষকের স্বাক্ষর</span>
                   </div>
                   <div>
-                    <div className="border-t border-slate-900 w-36 mx-auto mb-1" />
+                    <div className="border-t-2 border-slate-900 w-40 mx-auto mb-1.5" />
                     <span>প্রধান শিক্ষকের স্বাক্ষর</span>
                   </div>
                   <div>
-                    <div className="border-t border-slate-900 w-36 mx-auto mb-1" />
+                    <div className="border-t-2 border-slate-900 w-40 mx-auto mb-1.5" />
                     <span>অভিভাবকের স্বাক্ষর</span>
                   </div>
                 </div>
@@ -825,6 +954,443 @@ export const ExamControllerSystem: React.FC = () => {
             ))}
           </div>
 
+        </div>
+      )}
+
+      {/* =====================================================================
+          SUB-TAB 2: EXAM SCHEDULE BUILDER & ROUTINE MATRIX GRID
+         ===================================================================== */}
+      {activeSubTab === 'schedule_builder' && (
+        <div className="space-y-6">
+          {/* Controls Bar & View Switcher */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4 print:hidden">
+            <div>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                <Calendar className="h-6 w-6 text-blue-900" />
+                <span>পরীক্ষার সময়সূচি ও রুটিন বিল্ডার (Exam Schedule Builder)</span>
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                নির্দিষ্ট শ্রেণির জন্য পরীক্ষার তারিখ, সময় ও বিষয় নির্ধারণ করুন এবং ইন্টারঅ্যাক্টিভ গ্রিড ভিউতে রুটিন তৈরি ও প্রিন্ট করুন।
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Class Filter Dropdown */}
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs font-bold text-slate-600">শ্রেণি ফিল্টার:</label>
+                <select
+                  value={schedFilterClass}
+                  onChange={e => setSchedFilterClass(e.target.value)}
+                  className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-blue-900"
+                >
+                  <option value="All">সকল শ্রেণি (All Classes)</option>
+                  <option value="প্লে">প্লে</option>
+                  <option value="নার্সারী">নার্সারী</option>
+                  <option value="কেজি">কেজি</option>
+                  <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
+                  <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
+                  <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
+                  <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
+                  <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
+                </select>
+              </div>
+
+              {/* View Switcher: Matrix Grid, Card List, Print */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setSchedViewMode('matrix')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    schedViewMode === 'matrix' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span>গ্রিড ভিউ (Grid)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSchedViewMode('cards')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    schedViewMode === 'cards' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  <span>কার্ড ভিউ (Cards)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSchedViewMode('print')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    schedViewMode === 'print' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>মুদ্রণ ভিউ (Print)</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-blue-950 font-black px-4 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer"
+              >
+                <Printer className="h-4 w-4" />
+                <span>রুটিন প্রিন্ট করুন</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Slot Creation / Assignment Form (Hidden on Print) */}
+          <div className="bg-gradient-to-br from-slate-50 to-blue-50/40 p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4 print:hidden">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                <span>{editingSchedId ? 'রুটিন স্লট সম্পাদনা করুন' : 'নতুন পরীক্ষার বিষয় ও সময়সূচি নির্ধারণ (Assign Exam Slot)'}</span>
+              </h4>
+              {editingSchedId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSchedId(null);
+                    setSchedSubject('');
+                  }}
+                  className="text-xs text-rose-600 hover:underline font-bold"
+                >
+                  বাতিল করুন
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs sm:text-sm">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">পরীক্ষার নাম:</label>
+                <select
+                  value={schedExamName}
+                  onChange={e => setSchedExamName(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold text-slate-800"
+                >
+                  <option value="১ম সাময়িক পরীক্ষা- ২০২৬">১ম সাময়িক পরীক্ষা- ২০২৬</option>
+                  <option value="২য় সাময়িক পরীক্ষা- ২০২৬">২য় সাময়িক পরীক্ষা- ২০২৬</option>
+                  <option value="বার্ষিক পরীক্ষা- ২০২৬">বার্ষিক পরীক্ষা- ২০২৬</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">শ্রেণি নির্বাচন:</label>
+                <select
+                  value={schedClass}
+                  onChange={e => setSchedClass(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold text-slate-800"
+                >
+                  <option value="প্লে">প্লে</option>
+                  <option value="নার্সারী">নার্সারী</option>
+                  <option value="কেজি">কেজি</option>
+                  <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
+                  <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
+                  <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
+                  <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
+                  <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">তারিখ (Date Picker):</label>
+                <input
+                  type="date"
+                  value={schedDate}
+                  onChange={e => setSchedDate(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">বিষয় (Subject):</label>
+                <input
+                  type="text"
+                  placeholder="যেমন: প্রাথমিক গণিত, বাংলা..."
+                  value={schedSubject}
+                  onChange={e => setSchedSubject(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">শুরুর সময় (Start Time):</label>
+                <input
+                  type="time"
+                  value={schedStartTime}
+                  onChange={e => setSchedStartTime(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">শেষের সময় (End Time):</label>
+                <input
+                  type="time"
+                  value={schedEndTime}
+                  onChange={e => setSchedEndTime(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">কক্ষ নম্বর (Room No):</label>
+                <input
+                  type="text"
+                  placeholder="যেমন: ১০১, ১০২"
+                  value={schedRoomNo}
+                  onChange={e => setSchedRoomNo(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={handleSaveScheduleSlot}
+                  className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold p-2.5 rounded-lg text-sm transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{editingSchedId ? 'স্লট আপডেট করুন' : 'রুটিনে যোগ করুন'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* VIEW 1: MATRIX GRID VIEW (The requested Grid View) */}
+          {schedViewMode === 'matrix' && (
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className="h-5 w-5 text-indigo-700" />
+                  <h4 className="text-base font-black text-slate-900">
+                    পরীক্ষার রুটিন গ্রিড ভিউ (Schedule Matrix Grid)
+                  </h4>
+                </div>
+                <div className="text-xs font-semibold text-slate-500">
+                  মোট নির্ধারিত পরীক্ষার সংখ্যা: <span className="font-bold text-blue-900">{examSchedules.length} টি</span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-black border-b border-slate-200 text-sm">
+                      <th className="p-3 w-40 text-center border-r border-slate-200">তারিখ ও বার</th>
+                      <th className="p-3 w-32 text-center border-r border-slate-200">সময়সূচি</th>
+                      {['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি']
+                        .filter(c => schedFilterClass === 'All' || c === schedFilterClass)
+                        .map(clsName => (
+                          <th key={clsName} className="p-3 text-center border-r border-slate-200">
+                            {clsName}
+                          </th>
+                        ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150 text-sm">
+                    {/* Unique dates */}
+                    {(Array.from(new Set(examSchedules.map(s => s.date))) as string[]).sort().map(dateStr => {
+                      const sampleSlot = examSchedules.find(s => s.date === dateStr);
+                      const displayClasses = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি']
+                        .filter(c => schedFilterClass === 'All' || c === schedFilterClass);
+
+                      return (
+                        <tr key={dateStr} className="hover:bg-slate-50/70">
+                          {/* Date and Day */}
+                          <td className="p-3 text-center border-r border-slate-200 bg-slate-50/40">
+                            <span className="font-mono font-bold text-slate-900 block">{dateStr}</span>
+                            <span className="text-xs font-bold text-indigo-900 block mt-0.5">
+                              {sampleSlot?.dayName || getBanglaDayName(dateStr)}
+                            </span>
+                          </td>
+
+                          {/* Time */}
+                          <td className="p-3 text-center border-r border-slate-200 font-mono text-xs font-bold text-slate-700 bg-slate-50/20">
+                            {sampleSlot?.startTime} - {sampleSlot?.endTime}
+                          </td>
+
+                          {/* Slots per class */}
+                          {displayClasses.map(clsName => {
+                            const matchedSlot = examSchedules.find(s => s.date === dateStr && s.className === clsName);
+
+                            return (
+                              <td key={clsName} className="p-2.5 text-center border-r border-slate-200 align-top">
+                                {matchedSlot ? (
+                                  <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-2.5 space-y-1.5 shadow-2xs group relative hover:border-blue-400 transition">
+                                    <div className="font-black text-sm text-blue-950">
+                                      {matchedSlot.subject}
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-center gap-1 text-[11px] font-semibold text-slate-600">
+                                      <span className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-700">
+                                        রুম: {matchedSlot.roomNo}
+                                      </span>
+                                      <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-mono">
+                                        কোড: {matchedSlot.paperCode}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-center gap-2 pt-1 border-t border-blue-100 print:hidden">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleStartEditSchedule(matchedSlot)}
+                                        className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-0.5 cursor-pointer"
+                                        title="সম্পাদনা"
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                        <span>এডিট</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteScheduleSlot(matchedSlot.id)}
+                                        className="text-xs text-rose-600 hover:text-rose-800 font-bold flex items-center gap-0.5 cursor-pointer"
+                                        title="মুছুন"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <span>মুছুন</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-300 font-bold block py-3">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: CARDS VIEW */}
+          {schedViewMode === 'cards' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {examSchedules
+                .filter(s => schedFilterClass === 'All' || s.className === schedFilterClass)
+                .map(item => (
+                  <div key={item.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3 hover:shadow-md transition">
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div>
+                        <span className="bg-blue-100 text-blue-900 text-xs font-black px-2.5 py-0.5 rounded-full">
+                          {item.className}
+                        </span>
+                        <h4 className="text-base font-black text-slate-900 mt-1">{item.subject}</h4>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-mono font-bold text-slate-900 block">{item.date}</span>
+                        <span className="text-xs font-bold text-indigo-700 block">{item.dayName}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="text-slate-500 block">পরীক্ষার সময়:</span>
+                        <span className="font-mono font-bold text-slate-800">{item.startTime} - {item.endTime}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">কক্ষ নম্বর:</span>
+                        <span className="font-bold text-slate-800">{item.roomNo}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">বিষয় কোড:</span>
+                        <span className="font-mono font-bold text-slate-800">{item.paperCode}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">পরীক্ষার নাম:</span>
+                        <span className="font-bold text-slate-800 truncate block">{item.examName}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 print:hidden">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditSchedule(item)}
+                        className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        <span>সম্পাদনা</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteScheduleSlot(item.id)}
+                        className="px-3 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>মুছুন</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* VIEW 3: PRINTABLE EXAM ROUTINE SHEET */}
+          {schedViewMode === 'print' && (
+            <div className="bg-white border-2 border-slate-400 p-8 rounded-xl shadow-lg max-w-[850px] mx-auto text-slate-900 leading-normal print:border-none print:shadow-none print:p-2 print:max-w-full font-sans">
+              <div className="text-center border-b-2 border-slate-900 pb-3 mb-4">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-950">{schoolName || 'ডি-লিকন মডেল একাডেমী'}</h2>
+                <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-1">দক্ষিণগাঁও, গণি মার্কেট, বরমী রোড, কাপাসিয়া, গাজীপুর।</p>
+                <h3 className="text-lg font-black text-blue-950 mt-2 underline">
+                  {schedExamName} এর সময়সূচি ও চূড়ান্ত রুটিন
+                </h3>
+                <p className="text-xs font-bold text-slate-600 mt-0.5">
+                  {schedFilterClass === 'All' ? 'সকল শ্রেণির জন্য প্রযোজ্য' : `${schedFilterClass} এর রুটিন`}
+                </p>
+              </div>
+
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full border-collapse border border-slate-900 text-sm">
+                  <thead>
+                    <tr className="bg-slate-100 font-black text-slate-900 border-b-2 border-slate-900 text-center">
+                      <th className="border border-slate-900 p-2.5 w-28">তারিখ</th>
+                      <th className="border border-slate-900 p-2.5 w-24">বার</th>
+                      <th className="border border-slate-900 p-2.5 w-32">সময়</th>
+                      <th className="border border-slate-900 p-2.5 w-28">শ্রেণি</th>
+                      <th className="border border-slate-900 p-2.5">বিষয়</th>
+                      <th className="border border-slate-900 p-2.5 w-20">কক্ষ নং</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {examSchedules
+                      .filter(s => schedFilterClass === 'All' || s.className === schedFilterClass)
+                      .map((slot, sIdx) => (
+                        <tr key={sIdx} className="hover:bg-slate-50 text-center">
+                          <td className="border border-slate-900 p-2 font-mono font-bold">{slot.date}</td>
+                          <td className="border border-slate-900 p-2 font-bold">{slot.dayName}</td>
+                          <td className="border border-slate-900 p-2 font-mono">{slot.startTime} - {slot.endTime}</td>
+                          <td className="border border-slate-900 p-2 font-bold">{slot.className}</td>
+                          <td className="border border-slate-900 p-2 text-left font-bold px-3">{slot.subject}</td>
+                          <td className="border border-slate-900 p-2 font-bold">{slot.roomNo}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Instructions */}
+              <div className="text-xs text-slate-700 space-y-1 border-t border-slate-300 pt-3 mb-8">
+                <p className="font-bold text-slate-900">নির্দেশনাবলী:</p>
+                <p>১। পরীক্ষা আরম্ভের অন্তত ১৫ মিনিট পূর্বে পরীক্ষার্থীদের নিজ নিজ নির্ধারিত আসনে বসতে হবে।</p>
+                <p>২। প্রবেশপত্র ও প্রয়োজনীয় লেখার উপকরণ ব্যতীত অন্য কোনো কাগজপত্র আনা সম্পূর্ণ নিষেধ।</p>
+                <p>৩। পরীক্ষার হলে শৃঙ্খলা ভঙ্গকারী বা অসদুপায় অবলম্বনকারী পরীক্ষার্থীর পরীক্ষা বাতিল বলে গণ্য হবে।</p>
+              </div>
+
+              {/* Signatures */}
+              <div className="flex justify-between items-center text-sm font-bold pt-4">
+                <div className="text-center">
+                  <div className="border-t-2 border-slate-900 w-36 mb-1" />
+                  <span>পরীক্ষা কমিটি আহ্বায়ক</span>
+                </div>
+                <div className="text-center">
+                  <div className="border-t-2 border-slate-900 w-36 mb-1" />
+                  <span>অধ্যক্ষ / পরীক্ষা নিয়ন্ত্রক</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -909,17 +1475,17 @@ export const ExamControllerSystem: React.FC = () => {
 
           {/* Marks Entry Spreadsheet Table */}
           <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full text-sm sm:text-base text-left border-collapse">
               <thead>
-                <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
-                  <th className="p-2.5 w-16 text-center">রোল</th>
-                  <th className="p-2.5">শিক্ষার্থীর নাম</th>
-                  <th className="p-2.5 text-center w-32">লিখিত নম্বর (প্রাপ্ত)</th>
-                  <th className="p-2.5 text-center w-28">৮০% গণনা</th>
-                  <th className="p-2.5 text-center w-32">শ্রেণি পরীক্ষা (২০%)</th>
-                  <th className="p-2.5 text-center w-28">মোট প্রাপ্ত নম্বর</th>
-                  <th className="p-2.5 text-center w-20">গ্রেড</th>
-                  <th className="p-2.5 text-center w-20">পয়েন্ট</th>
+                <tr className="bg-slate-100 text-slate-800 font-black border-b border-slate-200 text-sm">
+                  <th className="p-3 w-20 text-center">রোল</th>
+                  <th className="p-3">শিক্ষার্থীর নাম</th>
+                  <th className="p-3 text-center w-36">লিখিত নম্বর (প্রাপ্ত)</th>
+                  <th className="p-3 text-center w-32">৮০% গণনা</th>
+                  <th className="p-3 text-center w-36">শ্রেণি পরীক্ষা (২০%)</th>
+                  <th className="p-3 text-center w-32">মোট প্রাপ্ত নম্বর</th>
+                  <th className="p-3 text-center w-24">গ্রেড</th>
+                  <th className="p-3 text-center w-24">পয়েন্ট</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-150">
@@ -930,34 +1496,34 @@ export const ExamControllerSystem: React.FC = () => {
 
                   return (
                     <tr key={row.studentId} className="hover:bg-slate-50">
-                      <td className="p-2.5 text-center font-mono font-bold text-purple-900">{toBanglaDigits(row.roll)}</td>
-                      <td className="p-2.5 font-bold text-slate-900">{row.studentName}</td>
-                      <td className="p-2 text-center">
+                      <td className="p-3 text-center font-mono font-bold text-purple-900 text-base">{toBanglaDigits(row.roll)}</td>
+                      <td className="p-3 font-bold text-slate-900 text-base">{row.studentName}</td>
+                      <td className="p-2.5 text-center">
                         <input
                           type="number"
                           value={row.writtenMarks}
                           onChange={e => handleUpdateRosterMark(idx, 'writtenMarks', parseFloat(e.target.value) || 0)}
-                          className="w-20 text-center font-mono font-bold p-1.5 border border-slate-300 rounded-lg bg-white focus:outline-blue-900"
+                          className="w-24 text-center font-mono font-bold p-2 text-sm sm:text-base border border-slate-300 rounded-lg bg-white focus:outline-blue-900"
                         />
                       </td>
-                      <td className="p-2.5 text-center font-mono text-slate-600">{toBanglaDigits(eighty.toFixed(1))}</td>
-                      <td className="p-2 text-center">
+                      <td className="p-3 text-center font-mono font-semibold text-slate-700 text-base">{toBanglaDigits(eighty.toFixed(1))}</td>
+                      <td className="p-2.5 text-center">
                         <input
                           type="number"
                           value={row.classTestMarks}
                           onChange={e => handleUpdateRosterMark(idx, 'classTestMarks', parseFloat(e.target.value) || 0)}
-                          className="w-20 text-center font-mono font-bold p-1.5 border border-slate-300 rounded-lg bg-white focus:outline-blue-900"
+                          className="w-24 text-center font-mono font-bold p-2 text-sm sm:text-base border border-slate-300 rounded-lg bg-white focus:outline-blue-900"
                         />
                       </td>
-                      <td className="p-2.5 text-center font-mono font-black text-slate-950 text-sm">
+                      <td className="p-3 text-center font-mono font-black text-slate-950 text-base sm:text-lg">
                         {toBanglaDigits(total.toFixed(1))}
                       </td>
-                      <td className="p-2.5 text-center font-bold">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-black ${gpaObj.grade === 'A+' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-900'}`}>
+                      <td className="p-3 text-center font-bold">
+                        <span className={`px-2.5 py-1 rounded text-xs font-black ${gpaObj.grade === 'A+' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-900'}`}>
                           {gpaObj.grade}
                         </span>
                       </td>
-                      <td className="p-2.5 text-center font-mono font-bold text-slate-700">{gpaObj.point}</td>
+                      <td className="p-3 text-center font-mono font-bold text-slate-700 text-base">{gpaObj.point}</td>
                     </tr>
                   );
                 })}
@@ -1131,20 +1697,20 @@ export const ExamControllerSystem: React.FC = () => {
           </div>
 
           {/* Printable Question Paper Canvas */}
-          <div className="bg-white border-2 border-slate-400 p-8 rounded-xl shadow-lg max-w-[800px] mx-auto text-slate-900 font-serif leading-relaxed print:border-none print:shadow-none print:p-2 print:max-w-full">
+          <div className="bg-white border-2 border-slate-400 p-8 rounded-xl shadow-lg max-w-[850px] mx-auto text-slate-900 font-sans leading-relaxed print:border-none print:shadow-none print:p-2 print:max-w-full">
             {/* Header */}
-            <div className="text-center border-b border-slate-800 pb-2 mb-3">
-              <h2 className="text-2xl font-black text-slate-950 font-serif">
+            <div className="text-center border-b-2 border-slate-800 pb-3 mb-3">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-950">
                 {schoolName || 'ডি-লিকন মডেল একাডেমী'}
               </h2>
-              <p className="text-xs font-semibold text-slate-700">
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-1">
                 দক্ষিণগাঁও, গণি মার্কেট, বরমী রোড, কাপাসিয়া, গাজীপুর।
               </p>
-              <h3 className="text-base font-black text-slate-900 mt-1 underline">
+              <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1.5 underline">
                 {qpExamName}
               </h3>
               
-              <div className="flex items-center justify-between text-xs font-bold text-slate-900 pt-2">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-900 pt-2.5">
                 <span>শ্রেণি: {qpClass}</span>
                 <span>বিষয়: {qpSubject}</span>
                 <span>সময়: {qpTime}</span>
@@ -1153,23 +1719,23 @@ export const ExamControllerSystem: React.FC = () => {
             </div>
 
             {/* Instruction */}
-            <div className="text-xs italic text-slate-600 border-b border-dashed border-slate-400 pb-2 mb-4 text-center">
+            <div className="text-xs sm:text-sm italic text-slate-600 border-b border-dashed border-slate-400 pb-2 mb-4 text-center">
               [{qpInstructions}]
             </div>
 
             {/* Questions by Section */}
-            <div className="space-y-4 text-xs sm:text-sm">
+            <div className="space-y-5 text-sm sm:text-base">
               {/* Section K */}
               <div>
-                <div className="text-center font-bold underline mb-2 text-xs">
+                <div className="text-center font-black underline mb-3 text-sm sm:text-base text-slate-950">
                   ক - বিভাগ (সংক্ষিপ্ত ও নৈর্ব্যক্তিক প্রশ্নাবলী)
                 </div>
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {questionsList.filter(q => q.section === 'ক').map(q => (
                     <div key={q.id} className="flex items-start justify-between gap-2 group">
-                      <div className="flex items-start gap-1 flex-1">
-                        <span className="font-bold">{toBanglaDigits(q.qNumber)}.</span>
-                        <span>{q.text}</span>
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="font-black">{toBanglaDigits(q.qNumber)}.</span>
+                        <span className="font-medium text-slate-900">{q.text}</span>
                       </div>
                       <span className="font-mono font-bold shrink-0 text-slate-800">
                         [{toBanglaDigits(q.marks)}]
@@ -1179,7 +1745,7 @@ export const ExamControllerSystem: React.FC = () => {
                         className="opacity-0 group-hover:opacity-100 text-rose-600 print:hidden text-xs cursor-pointer ml-1"
                         title="মুছুন"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ))}
@@ -1187,16 +1753,16 @@ export const ExamControllerSystem: React.FC = () => {
               </div>
 
               {/* Section Kh */}
-              <div className="pt-3 border-t border-slate-200">
-                <div className="text-center font-bold underline mb-2 text-xs">
+              <div className="pt-4 border-t border-slate-200">
+                <div className="text-center font-black underline mb-3 text-sm sm:text-base text-slate-950">
                   খ - বিভাগ (সৃজনশীল ও রচনামূলক প্রশ্নাবলী)
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {questionsList.filter(q => q.section === 'খ').map(q => (
                     <div key={q.id} className="flex items-start justify-between gap-2 group">
-                      <div className="flex items-start gap-1 flex-1">
-                        <span className="font-bold">{toBanglaDigits(q.qNumber)}.</span>
-                        <span className="whitespace-pre-line">{q.text}</span>
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="font-black">{toBanglaDigits(q.qNumber)}.</span>
+                        <span className="whitespace-pre-line font-medium text-slate-900 leading-relaxed">{q.text}</span>
                       </div>
                       <span className="font-mono font-bold shrink-0 text-slate-800">
                         [{toBanglaDigits(q.marks)}]
@@ -1206,7 +1772,7 @@ export const ExamControllerSystem: React.FC = () => {
                         className="opacity-0 group-hover:opacity-100 text-rose-600 print:hidden text-xs cursor-pointer ml-1"
                         title="মুছুন"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ))}
@@ -1266,52 +1832,52 @@ export const ExamControllerSystem: React.FC = () => {
           </div>
 
           {/* Printable Admit Card Frame */}
-          <div className="bg-white border-2 border-slate-500 rounded-2xl p-6 max-w-[750px] mx-auto shadow-md relative overflow-hidden font-serif print:border-2 print:shadow-none print:max-w-full">
-            <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-3">
+          <div className="bg-white border-2 border-slate-500 rounded-2xl p-6 sm:p-8 max-w-[800px] mx-auto shadow-md relative overflow-hidden font-sans print:border-2 print:shadow-none print:max-w-full">
+            <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
               <img 
                 src={schoolLogoVal || 'https://i.postimg.cc/prHZW6n3/logo-1.png'} 
                 alt="Logo" 
-                className="h-16 w-16 object-contain shrink-0" 
+                className="h-20 w-20 object-contain shrink-0" 
               />
-              <div className="text-center flex-1">
-                <h2 className="text-xl font-black text-slate-950">{schoolName || 'ডি-লিকন মডেল একাডেমী'}</h2>
-                <p className="text-[11px] text-slate-700">দক্ষিণগাঁও, গণি মার্কেট, বরমী রোড, কাপাসিয়া, গাজীপুর।</p>
-                <span className="inline-block bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full mt-1">
+              <div className="text-center flex-1 px-2">
+                <h2 className="text-2xl font-black text-slate-950">{schoolName || 'ডি-লিকন মডেল একাডেমী'}</h2>
+                <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">দক্ষিণগাঁও, গণি মার্কেট, বরমী রোড, কাপাসিয়া, গাজীপুর।</p>
+                <span className="inline-block bg-slate-900 text-white text-xs font-black uppercase px-3.5 py-1 rounded-full mt-1.5 shadow-2xs">
                   প্রবেশপত্র (ADMIT CARD)
                 </span>
               </div>
               {qrCodeUrl && (
-                <img src={qrCodeUrl} alt="QR" className="h-16 w-16 border border-slate-300 p-0.5 shrink-0" />
+                <img src={qrCodeUrl} alt="QR" className="h-20 w-20 border border-slate-300 p-0.5 shrink-0" />
               )}
             </div>
 
             {/* Student Info Box */}
-            <div className="grid grid-cols-2 gap-2 text-xs border border-slate-400 p-2.5 rounded-lg mb-3 bg-slate-50/50">
-              <div><strong>পরীক্ষার্থীর নাম:</strong> {activeTranscript.studentName}</div>
-              <div><strong>শ্রেণি:</strong> {activeTranscript.className} শ্রেণি</div>
-              <div><strong>রোল নম্বর:</strong> <span className="font-mono font-bold">{toBanglaDigits(activeTranscript.roll)}</span></div>
-              <div><strong>শিক্ষাবর্ষ:</strong> ২০২৬ ইং</div>
-              <div><strong>পরীক্ষার নাম:</strong> {admitCardExamTitle}</div>
-              <div><strong>নিবন্ধন নম্বর:</strong> <span className="font-mono">DEL-2026-{activeTranscript.roll}</span></div>
+            <div className="grid grid-cols-2 gap-3 text-sm sm:text-base border border-slate-400 p-3.5 rounded-xl mb-4 bg-slate-50/70">
+              <div><strong className="text-slate-900">পরীক্ষার্থীর নাম:</strong> <span className="font-black text-blue-950">{activeTranscript.studentName}</span></div>
+              <div><strong className="text-slate-900">শ্রেণি:</strong> <span className="font-bold">{activeTranscript.className} শ্রেণি</span></div>
+              <div><strong className="text-slate-900">রোল নম্বর:</strong> <span className="font-mono font-black text-purple-950">{toBanglaDigits(activeTranscript.roll)}</span></div>
+              <div><strong className="text-slate-900">শিক্ষাবর্ষ:</strong> ২০২৬ ইং</div>
+              <div><strong className="text-slate-900">পরীক্ষার নাম:</strong> <span className="font-bold">{admitCardExamTitle}</span></div>
+              <div><strong className="text-slate-900">নিবন্ধন নম্বর:</strong> <span className="font-mono font-bold">DEL-2026-{activeTranscript.roll}</span></div>
             </div>
 
             {/* Routine */}
             <div className="mb-4">
-              <span className="block text-[11px] font-bold text-slate-800 mb-1">পরীক্ষার সময়সূচি / রুটিন:</span>
-              <table className="w-full border-collapse border border-slate-400 text-[11px]">
+              <span className="block text-sm font-black text-slate-900 mb-1.5">পরীক্ষার সময়সূচি / রুটিন:</span>
+              <table className="w-full border-collapse border border-slate-400 text-sm">
                 <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 text-center font-bold">
-                    <th className="border border-slate-400 p-1">তারিখ</th>
-                    <th className="border border-slate-400 p-1">সময়</th>
-                    <th className="border border-slate-400 p-1">বিষয়</th>
+                  <tr className="bg-slate-100 border-b border-slate-400 text-center font-black">
+                    <th className="border border-slate-400 p-2">তারিখ</th>
+                    <th className="border border-slate-400 p-2">সময়</th>
+                    <th className="border border-slate-400 p-2">বিষয়</th>
                   </tr>
                 </thead>
                 <tbody>
                   {admitRoutine.map((r, rIdx) => (
-                    <tr key={rIdx} className="text-center">
-                      <td className="border border-slate-400 p-1 font-mono">{r.date}</td>
-                      <td className="border border-slate-400 p-1">{r.time}</td>
-                      <td className="border border-slate-400 p-1 font-bold">{r.subject}</td>
+                    <tr key={rIdx} className="text-center font-semibold">
+                      <td className="border border-slate-400 p-2 font-mono">{r.date}</td>
+                      <td className="border border-slate-400 p-2">{r.time}</td>
+                      <td className="border border-slate-400 p-2 font-bold text-slate-900">{r.subject}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1319,20 +1885,20 @@ export const ExamControllerSystem: React.FC = () => {
             </div>
 
             {/* Rules */}
-            <div className="text-[10px] text-slate-600 space-y-0.5 border-t border-slate-300 pt-2 mb-6">
+            <div className="text-xs sm:text-sm text-slate-700 space-y-1 border-t border-slate-300 pt-3 mb-8">
               <p>১। পরীক্ষা শুরুর অন্তত ১৫ মিনিট পূর্বে পরীক্ষার হলে উপস্থিত হতে হবে।</p>
               <p>২। প্রবেশপত্র ব্যতীত কোনো অবস্থাতেই পরীক্ষার হলে প্রবেশ করতে দেওয়া হবে না।</p>
               <p>৩। মোবাইল ফোন বা কোনো অবৈধ ইলেকট্রনিক ডিভাইস সাথে রাখা সম্পূর্ণ নিষিদ্ধ।</p>
             </div>
 
             {/* Signatures */}
-            <div className="flex justify-between items-center text-xs font-bold pt-6">
+            <div className="flex justify-between items-center text-sm font-bold pt-4">
               <div className="text-center">
-                <div className="border-t border-slate-900 w-32 mb-1" />
+                <div className="border-t-2 border-slate-900 w-36 mb-1" />
                 <span>শ্রেণি শিক্ষক</span>
               </div>
               <div className="text-center">
-                <div className="border-t border-slate-900 w-36 mb-1" />
+                <div className="border-t-2 border-slate-900 w-40 mb-1" />
                 <span>প্রধান শিক্ষক / পরীক্ষা নিয়ন্ত্রক</span>
               </div>
             </div>
@@ -1385,12 +1951,12 @@ export const ExamControllerSystem: React.FC = () => {
           </div>
 
           {/* Printable Bench Slips Grid (Cut & Paste onto Desks) */}
-          <div className="bg-white p-6 rounded-xl border border-slate-300 shadow-sm print:border-none print:shadow-none print:p-0">
-            <h4 className="text-center font-bold text-sm mb-4 text-slate-800 underline print:mb-2">
+          <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-300 shadow-sm print:border-none print:shadow-none print:p-0">
+            <h4 className="text-center font-black text-base sm:text-lg mb-5 text-slate-800 underline print:mb-3">
               পরীক্ষার বেঞ্চ স্লিপ (Student Desk Seat Slips) — কক্ষ নং ১০১
             </h4>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:grid-cols-3 print:gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-3">
               {[
                 { name: 'তাহসিন ইসলাম', roll: '০১', cls: 'চতুর্থ শ্রেণি', desk: '১-A' },
                 { name: 'আফিফা রহমান', roll: '০২', cls: 'চতুর্থ শ্রেণি', desk: '১-B' },
@@ -1399,16 +1965,16 @@ export const ExamControllerSystem: React.FC = () => {
                 { name: 'মাহিনুর ইসলাম', roll: '০৫', cls: 'চতুর্থ শ্রেণি', desk: '৩-A' },
                 { name: 'আরিয়ান সরকার', roll: '০৬', cls: 'চতুর্থ শ্রেণি', desk: '৩-B' },
               ].map((bench, bIdx) => (
-                <div key={bIdx} className="border-2 border-dashed border-slate-700 p-3 rounded-lg text-center font-serif text-xs space-y-1 bg-amber-50/20">
-                  <div className="text-[10px] font-black uppercase text-blue-900 border-b border-slate-300 pb-0.5">
+                <div key={bIdx} className="border-2 border-dashed border-slate-800 p-4 rounded-xl text-center font-sans space-y-1.5 bg-amber-50/30">
+                  <div className="text-xs font-black uppercase text-blue-900 border-b border-slate-300 pb-1">
                     ডি-লিকন মডেল একাডেমী
                   </div>
-                  <div className="font-black text-sm text-slate-950 mt-1">{bench.name}</div>
-                  <div className="font-bold text-slate-800">
-                    {bench.cls} • রোল: <span className="font-mono text-purple-900 text-sm font-black">{toBanglaDigits(bench.roll)}</span>
+                  <div className="font-black text-lg sm:text-xl text-slate-950 mt-1">{bench.name}</div>
+                  <div className="font-bold text-slate-800 text-sm sm:text-base">
+                    {bench.cls} • রোল: <span className="font-mono text-purple-950 font-black">{toBanglaDigits(bench.roll)}</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono">
-                    বেঞ্চ নং: {bench.desk} | রুম: ১০১
+                  <div className="text-xs sm:text-sm text-slate-600 font-mono font-bold pt-0.5">
+                    বেঞ্চ নং: <span className="text-blue-900">{bench.desk}</span> | কক্ষ: <span className="text-blue-900">১০১</span>
                   </div>
                 </div>
               ))}
@@ -1470,23 +2036,23 @@ export const ExamControllerSystem: React.FC = () => {
               <div key={res.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-2">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-800 px-2 py-0.5 rounded">
+                    <span className="text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded">
                       {res.className} শ্রেণি • {res.subject}
                     </span>
-                    <h4 className="text-base font-black text-slate-900 mt-1">{res.title}</h4>
-                    <p className="text-[11px] text-slate-500">{res.examTerm} • প্রণয়ন: {res.author}</p>
+                    <h4 className="text-base sm:text-lg font-black text-slate-900 mt-1">{res.title}</h4>
+                    <p className="text-xs text-slate-500">{res.examTerm} • প্রণয়ন: {res.author}</p>
                   </div>
 
                   <button
                     onClick={handlePrint}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition cursor-pointer"
+                    className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition cursor-pointer"
                   >
                     <Printer className="h-3.5 w-3.5" />
                     <span>প্রিন্ট</span>
                   </button>
                 </div>
 
-                <div className="text-xs space-y-2 text-slate-700 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
+                <div className="text-sm space-y-2 text-slate-700 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
                   <div>
                     <strong className="text-slate-900 block mb-0.5">পাঠ্যক্রম ও অন্তর্ভুক্ত অধ্যায়সমূহ:</strong>
                     <p>{res.chapters}</p>
@@ -1553,11 +2119,11 @@ export const ExamControllerSystem: React.FC = () => {
 
           {/* Merit List Table */}
           <div className="border border-slate-200 rounded-xl overflow-hidden">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-100 font-bold border-b border-slate-200 text-slate-800">
+            <table className="w-full text-sm sm:text-base text-left">
+              <thead className="bg-slate-100 font-black border-b border-slate-200 text-slate-800 text-sm">
                 <tr>
-                  <th className="p-3 text-center w-20">মেধাক্রম</th>
-                  <th className="p-3 text-center w-16">রোল</th>
+                  <th className="p-3 text-center w-24">মেধাক্রম</th>
+                  <th className="p-3 text-center w-20">রোল</th>
                   <th className="p-3">শিক্ষার্থীর নাম</th>
                   <th className="p-3 text-center">মোট নম্বর</th>
                   <th className="p-3 text-center">জিপিএ (GPA)</th>
@@ -1567,19 +2133,19 @@ export const ExamControllerSystem: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-150">
                 <tr className="hover:bg-slate-50 bg-amber-50/20 font-bold">
-                  <td className="p-3 text-center font-black text-amber-600 flex items-center justify-center gap-1">
+                  <td className="p-3.5 text-center font-black text-amber-600 flex items-center justify-center gap-1.5 text-base">
                     <span>🥇</span>
                     <span>১ম</span>
                   </td>
-                  <td className="p-3 text-center font-mono">০২</td>
-                  <td className="p-3 text-slate-900">আফিফা রহমান</td>
-                  <td className="p-3 text-center font-mono font-bold">৬১৫.৫</td>
-                  <td className="p-3 text-center font-mono font-black text-emerald-700">৫.০০</td>
-                  <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">A+</span></td>
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-center font-mono font-bold text-base">০২</td>
+                  <td className="p-3.5 text-slate-900 font-extrabold text-base">আফিফা রহমান</td>
+                  <td className="p-3.5 text-center font-mono font-bold text-base">৬১৫.৫</td>
+                  <td className="p-3.5 text-center font-mono font-black text-emerald-700 text-base">৫.০০</td>
+                  <td className="p-3.5 text-center"><span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded font-black text-xs sm:text-sm">A+</span></td>
+                  <td className="p-3.5 text-center">
                     <button
                       onClick={() => { setSelectedStudentId('sample_2'); setActiveSubTab('transcript'); }}
-                      className="text-blue-900 hover:underline font-bold"
+                      className="text-blue-900 hover:underline font-black text-sm cursor-pointer"
                     >
                       মার্কশীট দেখুন
                     </button>
@@ -1587,16 +2153,16 @@ export const ExamControllerSystem: React.FC = () => {
                 </tr>
 
                 <tr className="hover:bg-slate-50">
-                  <td className="p-3 text-center font-bold text-slate-700">৪র্থ</td>
-                  <td className="p-3 text-center font-mono font-bold">০১</td>
-                  <td className="p-3 text-slate-900 font-bold">তাহসিন ইসলাম</td>
-                  <td className="p-3 text-center font-mono font-bold">৫৫২.১</td>
-                  <td className="p-3 text-center font-mono font-bold text-blue-900">৪.৮৮</td>
-                  <td className="p-3 text-center"><span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">A</span></td>
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-center font-bold text-slate-700 text-base">৪র্থ</td>
+                  <td className="p-3.5 text-center font-mono font-bold text-base">০১</td>
+                  <td className="p-3.5 text-slate-900 font-extrabold text-base">তাহসিন ইসলাম</td>
+                  <td className="p-3.5 text-center font-mono font-bold text-base">৫৫২.১</td>
+                  <td className="p-3.5 text-center font-mono font-bold text-blue-900 text-base">৪.৮৮</td>
+                  <td className="p-3.5 text-center"><span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded font-bold text-xs sm:text-sm">A</span></td>
+                  <td className="p-3.5 text-center">
                     <button
                       onClick={() => { setSelectedStudentId('sample_1'); setActiveSubTab('transcript'); }}
-                      className="text-blue-900 hover:underline font-bold"
+                      className="text-blue-900 hover:underline font-black text-sm cursor-pointer"
                     >
                       মার্কশীট দেখুন
                     </button>

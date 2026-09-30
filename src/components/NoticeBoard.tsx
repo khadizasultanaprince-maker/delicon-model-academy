@@ -1311,7 +1311,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
               <h3 className="text-lg font-black text-slate-900 border-l-4 border-blue-900 pl-3">
                 {printNotice.banglaTitle || printNotice.title}
               </h3>
-              <p className="text-xs text-slate-800 leading-loose whitespace-pre-line text-justify">
+              <p className="text-sm sm:text-base text-slate-800 leading-relaxed whitespace-pre-line text-left">
                 {printNotice.content}
               </p>
             </div>

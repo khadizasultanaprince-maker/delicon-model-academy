@@ -2829,10 +2829,10 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
 
                             <h5 className="font-bold italic text-sm text-slate-800 my-3">প্রশংসাপত্র (Testimonial Commendation)</h5>
 
-                            <p className="text-xs text-justify font-normal mt-4 text-slate-700 leading-relaxed indent-8 font-sans">
+                            <p className="text-sm sm:text-base text-left font-normal mt-4 text-slate-800 leading-relaxed indent-8 font-sans">
                               এই মর্মে প্রত্যয়ন করা যাইতেছে যে, <span className="font-bold text-slate-900">{stud.name}</span>, অভিভাবক: <span className="font-bold text-slate-900">{stud.guardianName}</span>, মিরপুর ডিলিকন স্কুল ও রিসার্স মডেল একাডেমীর <span className="font-bold text-slate-900">{stud.className}</span> শ্রেণীতে অধ্যয়নরত আছে। তাহার শ্রেণী রোল নম্বর <span className="font-bold text-slate-900">{stud.roll}</span> এবং তাহার প্রাতিষ্ঠানিক রেজিস্ট্রি আইডি নম্বর <span className="font-bold text-slate-900">STD-2026-{stud.id.replace('s', '')}</span>। আমাদের জানামতে সে একজন অত্যন্ত বিনয়ী, মেধাবী ও চরিত্রবান শিক্ষার্থী। তাহার ক্লাসের উপস্থিতির রেকর্ড শতকরা <span className="font-bold text-slate-900">{stud.attendancePct}%</span> যাহা অত্যন্ত সন্তোষজনক।
                             </p>
-                            <p className="text-xs text-justify font-normal mt-3 text-slate-700 leading-relaxed indent-8 font-sans">
+                            <p className="text-sm sm:text-base text-left font-normal mt-3 text-slate-800 leading-relaxed indent-8 font-sans">
                               আমি তাহার জীবনের সর্বাঙ্গীন উন্নতি ও ভবিষ্যৎ শুভ শিক্ষাজীবনের সার্বিক সফলতা কামনা করিতেছি।
                             </p>
 

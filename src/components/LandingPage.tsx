@@ -488,13 +488,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           />
                         </defs>
                         {/* Circular Text Band / Guideline Ring (টেক্সট লাইনের চাকা লেগে রিং) */}
-                        <circle cx="140" cy="140" r="108" fill="none" stroke="rgba(245, 158, 11, 0.22)" strokeWidth="28" />
-                        <circle cx="140" cy="140" r="122" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" opacity="0.75" />
-                        <circle cx="140" cy="140" r="94" fill="none" stroke="#f59e0b" strokeWidth="1.2" opacity="0.75" />
+                        <circle cx="140" cy="140" r="108" fill="none" stroke="rgba(245, 158, 11, 0.25)" strokeWidth="32" />
+                        <circle cx="140" cy="140" r="124" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" opacity="0.75" />
+                        <circle cx="140" cy="140" r="92" fill="none" stroke="#f59e0b" strokeWidth="1.2" opacity="0.75" />
                         
-                        <text className="font-sans font-black text-[13.5px] fill-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                          <textPath href="#sunEmblemTextPath" startOffset="0%" textLength="665" lengthAdjust="spacing">
-                            ⭐ ডিজিটাল শিক্ষায় এগিয়ে চলা ⭐ সৃজনশীলতা ও মূল্যবোধের বিকাশ ⭐
+                        <text className="font-sans font-black text-[15.5px] fill-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] tracking-normal">
+                          <textPath href="#sunEmblemTextPath" startOffset="0%">
+                            ⭐ ডিজিটাল শিক্ষায় আদর্শ পাঠশালা ⭐ সৃজনশীলতা ও মূল্যবোধের বিকাশ ⭐
                           </textPath>
                         </text>
                       </svg>
