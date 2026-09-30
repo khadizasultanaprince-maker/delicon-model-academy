@@ -23,6 +23,7 @@ import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 import { RecruitmentPosterGenerator } from './RecruitmentPosterGenerator';
 import { BirthdayReminderCountdown } from './BirthdayReminderCountdown';
 import { AdminBirthdayAlertSystem } from './AdminBirthdayAlertSystem';
+import { ExamControllerSystem } from './ExamControllerSystem';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -1350,7 +1351,7 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'finance', label: '৪। ফি কালেকশন ও ব্যাংক', icon: CreditCard },
             { id: 'staff', label: '৫। স্টাফ পে-রোল ও হাজিরা', icon: Clock },
             { id: 'idcards', label: '৬। কিউআর আইডি কার্ড জেনারেটর', icon: QrCode },
-            { id: 'exams', label: '৭। পরীক্ষার মেট্রিক্স ও মার্কস এন্ট্রি', icon: FileText },
+            { id: 'exams', label: '৭। পরীক্ষা নিয়ন্ত্রণ কেন্দ্র ও ট্রান্সক্রিপ্ট 📝', icon: FileText },
             { id: 'docs', label: '৮। প্রশংসাপত্র ও ট্রান্সক্রিপ্ট প্রিন্ট', icon: Award },
             { id: 'requisitions', label: '৯। রিকুইজিশন অনুমোদন হাব', icon: CheckCircle2, count: requisitions.filter(r => !r.status.includes('Principal Approved') && !r.status.includes('Rejected')).length },
             { id: 'sections', label: '১০। ল্যান্ডিং সেকশন কাস্টমাইজার 🎨', icon: Layers },
@@ -2576,227 +2577,10 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             </div>
           )}
 
-          {/* 4C. EXAM METRICS & MARKS RECORDING HUB */}
+          {/* 7. FULL EXAMINATION CONTROLLER SYSTEM */}
           {activeTab === 'exams' && (
-            <div>
-              <div className="border-b pb-3 mb-6">
-                <h3 className="font-bold text-slate-800 text-sm">পরীক্ষা ফলাফল, গ্রেড স্কোর ও মার্কস এন্ট্রি সিস্টেম</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">পার্বণিক পরীক্ষা (বছরে ৩ বার) এবং মিডটার্ম পরীক্ষার (সাপ্তাহিক ও মাসিক) উত্তরপত্র যাচাই মার্কস ডিক্লেয়ারেশন ফরমেট</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Form column */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                  <h4 className="font-extrabold text-blue-900 text-xs flex items-center gap-1.5 mb-3 uppercase">
-                    <Layers className="h-4.5 w-4.5 text-amber-500" />
-                    পরীক্ষার নম্বর এন্ট্রি ও গ্রেড গণনা
-                  </h4>
-
-                  {examSuccess && (
-                    <div className="bg-emerald-100 text-emerald-800 text-[11px] p-2.5 rounded-lg font-bold my-3 flex items-center gap-1.5">
-                      <Check className="h-4 w-4" />
-                      মার্কস ডাটাবেজে সফলভাবে স্টোর করা হয়েছে!
-                    </div>
-                  )}
-
-                  {examFormError && (
-                    <div className="bg-rose-100 text-rose-800 text-[11px] p-2.5 rounded-lg font-bold my-3 flex items-center gap-1.5">
-                      <X className="h-4 w-4" />
-                      {examFormError}
-                    </div>
-                  )}
-
-                  <div className="space-y-3.5">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-600 block mb-1">শিক্ষার্থী নির্বাচন</label>
-                      <select
-                        value={selectedStudentForExam}
-                        onChange={e => setSelectedStudentForExam(e.target.value)}
-                        className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 focus:border-blue-900"
-                      >
-                        <option value="">নির্বাচن করুন...</option>
-                        {students.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} (শ্রেণী: {s.className} | রোল: {s.roll})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">পরীক্ষার ধরণ</label>
-                        <select
-                          value={examType}
-                          onChange={e => {
-                            setExamType(e.target.value as any);
-                            setExamName(e.target.value === 'Terminal' ? 'First Term 2026' : 'Weekly Midterm 1');
-                          }}
-                          className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
-                        >
-                          <option value="Terminal">পার্বণিক পরীক্ষা (৩ বার বছরে)</option>
-                          <option value="Midterm">মিডটার্ম পরীক্ষা (সাপ্তাহিক/মাসিক)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">পরীক্ষার নাম / পর্ব</label>
-                        <input
-                          type="text"
-                          value={examName}
-                          onChange={e => setExamName(e.target.value)}
-                          className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 focus:border-blue-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-1">
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">পরীক্ষার বিষয়</label>
-                        <select
-                          value={selectedSubject}
-                          onChange={e => setSelectedSubject(e.target.value)}
-                          className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
-                        >
-                          <option value="math">গণিত (Math)</option>
-                          <option value="bangla">বাংলা (Bangla)</option>
-                          <option value="english">ইংরেজি (english)</option>
-                          <option value="science">বিজ্ঞান (Science)</option>
-                          <option value="ict">আইসিটি (ICT)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">লিখিত নম্বর (৬০)</label>
-                        <input
-                          type="number"
-                          placeholder="উদা: ৪২"
-                          value={writtenMarksInput}
-                          onChange={e => setWrittenMarksInput(e.target.value)}
-                          className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 focus:border-blue-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">এমসিকিউ (৪০)</label>
-                        <input
-                          type="number"
-                          placeholder="উদা: ২৭"
-                          value={mcqMarksInput}
-                          onChange={e => setMcqMarksInput(e.target.value)}
-                          className="w-full rounded border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 focus:border-blue-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-900 text-white p-3 rounded-xl space-y-1 text-xs select-none shadow">
-                      {(() => {
-                        const writ = parseFloat(writtenMarksInput) || 0;
-                        const mcq = parseFloat(mcqMarksInput) || 0;
-                        const tot = writ + mcq;
-                        let letterGrade = 'F';
-                        let gpScore = 0.0;
-
-                        if (tot >= 80) { letterGrade = 'A+'; gpScore = 5.0; }
-                        else if (tot >= 70) { letterGrade = 'A'; gpScore = 4.0; }
-                        else if (tot >= 60) { letterGrade = 'A-'; gpScore = 3.5; }
-                        else if (tot >= 50) { letterGrade = 'B'; gpScore = 3.0; }
-                        else if (tot >= 40) { letterGrade = 'C'; gpScore = 2.0; }
-                        else if (tot >= 33) { letterGrade = 'D'; gpScore = 1.0; }
-
-                        return (
-                          <>
-                            <div className="flex justify-between font-bold border-b border-blue-800 pb-1">
-                              <span>মোট প্রাপ্ত নম্বর (Auto Compute):</span>
-                              <span className="text-amber-400 font-bold">{tot} / ১০০</span>
-                            </div>
-                            <div className="flex justify-between pt-1 select-none font-bold text-[11px]">
-                              <span>গ্রেড লেটার: {letterGrade}</span>
-                              <span>জিপিএ পয়েন্ট: {gpScore.toFixed(2)}</span>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-
-                    <div className="pt-2 flex justify-end">
-                      <button
-                        onClick={() => {
-                          if (!selectedStudentForExam || !writtenMarksInput || !mcqMarksInput) {
-                            setExamFormError('অনুগ্রহ করে সঠিক শিক্ষার্থী নির্বাচন এবং প্রাপ্ত নম্বর প্রদান করুন।');
-                            return;
-                          }
-                          const foundStud = students.find(s => s.id === selectedStudentForExam);
-                          if (!foundStud) return;
-
-                          const writ = parseFloat(writtenMarksInput) || 0;
-                          const mcq = parseFloat(mcqMarksInput) || 0;
-                          const tot = writ + mcq;
-
-                          let letterGrade = 'F';
-                          let gpScore = 0.0;
-                          if (tot >= 80) { letterGrade = 'A+'; gpScore = 5.0; }
-                          else if (tot >= 70) { letterGrade = 'A'; gpScore = 4.0; }
-                          else if (tot >= 60) { letterGrade = 'A-'; gpScore = 3.5; }
-                          else if (tot >= 50) { letterGrade = 'B'; gpScore = 3.0; }
-                          else if (tot >= 40) { letterGrade = 'C'; gpScore = 2.0; }
-                          else if (tot >= 33) { letterGrade = 'D'; gpScore = 1.0; }
-
-                          addExamMark({
-                            studentId: selectedStudentForExam,
-                            studentName: foundStud.name,
-                            className: foundStud.className,
-                            roll: foundStud.roll,
-                            examType: examType,
-                            examName: examName,
-                            subject: selectedSubject,
-                            writtenMarks: writ,
-                            mcqMarks: mcq,
-                            totalMarks: tot,
-                            grade: letterGrade,
-                            gpa: gpScore
-                          });
-
-                          setWrittenMarksInput('');
-                          setMcqMarksInput('');
-                          setExamFormError('');
-                          setExamSuccess(true);
-                          setTimeout(() => setExamSuccess(false), 3000);
-                        }}
-                        className="bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs p-2.5 px-4 rounded-xl shadow cursor-pointer transition-all w-full"
-                      >
-                        ফলাফল রেজিস্ট্রি করুন
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* History Database Display List */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="bg-slate-50 p-4 border-b flex justify-between items-center shrink-0">
-                    <div>
-                      <h4 className="font-extrabold text-xs text-slate-800">সর্বশেষ সাবমিটকৃত মার্কস শিট</h4>
-                      <p className="text-[9px] text-slate-400 mt-0.5">রিয়েলটাইম পরীক্ষার মার্ক রেকর্ড ও ফলাফল ডেটা</p>
-                    </div>
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded leading-none">লাইভ ডাটাবেজ</span>
-                  </div>
-
-                  <div className="divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[350px]">
-                    {examMarks.length === 0 ? (
-                      <p className="text-center p-8 text-xs text-slate-400 font-semibold">কোনো পরীক্ষার নম্বর এখনও ডিক্লেয়ার করা হয়নি।</p>
-                    ) : (
-                      examMarks.map(em => (
-                        <div key={em.id} className="p-3.5 flex justify-between items-center text-xs">
-                          <div>
-                            <span className={`text-[8px] font-bold uppercase rounded px-1.5 py-0.5 leading-none ${em.examType === 'Terminal' ? 'bg-indigo-100 text-indigo-800' : 'bg-sky-100 text-sky-800'}`}>{em.examType === 'Terminal' ? 'পার্বণিক' : 'মিডটার্ম'}</span>
-                            <h5 className="font-bold text-slate-800 text-xs mt-1.5">{em.studentName} (শ্রেণী: {em.className})</h5>
-                            <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{em.examName} • বিষয়: <span className="uppercase text-blue-900 font-bold">{em.subject}</span></p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-slate-700 font-mono">লিখিত: {em.writtenMarks} | MCQ: {em.mcqMarks}</p>
-                            <p className="text-[10px] text-slate-500 font-bold mt-1">সর্বমোট: <span className="text-amber-600 font-black">{em.totalMarks}</span> (গ্রেড: <span className="text-blue-900 font-black">{em.grade}</span> | GPA: {em.gpa.toFixed(2)})</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-4 animate-fadeIn">
+              <ExamControllerSystem />
             </div>
           )}
 
