@@ -18,6 +18,7 @@ import {
 import { motion } from 'motion/react';
 import { LatestCampusNews } from './LatestCampusNews';
 import { VideoPlayer, extractYouTubeId } from './VideoPlayer';
+import { BirthdayReminderCountdown } from './BirthdayReminderCountdown';
 
 const getYouTubeId = extractYouTubeId;
 
@@ -2561,10 +2562,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        {/* SECTION 15: GENERAL NOTICES */}
+        {/* SECTION 15: GENERAL NOTICES & BIRTHDAY ALERTS */}
         {isSecVisible('sec-notice') && (
-          <section id="sec-notice" className="bg-slate-50/50 py-16 px-6 lg:px-16 border-b border-slate-200/60 font-sans">
-            <div className="max-w-4xl mx-auto">
+          <section id="sec-notice" className="bg-slate-50/50 py-16 px-6 lg:px-16 border-b border-slate-200/60 font-sans space-y-8">
+            <div className="max-w-4xl mx-auto space-y-6">
+              <BirthdayReminderCountdown compactBanner={true} />
               <LatestCampusNews loggedInRole={loggedInRole} />
             </div>
           </section>

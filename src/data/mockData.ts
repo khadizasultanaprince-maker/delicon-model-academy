@@ -5,6 +5,15 @@
 
 import { Student, Employee, Notice, StationeryItem, TransportRoute, ExamResult, DevProject, AcademicEvent, LibraryResource } from '../types';
 
+// Helper to calculate realistic relative DOB for testing countdowns
+export const getRelativeBirthdayDob = (daysOffset: number, birthYear = 2015): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${birthYear}-${m}-${day}`;
+};
+
 export const demoSampleStudents: Student[] = [
   {
     id: 's1',
@@ -14,6 +23,24 @@ export const demoSampleStudents: Student[] = [
     roll: '01',
     guardianName: 'Khalid Rahman',
     guardianPhone: '01712345678',
+    dob: getRelativeBirthdayDob(3, 2015), // Birthday in 3 days!
+    birthRegNo: '20152692518100123',
+    gender: 'Female',
+    bloodGroup: 'A+',
+    fatherNameBn: 'মোঃ খালিদ রহমান',
+    fatherNameEn: 'MD. KHALID RAHMAN',
+    fatherNid: '1982269251810',
+    fatherDob: '1982-05-14',
+    fatherBirthRegNo: '19822692518100123',
+    fatherPhone: '01712345678',
+    fatherOccupation: 'ব্যবসায়ী',
+    motherNameBn: 'সুলতানা পারভীন',
+    motherNameEn: 'SULTANA PARVEEN',
+    motherNid: '1986269251820',
+    motherDob: getRelativeBirthdayDob(6, 1986), // Mother's birthday in 6 days!
+    motherBirthRegNo: '19862692518100456',
+    motherPhone: '01711223344',
+    motherOccupation: 'গৃহিণী',
     feesPaid: 15000,
     totalFees: 18000,
     attendancePct: 94,
@@ -28,6 +55,24 @@ export const demoSampleStudents: Student[] = [
     roll: '02',
     guardianName: 'Monir Ahmed',
     guardianPhone: '01823456789',
+    dob: getRelativeBirthdayDob(7, 2014), // Birthday in 7 days!
+    birthRegNo: '20142692518100789',
+    gender: 'Male',
+    bloodGroup: 'B+',
+    fatherNameBn: 'মোঃ মনির আহমেদ',
+    fatherNameEn: 'MD. MONIR AHMED',
+    fatherNid: '1980269251830',
+    fatherDob: '1980-11-20',
+    fatherBirthRegNo: '19802692518100789',
+    fatherPhone: '01823456789',
+    fatherOccupation: 'ব্যাংকার',
+    motherNameBn: 'রোকেয়া বেগম',
+    motherNameEn: 'ROKEYA BEGUM',
+    motherNid: '1984269251840',
+    motherDob: '1984-03-12',
+    motherBirthRegNo: '19842692518100999',
+    motherPhone: '01822334455',
+    motherOccupation: 'শিক্ষিকা',
     feesPaid: 12000,
     totalFees: 18000,
     attendancePct: 88,
@@ -42,6 +87,24 @@ export const demoSampleStudents: Student[] = [
     roll: '01',
     guardianName: 'Sohail Yasmin',
     guardianPhone: '01934567890',
+    dob: getRelativeBirthdayDob(0, 2016), // TODAY!
+    birthRegNo: '20162692518100555',
+    gender: 'Female',
+    bloodGroup: 'O+',
+    fatherNameBn: 'সোহেল ইয়াসমিন',
+    fatherNameEn: 'SOHAIL YASMIN',
+    fatherNid: '1979269251850',
+    fatherDob: getRelativeBirthdayDob(1, 1979), // Father tomorrow!
+    fatherBirthRegNo: '19792692518100555',
+    fatherPhone: '01934567890',
+    fatherOccupation: 'ইঞ্জিনিয়ার',
+    motherNameBn: 'নাজমা আক্তার',
+    motherNameEn: 'NAZMA AKTER',
+    motherNid: '1983269251860',
+    motherDob: '1983-02-18',
+    motherBirthRegNo: '19832692518100777',
+    motherPhone: '01933445566',
+    motherOccupation: 'গৃহিণী',
     feesPaid: 18000,
     totalFees: 18000,
     attendancePct: 98,
@@ -56,6 +119,24 @@ export const demoSampleStudents: Student[] = [
     roll: '05',
     guardianName: 'Aminul Islam',
     guardianPhone: '01545678901',
+    dob: getRelativeBirthdayDob(15, 2017), // In 15 days (> 10 days)
+    birthRegNo: '20172692518100111',
+    gender: 'Male',
+    bloodGroup: 'AB+',
+    fatherNameBn: 'আমিনুল ইসলাম',
+    fatherNameEn: 'AMINUL ISLAM',
+    fatherNid: '1985269251870',
+    fatherDob: '1985-04-05',
+    fatherBirthRegNo: '19852692518100111',
+    fatherPhone: '01545678901',
+    fatherOccupation: 'অধ্যাপক',
+    motherNameBn: 'ফারহানা ইসলাম',
+    motherNameEn: 'FARHANA ISLAM',
+    motherNid: '1988269251880',
+    motherDob: '1988-12-01',
+    motherBirthRegNo: '19882692518100222',
+    motherPhone: '01544332211',
+    motherOccupation: 'গৃহিণী',
     feesPaid: 9000,
     totalFees: 15000,
     attendancePct: 79,

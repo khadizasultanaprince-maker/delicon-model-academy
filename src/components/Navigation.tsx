@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Sparkles, KeyRound, Monitor, ScanLine, Menu, X, Landmark } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Sparkles, KeyRound, Monitor, ScanLine, Menu, X, Landmark, Cake } from 'lucide-react';
 import { UserRole } from '../types';
 import { useSchool } from '../context/SchoolContext';
+import { BirthdayReminderCountdown } from './BirthdayReminderCountdown';
 
 interface NavigationProps {
   activeView: 'home' | 'scanner' | 'portal' | 'poster';
@@ -24,7 +25,33 @@ export const Navigation: React.FC<NavigationProps> = ({
   onLogout
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { schoolName, schoolSlogan, schoolLogoType, schoolLogoVal } = useSchool();
+  const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
+  const { schoolName, schoolSlogan, schoolLogoType, schoolLogoVal, students } = useSchool();
+
+  // Calculate count of students with birthdays within 10 days
+  const upcomingBirthdaysCount = useMemo(() => {
+    const today = new Date();
+    let count = 0;
+    students.forEach(st => {
+      if (!st.dob) return;
+      const parts = st.dob.split('-');
+      if (parts.length === 3) {
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        const thisYearBirthday = new Date(today.getFullYear(), m, d);
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        let target = thisYearBirthday;
+        if (target < startOfToday && !(today.getMonth() === m && today.getDate() === d)) {
+          target = new Date(today.getFullYear() + 1, m, d);
+        }
+        const diffDays = Math.ceil((target.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 10) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [students]);
 
   const navItems = [
     { id: 'home', label: '১। হোম পেইজ ও বিবরণ', icon: Landmark },
@@ -99,6 +126,21 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* User Sign In controls & Poster CTA */}
           <div className="hidden lg:flex items-center gap-2.5">
+            {/* Birthday Reminder Button */}
+            <button
+              onClick={() => setBirthdayModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-3 py-2 text-xs transition shadow-sm cursor-pointer border border-rose-400/40 active:scale-95"
+              title="শিক্ষার্থী জন্মদিন রিমাইন্ডার ও লাইভ কাউন্টডাউন"
+            >
+              <Cake className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+              <span>জন্মদিন</span>
+              {upcomingBirthdaysCount > 0 && (
+                <span className="bg-amber-400 text-blue-950 font-black px-1.5 py-0.2 rounded-full text-[10px]">
+                  {upcomingBirthdaysCount}
+                </span>
+              )}
+            </button>
+
             {!loggedInRole && (
               <a
                 href="#sec-lead-form"
@@ -208,6 +250,25 @@ export const Navigation: React.FC<NavigationProps> = ({
             </button>
           ))}
           
+          {/* Mobile Birthday Button */}
+          <button
+            onClick={() => {
+              setBirthdayModalOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-2.5 text-xs font-bold bg-gradient-to-r from-rose-700 to-pink-700 text-white shadow-sm"
+          >
+            <div className="flex items-center gap-2.5">
+              <Cake className="h-4.5 w-4.5 text-amber-300" />
+              <span>🎂 শিক্ষার্থী জন্মদিন রিমাইন্ডার ও কাউন্টডাউন</span>
+            </div>
+            {upcomingBirthdaysCount > 0 && (
+              <span className="bg-amber-400 text-blue-950 px-2 py-0.5 rounded-full font-black text-[10px]">
+                {upcomingBirthdaysCount} জন
+              </span>
+            )}
+          </button>
+          
           {loggedInRole && (
             <div className="border-t border-blue-905 pt-3 mt-2 flex items-center justify-between">
               <div>
@@ -222,6 +283,21 @@ export const Navigation: React.FC<NavigationProps> = ({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Birthday Modal */}
+      {birthdayModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-4xl my-auto animate-scale-up">
+            <button
+              onClick={() => setBirthdayModalOpen(false)}
+              className="absolute -top-3 -right-3 z-30 h-9 w-9 rounded-full bg-slate-900 text-white hover:bg-rose-600 flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <BirthdayReminderCountdown />
+          </div>
         </div>
       )}
     </header>

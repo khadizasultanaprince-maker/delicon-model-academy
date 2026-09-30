@@ -14,6 +14,7 @@ import {
   Layers, Award, RotateCcw, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
+import { BirthdayReminderCountdown } from './BirthdayReminderCountdown';
 
 interface StudentDataEntryManagerProps {
   currentRole?: string;
@@ -80,6 +81,19 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     if (['s1', 's2', 's3', 's4'].includes(st.id)) return true;
     if (['Afifa Rahman', 'Tanvir Ahmed', 'Raisa Yasmin', 'Tahsin Islam'].includes(st.name || '')) return true;
     return false;
+  };
+
+  // Helper to calculate data completeness percentage
+  const calculateCompleteness = (st: Partial<Student>) => {
+    const keyFields = [
+      st.banglaName, st.name, st.className, st.roll, st.birthRegNo, st.dob, st.gender,
+      st.fatherNameBn, st.fatherPhone, st.fatherDob, st.fatherBirthRegNo,
+      st.motherNameBn, st.motherDob, st.motherBirthRegNo,
+      st.guardianName, st.guardianPhone,
+      st.presentAddress, st.formImageRefUrl || st.photoUrl
+    ];
+    const filled = keyFields.filter(f => f && String(f).trim().length > 0).length;
+    return Math.round((filled / keyFields.length) * 100);
   };
 
   const demoStudents = students.filter(isDemoStudent);
@@ -260,17 +274,6 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
 
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Helper to calculate data completeness percentage
-  const calculateCompleteness = (st: Partial<Student>) => {
-    const keyFields = [
-      st.banglaName, st.name, st.className, st.roll, st.birthRegNo, st.dob, st.gender,
-      st.fatherNameBn, st.fatherPhone, st.motherNameBn, st.guardianName, st.guardianPhone,
-      st.presentAddress, st.formImageRefUrl || st.photoUrl
-    ];
-    const filled = keyFields.filter(f => f && String(f).trim().length > 0).length;
-    return Math.round((filled / keyFields.length) * 100);
   };
 
   // Handle Form input change
@@ -740,6 +743,9 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           </div>
         </div>
       </div>
+
+      {/* BIRTHDAY REMINDER & LIVE 10-DAY COUNTDOWN */}
+      <BirthdayReminderCountdown onEditStudentDob={(st) => handleEditStudent(st)} />
 
       {/* 1. AI DOCUMENT OCR SCANNER BOX */}
       <div className="rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 p-5 md:p-6 shadow-sm">
@@ -1392,7 +1398,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      পিতার জন্ম তারিখ (Date of Birth)
+                      পিতার জন্ম তারিখ / 'Birth Date' <span className="text-blue-700 font-extrabold">(Date Picker)</span>
                     </label>
                     <input 
                       type="date" 
@@ -1403,12 +1409,12 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      পিতার জন্ম নিবন্ধন নম্বর (BRC)
+                      পিতার জন্ম নিবন্ধন নম্বর / 'Birth Registration Number' <span className="text-blue-700 font-extrabold">(Text input)</span>
                       <span className="text-[10px] text-slate-500 font-normal ml-1">(১৭ ডিজিট সনদ নং)</span>
                     </label>
                     <input 
                       type="text" 
-                      placeholder="যেমন: 1980XXXXXXXXXXXXX (১৭ ডিজিট)"
+                      placeholder="১৭ ডিজিট জন্ম নিবন্ধন সনদ নম্বর (যেমন: 1980XXXXXXXXXXXXX)"
                       value={formData.fatherBirthRegNo || ''}
                       onChange={e => handleInputChange('fatherBirthRegNo', e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 font-mono"
@@ -1506,7 +1512,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      মাতার জন্ম তারিখ (Date of Birth)
+                      মাতার জন্ম তারিখ / 'Birth Date' <span className="text-emerald-700 font-extrabold">(Date Picker)</span>
                     </label>
                     <input 
                       type="date" 
@@ -1517,12 +1523,12 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      মাতার জন্ম নিবন্ধন নম্বর (BRC)
+                      মাতার জন্ম নিবন্ধন নম্বর / 'Birth Registration Number' <span className="text-emerald-700 font-extrabold">(Text input)</span>
                       <span className="text-[10px] text-slate-500 font-normal ml-1">(১৭ ডিজিট সনদ নং)</span>
                     </label>
                     <input 
                       type="text" 
-                      placeholder="যেমন: 1985XXXXXXXXXXXXX (১৭ ডিজিট)"
+                      placeholder="১৭ ডিজিট জন্ম নিবন্ধন সনদ নম্বর (যেমন: 1985XXXXXXXXXXXXX)"
                       value={formData.motherBirthRegNo || ''}
                       onChange={e => handleInputChange('motherBirthRegNo', e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 font-mono"
@@ -2302,6 +2308,30 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                           <Phone className="h-3 w-3 text-slate-400" />
                           {student.guardianPhone || student.fatherPhone || 'ফোন নম্বর নেই'}
                         </span>
+                        {(student.fatherDob || student.fatherBirthRegNo || student.motherDob || student.motherBirthRegNo) && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {student.fatherDob && (
+                              <span className="text-[9px] bg-blue-50 text-blue-800 font-mono px-1 rounded border border-blue-200" title="পিতার জন্ম তারিখ">
+                                পি-জন্ম: {student.fatherDob}
+                              </span>
+                            )}
+                            {student.fatherBirthRegNo && (
+                              <span className="text-[9px] bg-slate-100 text-slate-700 font-mono px-1 rounded border border-slate-200" title="পিতার জন্ম নিবন্ধন সনদ নং">
+                                পি-সনদ: {student.fatherBirthRegNo.slice(-6)}
+                              </span>
+                            )}
+                            {student.motherDob && (
+                              <span className="text-[9px] bg-emerald-50 text-emerald-800 font-mono px-1 rounded border border-emerald-200" title="মাতার জন্ম তারিখ">
+                                মা-জন্ম: {student.motherDob}
+                              </span>
+                            )}
+                            {student.motherBirthRegNo && (
+                              <span className="text-[9px] bg-slate-100 text-slate-700 font-mono px-1 rounded border border-slate-200" title="মাতার জন্ম নিবন্ধন সনদ নং">
+                                মা-সনদ: {student.motherBirthRegNo.slice(-6)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Attached Form Image Link */}

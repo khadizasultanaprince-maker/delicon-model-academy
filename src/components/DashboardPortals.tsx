@@ -14,6 +14,7 @@ import { DigitalLibrary } from './DigitalLibrary';
 import { AcademicAiAssistant } from './AcademicAiAssistant';
 import { StudentProgressTracker } from './StudentProgressTracker';
 import { StudentDataEntryManager } from './StudentDataEntryManager';
+import { GuardianBirthdayCountdown, BirthdayCountdown } from './GuardianBirthdayCountdown';
 import { NoticeBoard, isNoticeExpired } from './NoticeBoard';
 import { UserRole, Student } from '../types';
 import { 
@@ -1308,6 +1309,9 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
                 })()}
               </div>
             </div>
+
+            {/* Birthday Countdown component for Guardian Dashboard */}
+            <GuardianBirthdayCountdown currentStudent={targetStudent} students={students} />
 
             {/* Digital Student ID Card Component for Guardian */}
             {targetStudent && (

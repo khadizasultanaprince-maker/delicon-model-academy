@@ -219,7 +219,32 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem('delicon_students');
-    return saved ? JSON.parse(saved) : initialStudents;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If any demo students exist without dob, hydrate them with sample DOBs for countdown
+          const hydrated = parsed.map(st => {
+            const demoMatch = demoSampleStudents.find(d => d.id === st.id);
+            if (demoMatch && !st.dob) {
+              return { 
+                ...st, 
+                dob: demoMatch.dob, 
+                fatherDob: demoMatch.fatherDob, 
+                fatherBirthRegNo: demoMatch.fatherBirthRegNo, 
+                motherDob: demoMatch.motherDob, 
+                motherBirthRegNo: demoMatch.motherBirthRegNo 
+              };
+            }
+            return st;
+          });
+          return hydrated;
+        }
+      } catch (e) {
+        console.warn('Failed to parse delicon_students', e);
+      }
+    }
+    return demoSampleStudents;
   });
 
   const [employees, setEmployees] = useState<Employee[]>(() => {

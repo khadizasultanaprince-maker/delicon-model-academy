@@ -11,7 +11,7 @@ import {
   Building, Settings, FolderClosed, Users, TrendingUp, Bus, PackageOpen, 
   Check, X, Plus, CreditCard, Clock, Bell, Trash2, ShieldCheck, Database, KeyRound, Link, Copy,
   Printer, QrCode, FileText, CheckCircle2, Layers, Bookmark, Star, Award, HelpCircle, Download, Upload, Image, RefreshCw, Video,
-  Camera, CameraOff, Calendar, Book, Film, Sparkles, Search, UserCheck, Eye, RotateCcw
+  Camera, CameraOff, Calendar, Book, Film, Sparkles, Search, UserCheck, Eye, RotateCcw, Cake
 } from 'lucide-react';
 import { AttendanceSimulator } from './AttendanceSimulator';
 import { AcademicCalendar } from './AcademicCalendar';
@@ -21,6 +21,8 @@ import { StudentDataEntryManager } from './StudentDataEntryManager';
 import { NoticeBoard } from './NoticeBoard';
 import { DigitalStudentIdCard } from './DigitalStudentIdCard';
 import { RecruitmentPosterGenerator } from './RecruitmentPosterGenerator';
+import { BirthdayReminderCountdown } from './BirthdayReminderCountdown';
+import { AdminBirthdayAlertSystem } from './AdminBirthdayAlertSystem';
 
 interface SystemControlPanelProps {
   role: 'Admin' | 'Developer';
@@ -340,7 +342,32 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
   } = useSchool();
 
   // Active module tab within ERP
-  const [activeTab, setActiveTab] = useState<'student_entry' | 'admissions' | 'posters' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt'>('student_entry');
+  const [activeTab, setActiveTab] = useState<'student_entry' | 'admissions' | 'posters' | 'finance' | 'staff' | 'inventory' | 'transport' | 'planning' | 'notices' | 'settings' | 'sections' | 'idcards' | 'exams' | 'docs' | 'requisitions' | 'db' | 'scanner' | 'dtube' | 'calendar' | 'library' | 'cultural_mgt' | 'birthdays'>('student_entry');
+
+  // Count of students with birthdays within 10 days
+  const upcomingBirthdaysCount = React.useMemo(() => {
+    const today = new Date();
+    let count = 0;
+    students.forEach(st => {
+      if (!st.dob) return;
+      const parts = st.dob.split('-');
+      if (parts.length === 3) {
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        const thisYearBirthday = new Date(today.getFullYear(), m, d);
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        let target = thisYearBirthday;
+        if (target < startOfToday && !(today.getMonth() === m && today.getDate() === d)) {
+          target = new Date(today.getFullYear() + 1, m, d);
+        }
+        const diffDays = Math.ceil((target.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 10) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [students]);
 
   const [copiedText, setCopiedText] = useState<'traffic' | 'developer' | null>(null);
 
@@ -1265,12 +1292,16 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
           <p className="text-xs text-slate-500 mt-1">লগইন মোড: <strong className="text-blue-900 uppercase">{role} PORTAL</strong> • সর্বোচ্চ নিরাপত্তা কনফিগারেশন</p>
         </div>
         
-        <div className="flex gap-2 mt-4 sm:mt-0">
+        <div className="flex items-center gap-2 mt-4 sm:mt-0">
+          <AdminBirthdayAlertSystem 
+            renderMode="bell_dropdown" 
+            onNavigateToTab={(t) => setActiveTab(t as any)} 
+          />
           <button 
             onClick={onLogout}
             className="rounded-lg border border-slate-300 hover:border-amber-500 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:text-amber-600 transition-all cursor-pointer"
           >
-            კონტროল პანელი লগআউট
+            কন্ট্রোল প্যানেল লগআউট
           </button>
         </div>
       </div>
@@ -1299,6 +1330,14 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
         </div>
       </div>
 
+      {/* Automated In-App Birthday Alerts Banner for Admin Dashboard */}
+      <div className="mb-8">
+        <AdminBirthdayAlertSystem 
+          renderMode="banner" 
+          onNavigateToTab={(t) => setActiveTab(t as any)} 
+        />
+      </div>
+
       {/* Main ERP Layout - Sidebar Tabs + Module Panel */}
       <div className="flex flex-col lg:flex-row gap-6 min-h-[500px]">
         
@@ -1324,8 +1363,9 @@ export const SystemControlPanel: React.FC<SystemControlPanelProps> = ({ role, on
             { id: 'calendar', label: '১৭। একাডেমিক ডায়েরী ও ক্যালেন্ডার 📅', icon: Calendar },
             { id: 'library', label: '১৮। ডিজিটাল একাডেমিক লাইব্রেরি 📚', icon: Book },
             { id: 'cultural_mgt', label: '১৯। সাংস্কৃতিক ভিডিও ব্যবস্থাপনা 🎭', icon: Film },
-            { id: 'settings', label: '২০। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
-            { id: 'db', label: '২১। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
+            { id: 'birthdays', label: '২০। শিক্ষার্থী জন্মদিন রিমাইন্ডার ও কাউন্টডাউন 🎂', icon: Cake, count: upcomingBirthdaysCount },
+            { id: 'settings', label: '২১। গেটলাইন ও সিকিউরিটি', icon: KeyRound, devOnly: true },
+            { id: 'db', label: '২২। সিস্টেম ডিবি তথ্য (ডিভ)', icon: Database, devOnly: true }
           ].filter(tab => !tab.devOnly || role === 'Developer').map(tab => (
             <button
               key={tab.id}
@@ -4893,6 +4933,13 @@ export default fallbackDb;
                   <p className="text-center text-slate-400 py-6 text-xs font-medium font-sans">কোনো সাংস্কৃতিক ভিডিও পাওয়া যায়নি। অনুগ্রহ করে উপরের ফর্মের মাধ্যমে যুক্ত করুন।</p>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* 20. BIRTHDAY REMINDER & LIVE 10-DAY COUNTDOWN */}
+          {activeTab === 'birthdays' && (
+            <div className="space-y-4 animate-fadeIn">
+              <BirthdayReminderCountdown />
             </div>
           )}
 
