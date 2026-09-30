@@ -46,6 +46,8 @@ export interface Student {
   fatherNameBn?: string;          // পিতার নাম (বাংলা)
   fatherNameEn?: string;          // পিতার নাম (ইংরেজি)
   fatherNid?: string;             // পিতার এনআইডি
+  fatherDob?: string;             // পিতার জন্ম তারিখ
+  fatherBirthRegNo?: string;      // পিতার জন্ম নিবন্ধন নম্বর
   fatherPhone?: string;           // পিতার ফোন
   fatherOccupation?: string;      // পিতার পেশা
   fatherEducation?: string;       // পিতার শিক্ষাগত যোগ্যতা
@@ -55,6 +57,8 @@ export interface Student {
   motherNameBn?: string;          // মাতার নাম (বাংলা)
   motherNameEn?: string;          // মাতার নাম (ইংরেজি)
   motherNid?: string;             // মাতার এনআইডি
+  motherDob?: string;             // মাতার জন্ম তারিখ
+  motherBirthRegNo?: string;      // মাতার জন্ম নিবন্ধন নম্বর
   motherPhone?: string;           // মাতার ফোন
   motherOccupation?: string;      // মাতার পেশা
   motherEducation?: string;       // মাতার শিক্ষাগত যোগ্যতা

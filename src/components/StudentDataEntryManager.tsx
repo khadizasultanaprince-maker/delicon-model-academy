@@ -198,6 +198,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     fatherNameBn: '',
     fatherNameEn: '',
     fatherNid: '',
+    fatherDob: '',
+    fatherBirthRegNo: '',
     fatherPhone: '',
     fatherOccupation: '',
     fatherEducation: '',
@@ -205,6 +207,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     motherNameBn: '',
     motherNameEn: '',
     motherNid: '',
+    motherDob: '',
+    motherBirthRegNo: '',
     motherPhone: '',
     motherOccupation: '',
     motherEducation: '',
@@ -458,6 +462,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           fatherNameBn: extracted.fatherNameBn?.trim() || prev.fatherNameBn,
           fatherNameEn: extracted.fatherNameEn?.trim() || prev.fatherNameEn,
           fatherNid: extracted.fatherNid?.trim() || prev.fatherNid,
+          fatherDob: extracted.fatherDob?.trim() || prev.fatherDob,
+          fatherBirthRegNo: extracted.fatherBirthRegNo?.trim() || prev.fatherBirthRegNo,
           fatherPhone: extracted.fatherPhone?.trim() || prev.fatherPhone,
           fatherOccupation: extracted.fatherOccupation?.trim() || prev.fatherOccupation,
           fatherEducation: extracted.fatherEducation?.trim() || prev.fatherEducation,
@@ -465,6 +471,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           motherNameBn: extracted.motherNameBn?.trim() || prev.motherNameBn,
           motherNameEn: extracted.motherNameEn?.trim() || prev.motherNameEn,
           motherNid: extracted.motherNid?.trim() || prev.motherNid,
+          motherDob: extracted.motherDob?.trim() || prev.motherDob,
+          motherBirthRegNo: extracted.motherBirthRegNo?.trim() || prev.motherBirthRegNo,
           motherPhone: extracted.motherPhone?.trim() || prev.motherPhone,
           motherOccupation: extracted.motherOccupation?.trim() || prev.motherOccupation,
           motherEducation: extracted.motherEducation?.trim() || prev.motherEducation,
@@ -595,6 +603,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
       fatherNameBn: '',
       fatherNameEn: '',
       fatherNid: '',
+      fatherDob: '',
+      fatherBirthRegNo: '',
       fatherPhone: '',
       fatherOccupation: '',
       fatherEducation: '',
@@ -602,6 +612,8 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
       motherNameBn: '',
       motherNameEn: '',
       motherNid: '',
+      motherDob: '',
+      motherBirthRegNo: '',
       motherPhone: '',
       motherOccupation: '',
       motherEducation: '',
@@ -1323,11 +1335,19 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
             <div className="p-4 space-y-4 bg-white">
               
               {/* Father Box */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-blue-50/20">
-                <span className="text-xs font-black text-blue-900 block mb-2">👨 পিতার তথ্য (Father's Details)</span>
+              <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/25 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 pb-2">
+                  <span className="text-xs font-black text-blue-900 flex items-center gap-1.5">
+                    <span>👨 পিতার তথ্য (Father's Details)</span>
+                  </span>
+                  <span className="text-[10px] font-medium text-blue-700 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded-md">
+                    এনআইডি অথবা জন্ম নিবন্ধন সনদ নম্বর—যেকোনো একটি বা উভয়ই দেয়া যাবে
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার নাম (বাংলা)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার নাম (বাংলা)</label>
                     <input 
                       type="text" 
                       placeholder="উদা: মোঃ খালিদ রহমান"
@@ -1337,7 +1357,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার নাম (English)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার নাম (English)</label>
                     <input 
                       type="text" 
                       placeholder="e.g. MD. KHALID RAHMAN"
@@ -1347,7 +1367,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার মোবাইল নম্বর</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার মোবাইল নম্বর</label>
                     <input 
                       type="text" 
                       placeholder="01712345678"
@@ -1356,8 +1376,12 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার জাতীয় পরিচয়পত্র (NID)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      পিতার জাতীয় পরিচয়পত্র (NID)
+                      <span className="text-[10px] text-slate-500 font-normal ml-1">(১০ বা ১৭ ডিজিট)</span>
+                    </label>
                     <input 
                       type="text" 
                       placeholder="NID নম্বর"
@@ -1367,7 +1391,32 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার পেশা</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      পিতার জন্ম তারিখ (Date of Birth)
+                    </label>
+                    <input 
+                      type="date" 
+                      value={formData.fatherDob || ''}
+                      onChange={e => handleInputChange('fatherDob', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      পিতার জন্ম নিবন্ধন নম্বর (BRC)
+                      <span className="text-[10px] text-slate-500 font-normal ml-1">(১৭ ডিজিট সনদ নং)</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="যেমন: 1980XXXXXXXXXXXXX (১৭ ডিজিট)"
+                      value={formData.fatherBirthRegNo || ''}
+                      onChange={e => handleInputChange('fatherBirthRegNo', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার পেশা</label>
                     <input 
                       type="text" 
                       placeholder="যেমন: ব্যবসায়ী / চাকুরীজীবী"
@@ -1377,7 +1426,17 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">পিতার মাসিক আয়</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার শিক্ষাগত যোগ্যতা</label>
+                    <input 
+                      type="text" 
+                      placeholder="যেমন: স্নাতক / এইচএসসি"
+                      value={formData.fatherEducation || ''}
+                      onChange={e => handleInputChange('fatherEducation', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">পিতার মাসিক আয়</label>
                     <input 
                       type="text" 
                       placeholder="যেমন: ৩০,০০০ টাকা"
@@ -1390,11 +1449,19 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
               </div>
 
               {/* Mother Box */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-emerald-50/20">
-                <span className="text-xs font-black text-emerald-900 block mb-2">👩 মাতার তথ্য (Mother's Details)</span>
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/25 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-2">
+                  <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+                    <span>👩 মাতার তথ্য (Mother's Details)</span>
+                  </span>
+                  <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md">
+                    এনআইডি অথবা জন্ম নিবন্ধন সনদ নম্বর—যেকোনো একটি বা উভয়ই দেয়া যাবে
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">মাতার নাম (বাংলা)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">মাতার নাম (বাংলা)</label>
                     <input 
                       type="text" 
                       placeholder="উদা: ফাতেমা আক্তার"
@@ -1404,7 +1471,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">মাতার নাম (English)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">মাতার নাম (English)</label>
                     <input 
                       type="text" 
                       placeholder="e.g. FATEMA AKTER"
@@ -1414,7 +1481,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">মাতার মোবাইল নম্বর</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">মাতার মোবাইল নম্বর</label>
                     <input 
                       type="text" 
                       placeholder="01812345678"
@@ -1423,8 +1490,12 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">মাতার জাতীয় পরিচয়পত্র (NID)</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      মাতার জাতীয় পরিচয়পত্র (NID)
+                      <span className="text-[10px] text-slate-500 font-normal ml-1">(১০ বা ১৭ ডিজিট)</span>
+                    </label>
                     <input 
                       type="text" 
                       placeholder="NID নম্বর"
@@ -1434,12 +1505,47 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">মাতার পেশা</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      মাতার জন্ম তারিখ (Date of Birth)
+                    </label>
+                    <input 
+                      type="date" 
+                      value={formData.motherDob || ''}
+                      onChange={e => handleInputChange('motherDob', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      মাতার জন্ম নিবন্ধন নম্বর (BRC)
+                      <span className="text-[10px] text-slate-500 font-normal ml-1">(১৭ ডিজিট সনদ নং)</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="যেমন: 1985XXXXXXXXXXXXX (১৭ ডিজিট)"
+                      value={formData.motherBirthRegNo || ''}
+                      onChange={e => handleInputChange('motherBirthRegNo', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">মাতার পেশা</label>
                     <input 
                       type="text" 
                       placeholder="যেমন: গৃহিণী / শিক্ষিকা"
                       value={formData.motherOccupation || ''}
                       onChange={e => handleInputChange('motherOccupation', e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">মাতার শিক্ষাগত যোগ্যতা</label>
+                    <input 
+                      type="text" 
+                      placeholder="যেমন: স্নাতক / এইচএসসি"
+                      value={formData.motherEducation || ''}
+                      onChange={e => handleInputChange('motherEducation', e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs focus:outline-blue-900"
                     />
                   </div>
@@ -2456,16 +2562,32 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
                       <td className="p-2">{showPrintModalStudent.fatherNameBn || '---'} {showPrintModalStudent.fatherNameEn ? `(${showPrintModalStudent.fatherNameEn})` : ''}</td>
                     </tr>
                     <tr className="border-b border-slate-200">
-                      <td className="p-2 font-bold bg-slate-50">পিতার ফোন ও এনআইডি:</td>
-                      <td className="p-2">ফোন: {showPrintModalStudent.fatherPhone || '---'} | NID: {showPrintModalStudent.fatherNid || '---'} | পেশা: {showPrintModalStudent.fatherOccupation || '---'}</td>
+                      <td className="p-2 font-bold bg-slate-50">পিতার NID ও জন্ম তথ্য:</td>
+                      <td className="p-2">
+                        NID: <span className="font-mono font-semibold">{showPrintModalStudent.fatherNid || '---'}</span> | 
+                        জন্ম তারিখ: <span className="font-semibold">{showPrintModalStudent.fatherDob || '---'}</span> | 
+                        জন্ম নিবন্ধন নং: <span className="font-mono font-semibold">{showPrintModalStudent.fatherBirthRegNo || '---'}</span>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
+                      <td className="p-2 font-bold bg-slate-50">পিতার ফোন ও পেশা:</td>
+                      <td className="p-2">ফোন: {showPrintModalStudent.fatherPhone || '---'} | পেশা: {showPrintModalStudent.fatherOccupation || '---'} {showPrintModalStudent.fatherIncome ? `| মাসিক আয়: ${showPrintModalStudent.fatherIncome}` : ''}</td>
                     </tr>
                     <tr className="border-b border-slate-200">
                       <td className="p-2 font-bold bg-slate-50">মাতার নাম (বাংলা/ইংরেজি):</td>
                       <td className="p-2">{showPrintModalStudent.motherNameBn || '---'} {showPrintModalStudent.motherNameEn ? `(${showPrintModalStudent.motherNameEn})` : ''}</td>
                     </tr>
                     <tr className="border-b border-slate-200">
+                      <td className="p-2 font-bold bg-slate-50">মাতার NID ও জন্ম তথ্য:</td>
+                      <td className="p-2">
+                        NID: <span className="font-mono font-semibold">{showPrintModalStudent.motherNid || '---'}</span> | 
+                        জন্ম তারিখ: <span className="font-semibold">{showPrintModalStudent.motherDob || '---'}</span> | 
+                        জন্ম নিবন্ধন নং: <span className="font-mono font-semibold">{showPrintModalStudent.motherBirthRegNo || '---'}</span>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
                       <td className="p-2 font-bold bg-slate-50">মাতার ফোন ও পেশা:</td>
-                      <td className="p-2">ফোন: {showPrintModalStudent.motherPhone || '---'} | পেশা: {showPrintModalStudent.motherOccupation || '---'}</td>
+                      <td className="p-2">ফোন: {showPrintModalStudent.motherPhone || '---'} | পেশা: {showPrintModalStudent.motherOccupation || '---'} {showPrintModalStudent.motherEducation ? `| শিক্ষা: ${showPrintModalStudent.motherEducation}` : ''}</td>
                     </tr>
 
                     <tr className="bg-slate-100 font-bold border-b border-slate-300">

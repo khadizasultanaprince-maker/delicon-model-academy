@@ -181,6 +181,8 @@ Field guidelines:
 - fatherNameBn: পিতার নাম (বাংলায়)
 - fatherNameEn: পিতার নাম (ইংরেজিতে)
 - fatherNid: পিতার জাতীয় পরিচয়পত্র (এনআইডি) নম্বর
+- fatherDob: পিতার জন্ম তারিখ (YYYY-MM-DD or DD/MM/YYYY)
+- fatherBirthRegNo: পিতার জন্ম নিবন্ধন সনদ নম্বর (১৭ ডিজিট বিআরসি নং)
 - fatherPhone: পিতার মোবাইল নম্বর
 - fatherOccupation: পিতার পেশা
 - fatherEducation: পিতার শিক্ষাগত যোগ্যতা
@@ -188,6 +190,8 @@ Field guidelines:
 - motherNameBn: মাতার নাম (বাংলায়)
 - motherNameEn: মাতার নাম (ইংরেজিতে)
 - motherNid: মাতার জাতীয় পরিচয়পত্র (এনআইডি) নম্বর
+- motherDob: মাতার জন্ম তারিখ (YYYY-MM-DD or DD/MM/YYYY)
+- motherBirthRegNo: মাতার জন্ম নিবন্ধন সনদ নম্বর (১৭ ডিজিট বিআরসি নং)
 - motherPhone: মাতার মোবাইল নম্বর
 - motherOccupation: মাতার পেশা
 - motherEducation: মাতার শিক্ষাগত যোগ্যতা
@@ -254,6 +258,8 @@ Field guidelines:
                     fatherNameBn: { type: Type.STRING },
                     fatherNameEn: { type: Type.STRING },
                     fatherNid: { type: Type.STRING },
+                    fatherDob: { type: Type.STRING },
+                    fatherBirthRegNo: { type: Type.STRING },
                     fatherPhone: { type: Type.STRING },
                     fatherOccupation: { type: Type.STRING },
                     fatherEducation: { type: Type.STRING },
@@ -261,6 +267,8 @@ Field guidelines:
                     motherNameBn: { type: Type.STRING },
                     motherNameEn: { type: Type.STRING },
                     motherNid: { type: Type.STRING },
+                    motherDob: { type: Type.STRING },
+                    motherBirthRegNo: { type: Type.STRING },
                     motherPhone: { type: Type.STRING },
                     motherOccupation: { type: Type.STRING },
                     motherEducation: { type: Type.STRING },
