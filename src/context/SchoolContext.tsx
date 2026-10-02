@@ -90,6 +90,7 @@ interface SchoolContextProps {
   purgeDemoStudents: () => void;
   restoreDemoStudents: () => void;
   importMeritStudentsToDirectory: () => number;
+  bulkImportStudents: (studentsList: Student[]) => number;
   addEmployee: (employee: Omit<Employee, 'id' | 'paymentStatus'>) => void;
   updateStudentHomework: (id: string, status: 'Completed' | 'Pending' | 'Needs-Motivation') => void;
   receiveFees: (studentId: string, amount: number) => void;
@@ -712,7 +713,13 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [examMarks]);
 
   useEffect(() => {
-    localStorage.setItem('delicon_students', JSON.stringify(students));
+    const dataStr = JSON.stringify(students);
+    localStorage.setItem('delicon_students', dataStr);
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'delicon_students', data: dataStr })
+    }).catch(err => console.warn('[Sync] Students save to server failed:', err));
   }, [students]);
 
   useEffect(() => {
@@ -1104,6 +1111,36 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return count;
   };
 
+  const bulkImportStudents = (newStudents: Student[]): number => {
+    if (!Array.isArray(newStudents) || newStudents.length === 0) return 0;
+    let count = 0;
+    setStudents(prev => {
+      const existingIds = new Set(prev.map(s => s.id));
+      const existingRollAndClass = new Set(prev.map(s => `${(s.className || '').trim()}_${(s.roll || '').trim()}`));
+      
+      const toAdd: Student[] = [];
+      newStudents.forEach(st => {
+        const uniqueKey = `${(st.className || '').trim()}_${(st.roll || '').trim()}`;
+        if (!existingIds.has(st.id) && !existingRollAndClass.has(uniqueKey)) {
+          toAdd.push(st);
+          existingIds.add(st.id);
+          existingRollAndClass.add(uniqueKey);
+          count++;
+        }
+      });
+      const merged = [...prev, ...toAdd];
+      const dataStr = JSON.stringify(merged);
+      localStorage.setItem('delicon_students', dataStr);
+      fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'delicon_students', data: dataStr })
+      }).catch(err => console.warn('[Sync] Bulk import save failed:', err));
+      return merged;
+    });
+    return count;
+  };
+
   const updateStudentHomework = (id: string, status: Student['homeworkStatus']) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, homeworkStatus: status } : s));
   };
@@ -1406,6 +1443,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       purgeDemoStudents,
       restoreDemoStudents,
       importMeritStudentsToDirectory,
+      bulkImportStudents,
       addEmployee,
       updateStudentHomework,
       receiveFees,

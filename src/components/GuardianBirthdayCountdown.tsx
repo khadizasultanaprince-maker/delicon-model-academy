@@ -82,9 +82,10 @@ const ALL_CLASSES = [
   'Class 5',
   'Class 6',
   'Class 7',
-  'Class 8',
-  'Class 9',
-  'Class 10'
+  'অষ্টম শ্রেণি',
+  'নবম শ্রেণি',
+  'দশম শ্রেণি',
+  'এসএসসি পরীক্ষার্থী'
 ];
 
 export const GuardianBirthdayCountdown: React.FC<GuardianBirthdayCountdownProps> = ({ 
@@ -293,7 +294,16 @@ export const GuardianBirthdayCountdown: React.FC<GuardianBirthdayCountdownProps>
 
     // Class filtering
     if (classFilter !== 'All') {
-      list = list.filter(c => c.student.className === classFilter || c.student.className?.toLowerCase().includes(classFilter.toLowerCase()));
+      const normFilter = classFilter.toLowerCase();
+      list = list.filter(c => {
+        const cClass = (c.student.className || '').toLowerCase();
+        if (cClass === normFilter) return true;
+        if (normFilter.includes('অষ্টম') && (cClass.includes('8') || cClass.includes('৮') || cClass.includes('অষ্টম'))) return true;
+        if (normFilter.includes('নবম') && (cClass.includes('9') || cClass.includes('৯') || cClass.includes('নবম'))) return true;
+        if (normFilter.includes('দশম') && (cClass.includes('10') || cClass.includes('১০') || cClass.includes('দশম'))) return true;
+        if (normFilter.includes('এসএসসি') && (cClass.includes('ssc') || cClass.includes('পরীক্ষার্থী'))) return true;
+        return cClass.includes(normFilter) || normFilter.includes(cClass);
+      });
     }
 
     // Specific calendar day selection

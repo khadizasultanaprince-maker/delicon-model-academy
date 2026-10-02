@@ -49,7 +49,7 @@ export const MarksController: React.FC = () => {
     { id: 'বার্ষিক পরীক্ষা ২০২৬', label: 'বার্ষিক পরীক্ষা ২০২৬' }
   ];
 
-  const classesList = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
+  const classesList = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'অষ্টম শ্রেণি', 'নবম শ্রেণি', 'দশম শ্রেণি', 'এসএসসি পরীক্ষার্থী'];
 
   // Filter students by selected class
   const classStudents = useMemo(() => {

@@ -1175,9 +1175,10 @@ export const AttendanceSimulator: React.FC = () => {
                             <option value="Class 5">Class 5</option>
                             <option value="Class 6">Class 6 (ষষ্ঠ)</option>
                             <option value="Class 7">Class 7</option>
-                            <option value="Class 8">Class 8</option>
-                            <option value="Class 9">Class 9</option>
-                            <option value="Class 10">Class 10</option>
+                            <option value="অষ্টম শ্রেণি">অষ্টম শ্রেণি (Class 8)</option>
+                            <option value="নবম শ্রেণি">নবম শ্রেণি (Class 9)</option>
+                            <option value="দশম শ্রেণি">দশম শ্রেণি (Class 10)</option>
+                            <option value="এসএসসি পরীক্ষার্থী">এসএসসি পরীক্ষার্থী (SSC Examinee)</option>
                           </select>
                         </div>
                         <div>
@@ -1718,9 +1719,10 @@ export const AttendanceSimulator: React.FC = () => {
                       <option value="Class 5">Class 5</option>
                       <option value="Class 6">Class 6</option>
                       <option value="Class 7">Class 7</option>
-                      <option value="Class 8">Class 8</option>
-                      <option value="Class 9">Class 9</option>
-                      <option value="Class 10">Class 10</option>
+                      <option value="অষ্টম শ্রেণি">অষ্টম শ্রেণি (Class 8)</option>
+                      <option value="নবম শ্রেণি">নবম শ্রেণি (Class 9)</option>
+                      <option value="দশম শ্রেণি">দশম শ্রেণি (Class 10)</option>
+                      <option value="এসএসসি পরীক্ষার্থী">এসএসসি পরীক্ষার্থী (SSC Examinee)</option>
                     </select>
                   </div>
                   <div>

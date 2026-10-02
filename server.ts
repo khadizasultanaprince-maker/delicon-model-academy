@@ -157,14 +157,22 @@ Analyze this uploaded student form/document image carefully. It contains printed
 Extract all discernible fields accurately into a clean JSON object.
 CRITICAL ACCURACY INSTRUCTIONS:
 - Read the student's actual name, class, roll, parents' names, and phone numbers directly from the document.
-- Pay special attention to Bengali handwriting or print (e.g. নাম: মাহিনুর / Mahinur, শ্রেণী: ষষ্ঠ শ্রেণি / Class 6 / Class VI, ইত্যাদি).
+- Pay special attention to Bengali handwriting or print.
+- CLASS (শ্রেণি) EXTRACTION RULES:
+  * You MUST extract the exact class that the form is for.
+  * If the form is for Class 5 (পঞ্চম শ্রেণি / ৫ম / Class 5 / Class V), return "Class 5".
+  * If the form is for Class 6 (ষষ্ঠ শ্রেণি / ৬ষ্ঠ / Class 6 / Class VI), return "Class 6".
+  * NEVER confuse Class 5 (পঞ্চম / ৫ম) with Class 6 (ষষ্ঠ / ৬ষ্ঠ). Pay close attention to Bengali numerals (৫ vs ৬) and Bengali text ("পঞ্চম" vs "ষষ্ঠ").
+  * Do NOT confuse the academic session year (e.g. 2026 / ২০২৬) or roll number (e.g. 06 / ০৬) with the class!
+  * Distinguish between the target class for which the admission/form is submitted and any previous school class.
+  * DO NOT default or bias towards Class 6 or any particular class.
 - If a field is empty, blank, or illegible on the form, return an empty string "" for that field.
 - ABSOLUTELY NEVER make up fake, hallucinated, or placeholder names or classes. If not visible, return "".
 
 Field guidelines:
 - banglaName: শিক্ষার্থীর নাম (বাংলায় - যেমন "মাহিনুর")
 - name: শিক্ষার্থীর নাম (ইংরেজিতে - যেমন "MAHINUR")
-- className: শ্রেণী (যেমন: "Class 6", "৬ষ্ঠ শ্রেণি", "Class 5", "Play", "Nursery", "KG", "Class 1", etc.)
+- className: শ্রেণী (যেমন: "প্লে / Play", "নার্সারী / Nursery", "কেজি / KG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6 / ৬ষ্ঠ শ্রেণি", "Class 7 / ৭ম শ্রেণি", "Class 8 / ৮ম শ্রেণি / অষ্টম শ্রেণি", "Class 9 / ৯ম শ্রেণি / নবম শ্রেণি", "Class 10 / ১০ম শ্রেণি / দশম শ্রেণি", "এসএসসি পরীক্ষার্থী / SSC Examinee", ইত্যাদি)
 - section: শাখা (যেমন: "ক", "খ", "A", "B", "")
 - roll: রোল নম্বর (যেমন: "০১", "01", "৬", "")
 - sessionYear: শিক্ষাবর্ষ (যেমন: "2026")

@@ -49,6 +49,24 @@ export const toBanglaDigits = (num: number | string): string => {
   return String(num).replace(/[0-9]/g, (w) => bnDigits[+w]);
 };
 
+// All standard academic classes for Exam Control System (Play to Class 10 & SSC Examinees)
+export const EXAM_ALL_CLASSES = [
+  'প্লে',
+  'নার্সারী',
+  'কেজি',
+  'প্রথম শ্রেণি',
+  'দ্বিতীয় শ্রেণি',
+  'তৃতীয় শ্রেণি',
+  'চতুর্থ শ্রেণি',
+  'পঞ্চম শ্রেণি',
+  'ষষ্ঠ শ্রেণি',
+  'সপ্তম শ্রেণি',
+  'অষ্টম শ্রেণি',
+  'নবম শ্রেণি',
+  'দশম শ্রেণি',
+  'এসএসসি পরীক্ষার্থী'
+];
+
 // Standard grading scale points
 export const calculateGpa = (marks: number): { gpa: number; grade: string; point: string } => {
   if (marks >= 80) return { gpa: 5.0, grade: 'A+', point: '5.00' };
@@ -462,6 +480,14 @@ export const ExamControllerSystem: React.FC = () => {
       { id: 'sch_10', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-18', dayName: 'রবিবার', startTime: '10:00', endTime: '12:30', subject: 'বাংলাদেশ ও বিশ্বপরিচয়', roomNo: '২০১, ২০২', paperCode: '১০৫' },
       { id: 'sch_11', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'চতুর্থ শ্রেণি', date: '2026-10-20', dayName: 'মঙ্গলবার', startTime: '10:00', endTime: '12:30', subject: 'ধর্ম ও নৈতিক শিক্ষা / ড্রয়িং', roomNo: '১০১, ১০২', paperCode: '১০৬' },
       { id: 'sch_12', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'পঞ্চম শ্রেণি', date: '2026-10-20', dayName: 'মঙ্গলবার', startTime: '10:00', endTime: '12:30', subject: 'ধর্ম ও নৈতিক শিক্ষা', roomNo: '২০১, ২০২', paperCode: '১০৬' },
+      { id: 'sch_13', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'অষ্টম শ্রেণি', date: '2026-10-10', dayName: 'শনিবার', startTime: '10:00', endTime: '01:00', subject: 'বাংলা ১ম ও ২য় পত্র', roomNo: '৩০১, ৩০২', paperCode: '৮০১' },
+      { id: 'sch_14', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'অষ্টম শ্রেণি', date: '2026-10-12', dayName: 'সোমবার', startTime: '10:00', endTime: '01:00', subject: 'ইংরেজি ১ম ও ২য় পত্র', roomNo: '৩০১, ৩০২', paperCode: '৮০২' },
+      { id: 'sch_15', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'অষ্টম শ্রেণি', date: '2026-10-14', dayName: 'বুধবার', startTime: '10:00', endTime: '01:00', subject: 'গণিত', roomNo: '৩০১, ৩০২', paperCode: '৮০৩' },
+      { id: 'sch_16', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'দশম শ্রেণি', date: '2026-10-10', dayName: 'শনিবার', startTime: '10:00', endTime: '01:00', subject: 'বাংলা ১ম পত্র', roomNo: '৪০১, ৪০২', paperCode: '১০১' },
+      { id: 'sch_17', examName: '২য় সাময়িক পরীক্ষা- ২০২৬', className: 'দশম শ্রেণি', date: '2026-10-12', dayName: 'সোমবার', startTime: '10:00', endTime: '01:00', subject: 'পদার্থবিজ্ঞান / হিসাববিজ্ঞান', roomNo: '৪০১, ৪০২', paperCode: '১৭৪' },
+      { id: 'sch_18', examName: 'প্রাক-নির্বাচনী পরীক্ষা- ২০২৬', className: 'এসএসসি পরীক্ষার্থী', date: '2026-10-10', dayName: 'শনিবার', startTime: '10:00', endTime: '01:00', subject: 'বাংলা ১ম পত্র (মডেল টেস্ট)', roomNo: 'হলরুম-০১', paperCode: 'SSC-101' },
+      { id: 'sch_19', examName: 'প্রাক-নির্বাচনী পরীক্ষা- ২০২৬', className: 'এসএসসি পরীক্ষার্থী', date: '2026-10-12', dayName: 'সোমবার', startTime: '10:00', endTime: '01:00', subject: 'ইংরেজি ১ম ও ২য় পত্র', roomNo: 'হলরুম-০১', paperCode: 'SSC-107' },
+      { id: 'sch_20', examName: 'প্রাক-নির্বাচনী পরীক্ষা- ২০২৬', className: 'এসএসসি পরীক্ষার্থী', date: '2026-10-14', dayName: 'বুধবার', startTime: '10:00', endTime: '01:00', subject: 'উচ্চতর গণিত / সাধারণ গণিত', roomNo: 'হলরুম-০১', paperCode: 'SSC-109' },
     ];
   });
 
@@ -714,14 +740,9 @@ export const ExamControllerSystem: React.FC = () => {
                   onChange={e => setSelectedClass(e.target.value)}
                   className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800"
                 >
-                  <option value="প্লে">প্লে</option>
-                  <option value="নার্সারী">নার্সারী</option>
-                  <option value="কেজি">কেজি</option>
-                  <option value="প্রথম">প্রথম শ্রেণি</option>
-                  <option value="দ্বিতীয়">দ্বিতীয় শ্রেণি</option>
-                  <option value="তৃতীয়">তৃতীয় শ্রেণি</option>
-                  <option value="চতুর্থ">চতুর্থ শ্রেণি (Class 4)</option>
-                  <option value="পঞ্চম">পঞ্চম শ্রেণি</option>
+                  {EXAM_ALL_CLASSES.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -984,14 +1005,9 @@ export const ExamControllerSystem: React.FC = () => {
                   className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-blue-900"
                 >
                   <option value="All">সকল শ্রেণি (All Classes)</option>
-                  <option value="প্লে">প্লে</option>
-                  <option value="নার্সারী">নার্সারী</option>
-                  <option value="কেজি">কেজি</option>
-                  <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
-                  <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
-                  <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
-                  <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
-                  <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
+                  {EXAM_ALL_CLASSES.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
 
@@ -1082,14 +1098,9 @@ export const ExamControllerSystem: React.FC = () => {
                   onChange={e => setSchedClass(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs sm:text-sm font-bold text-slate-800"
                 >
-                  <option value="প্লে">প্লে</option>
-                  <option value="নার্সারী">নার্সারী</option>
-                  <option value="কেজি">কেজি</option>
-                  <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
-                  <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
-                  <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
-                  <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
-                  <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
+                  {EXAM_ALL_CLASSES.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
 
@@ -1179,8 +1190,8 @@ export const ExamControllerSystem: React.FC = () => {
                     <tr className="bg-slate-100 text-slate-800 font-black border-b border-slate-200 text-sm">
                       <th className="p-3 w-40 text-center border-r border-slate-200">তারিখ ও বার</th>
                       <th className="p-3 w-32 text-center border-r border-slate-200">সময়সূচি</th>
-                      {['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি']
-                        .filter(c => schedFilterClass === 'All' || c === schedFilterClass)
+                      {EXAM_ALL_CLASSES
+                        .filter(c => schedFilterClass === 'All' ? examSchedules.some(s => s.className === c) : c === schedFilterClass)
                         .map(clsName => (
                           <th key={clsName} className="p-3 text-center border-r border-slate-200">
                             {clsName}
@@ -1192,8 +1203,8 @@ export const ExamControllerSystem: React.FC = () => {
                     {/* Unique dates */}
                     {(Array.from(new Set(examSchedules.map(s => s.date))) as string[]).sort().map(dateStr => {
                       const sampleSlot = examSchedules.find(s => s.date === dateStr);
-                      const displayClasses = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি']
-                        .filter(c => schedFilterClass === 'All' || c === schedFilterClass);
+                      const displayClasses = EXAM_ALL_CLASSES
+                        .filter(c => schedFilterClass === 'All' ? examSchedules.some(s => s.className === c) : c === schedFilterClass);
 
                       return (
                         <tr key={dateStr} className="hover:bg-slate-50/70">
@@ -1443,14 +1454,9 @@ export const ExamControllerSystem: React.FC = () => {
                 onChange={e => setMarkEntryClass(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold"
               >
-                <option value="প্লে">প্লে</option>
-                <option value="নার্সারী">নার্সারী</option>
-                <option value="কেজি">কেজি</option>
-                <option value="প্রথম">প্রথম শ্রেণি</option>
-                <option value="দ্বিতীয়">দ্বিতীয় শ্রেণি</option>
-                <option value="তৃতীয়">তৃতীয় শ্রেণি</option>
-                <option value="চতুর্থ">চতুর্থ শ্রেণি (Class 4)</option>
-                <option value="পঞ্চম">পঞ্চম শ্রেণি</option>
+                {EXAM_ALL_CLASSES.map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
               </select>
             </div>
 

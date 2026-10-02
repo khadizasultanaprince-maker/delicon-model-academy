@@ -39,7 +39,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     schoolLogoVal 
   } = useSchool();
 
-  // Standard academic classes list
+  // Standard academic classes list (Play to Class 10 & SSC Examinees)
   const ALL_CLASSES = [
     'প্লে (Play)',
     'নার্সারী (Nursery)',
@@ -51,28 +51,126 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     'Class 5',
     'Class 6',
     'Class 7',
-    'Class 8',
-    'Class 9',
-    'Class 10',
+    'অষ্টম শ্রেণি',
+    'নবম শ্রেণি',
+    'দশম শ্রেণি',
+    'এসএসসি পরীক্ষার্থী',
   ];
+
+  // Helper to normalize class names to match school system standard
+  const normalizeClassName = (rawClass?: string): string => {
+    if (!rawClass) return '';
+    let c = rawClass.toLowerCase().trim();
+
+    // 1. Strip 4-digit academic session years (e.g. 2024, 2025, 2026, ২০২৪, ২০২৫, ২০২৬)
+    // CRITICAL BUG FIX: 2026 and ২০২৬ contain digit 6 / ৬, which previously caused ANY form with year 2026 to misclassify as Class 6!
+    c = c.replace(/\b(20[1-3][0-9])\b/g, ' ');
+    c = c.replace(/(২০[১-৩][০-৯])/g, ' ');
+
+    // 2. Strip date patterns (DD/MM/YYYY, YYYY-MM-DD, etc.)
+    c = c.replace(/[০-৯0-9]{1,4}[\/\-\.][০-৯0-9]{1,2}[\/\-\.][০-৯0-9]{1,4}/g, ' ');
+
+    // 3. Strip long numeric sequences (mobile numbers, NID, BRC 10-17 digits)
+    c = c.replace(/[০-৯0-9]{5,}/g, ' ');
+
+    // 4. Strip roll numbers if prefixed (e.g. roll: 06, রোল: ০৬, roll 6)
+    c = c.replace(/(?:roll|রোল)\s*[:=\-]?\s*[০-৯0-9]+/gi, ' ');
+
+    // Check SSC Examinee
+    if (c.includes('ssc') || c.includes('এসএসসি') || c.includes('এস.এস.সি') || c.includes('পরীক্ষার্থী') || c.includes('examinee') || c.includes('candidate')) {
+      return 'এসএসসি পরীক্ষার্থী';
+    }
+
+    // Check Play
+    if (c.includes('play') || c.includes('প্লে')) return 'প্লে (Play)';
+
+    // Check Nursery
+    if (c.includes('nursery') || c.includes('নার্সারী') || c.includes('নার্সারি')) return 'নার্সারী (Nursery)';
+
+    // Check KG
+    if (c.includes('kg') || c.includes('কেজি') || c.includes('kindergarten')) return 'কেজি (KG)';
+
+    // Check Class 10 (দশম শ্রেণি)
+    if (c.includes('দশম') || c.includes('১০ম') || /(?:class|cls)?\s*(?:10|১০)\b/i.test(c) || /\b(ten|class\s*x)\b/i.test(c)) {
+      return 'দশম শ্রেণি';
+    }
+
+    // Check Class 9 (নবম শ্রেণি)
+    if (c.includes('নবম') || c.includes('৯ম') || /(?:class|cls)?\s*(?:9|৯)\b/i.test(c) || /\b(nine|class\s*ix)\b/i.test(c)) {
+      return 'নবম শ্রেণি';
+    }
+
+    // Check Class 8 (অষ্টম শ্রেণি)
+    if (c.includes('অষ্টম') || c.includes('৮ম') || /(?:class|cls)?\s*(?:8|৮)\b/i.test(c) || /\b(eight|class\s*viii)\b/i.test(c)) {
+      return 'অষ্টম শ্রেণি';
+    }
+
+    // Check Class 7 (Class 7)
+    if (c.includes('সপ্তম') || c.includes('৭ম') || /(?:class|cls)?\s*(?:7|৭)\b/i.test(c) || /\b(seven|class\s*vii)\b/i.test(c)) {
+      return 'Class 7';
+    }
+
+    // Check Class 5 (পঞ্চম শ্রেণি)
+    const isClass5 = c.includes('পঞ্চম') || c.includes('পন্চম') || c.includes('৫ম') || 
+      /\b(five|class\s*5|class-5|cls\s*5|class\s*v|cls\s*v|grade\s*5|grade\s*v)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:5|৫)($|[^০-৯0-9a-zA-Z])/i.test(c);
+
+    // Check Class 6 (ষষ্ঠ শ্রেণি)
+    const isClass6 = c.includes('ষষ্ঠ') || c.includes('ষষ্ট') || c.includes('৬ষ্ঠ') || 
+      /\b(six|class\s*6|class-6|cls\s*6|class\s*vi|cls\s*vi|grade\s*6|grade\s*vi)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:6|৬)($|[^০-৯0-9a-zA-Z])/i.test(c);
+
+    // If both 5 and 6 appear (e.g. transfer certificate from Class 5 or previous school class 5 vs admission class 6)
+    if (isClass5 && isClass6) {
+      if (c.includes('ভর্তি') || c.includes('বর্তমান') || c.includes('ইচ্ছুক')) {
+        if (c.includes('পঞ্চম শ্রেণির ভর্তি') || c.includes('৫ম শ্রেণির ভর্তি')) return 'Class 5';
+        if (c.includes('ষষ্ঠ শ্রেণির ভর্তি') || c.includes('৬ষ্ঠ শ্রেণির ভর্তি')) return 'Class 6';
+      }
+      // If primarily marked as 5
+      if (c.includes('পঞ্চম') || c.includes('৫ম')) return 'Class 5';
+      return 'Class 6';
+    }
+
+    if (isClass5) return 'Class 5';
+    if (isClass6) return 'Class 6';
+
+    // Check Class 4
+    if (c.includes('চতুর্থ') || c.includes('চথুর্ত') || c.includes('৪র্থ') || 
+      /\b(four|class\s*4|class-4|cls\s*4|class\s*iv)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:4|৪)($|[^০-৯0-9a-zA-Z])/i.test(c) ||
+      /(^|[^a-zA-Z])iv($|[^a-zA-Z])/i.test(c)) {
+      return 'Class 4';
+    }
+
+    // Check Class 3
+    if (c.includes('তৃতীয়') || c.includes('তৃতীয়') || c.includes('৩য়') || 
+      /\b(three|class\s*3|class-3|cls\s*3|class\s*iii)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:3|৩)($|[^০-৯0-9a-zA-Z])/i.test(c) ||
+      /(^|[^a-zA-Z])iii($|[^a-zA-Z])/i.test(c)) {
+      return 'Class 3';
+    }
+
+    // Check Class 2
+    if (c.includes('দ্বিতীয়') || c.includes('দ্বিতীয়') || c.includes('২য়') || 
+      /\b(two|class\s*2|class-2|cls\s*2|class\s*ii)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:2|২)($|[^০-৯0-9a-zA-Z])/i.test(c) ||
+      /(^|[^a-zA-Z])ii($|[^a-zA-Z])/i.test(c)) {
+      return 'Class 2';
+    }
+
+    // Check Class 1
+    if (c.includes('প্রথম') || c.includes('১ম') || 
+      /\b(one|class\s*1|class-1|cls\s*1|class\s*i)\b/i.test(c) ||
+      /(^|[^০-৯0-9a-zA-Z])(?:1|১)($|[^০-৯0-9a-zA-Z])/i.test(c)) {
+      return 'Class 1';
+    }
+
+    return rawClass;
+  };
 
   // Helper to normalize class identifiers
   const normalizeClassKey = (clsName: string): string => {
-    const c = (clsName || '').toLowerCase().trim();
-    if (c.includes('প্লে') || c.includes('play')) return 'প্লে (Play)';
-    if (c.includes('নার্সারী') || c.includes('nursery')) return 'নার্সারী (Nursery)';
-    if (c.includes('কেজি') || c.includes('kg')) return 'কেজি (KG)';
-    if (c.includes('1') || c.includes('১ম') || c.includes('প্রথম')) return 'Class 1';
-    if (c.includes('2') || c.includes('২য়') || c.includes('দ্বিতীয়')) return 'Class 2';
-    if (c.includes('3') || c.includes('৩য়') || c.includes('তৃতীয়')) return 'Class 3';
-    if (c.includes('4') || c.includes('৪র্থ') || c.includes('চতুর্থ')) return 'Class 4';
-    if (c.includes('5') || c.includes('৫ম') || c.includes('পঞ্চম')) return 'Class 5';
-    if (c.includes('6') || c.includes('৬ষ্ঠ') || c.includes('ষষ্ঠ')) return 'Class 6';
-    if (c.includes('7') || c.includes('৭ম') || c.includes('সপ্তম')) return 'Class 7';
-    if (c.includes('8') || c.includes('৮ম') || c.includes('অষ্টম')) return 'Class 8';
-    if (c.includes('9') || c.includes('৯ম') || c.includes('নবম')) return 'Class 9';
-    if (c.includes('10') || c.includes('১০ম') || c.includes('দশম')) return 'Class 10';
-    return clsName;
+    return normalizeClassName(clsName);
   };
 
   // Helper to detect initial demo/mock student entries
@@ -194,7 +292,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
   const [formData, setFormData] = useState<Partial<Student>>({
     name: '',
     banglaName: '',
-    className: 'Class 6',
+    className: '',
     section: 'A',
     roll: '',
     sessionYear: '2026',
@@ -324,61 +422,6 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     });
   };
 
-  // Helper to normalize class names to match school system standard
-  const normalizeClassName = (rawClass?: string): string => {
-    if (!rawClass) return '';
-    const c = rawClass.toLowerCase();
-    if (c.includes('play') || c.includes('প্লে')) return 'প্লে (Play)';
-    if (c.includes('nursery') || c.includes('নার্সারী') || c.includes('নার্সারি')) return 'নার্সারী (Nursery)';
-    if (c.includes('kg') || c.includes('কেজি')) return 'কেজি (KG)';
-    if (c.includes('10') || c.includes('১০') || c.includes('ten')) return 'Class 10';
-    if (c.includes('9') || c.includes('৯') || c.includes('nine')) return 'Class 9';
-    if (c.includes('8') || c.includes('৮') || c.includes('eight') || c.includes('অষ্টম')) return 'Class 8';
-    if (c.includes('7') || c.includes('৭') || c.includes('seven') || c.includes('সপ্তম')) return 'Class 7';
-    if (c.includes('6') || c.includes('৬') || c.includes('six') || c.includes('ষষ্ঠ') || c.includes('ষষ্ট')) return 'Class 6';
-    if (c.includes('5') || c.includes('৫') || c.includes('five') || c.includes('পঞ্চম')) return 'Class 5';
-    if (c.includes('4') || c.includes('৪') || c.includes('four') || c.includes('চতুর্থ')) return 'Class 4';
-    if (c.includes('3') || c.includes('৩') || c.includes('three') || c.includes('তৃতীয়') || c.includes('তৃতীয়')) return 'Class 3';
-    if (c.includes('2') || c.includes('২') || c.includes('two') || c.includes('দ্বিতীয়') || c.includes('দ্বিতীয়')) return 'Class 2';
-    if (c.includes('1') || c.includes('১') || c.includes('one') || c.includes('প্রথম')) return 'Class 1';
-    return rawClass;
-  };
-
-  // Quick-fill helper specifically for Mahinur (Class 6)
-  const handleQuickFillMahinur = () => {
-    setFormData(prev => ({
-      ...prev,
-      banglaName: 'মাহিনুর',
-      name: 'MAHINUR',
-      className: 'Class 6',
-      section: prev.section || 'A',
-      roll: prev.roll || '০১',
-      sessionYear: '2026',
-      admissionDate: prev.admissionDate || new Date().toISOString().split('T')[0],
-      version: 'Bangla',
-      shift: 'Morning',
-      gender: 'Female',
-      religion: 'ইসলাম',
-      nationality: 'বাংলাদেশী',
-      entryStatus: 'Partial',
-      formImageRefUrl: scanInputUrl.trim() || scanImagePreview || prev.formImageRefUrl
-    }));
-    setScanSuccessMessage('✨ ৬ষ্ঠ শ্রেণির শিক্ষার্থী "মাহিনুর"-এর প্রাথমিক তথ্য সফলভাবে ফরমটিতে সেট করা হয়েছে! অভিভাবক ও ঠিকানার তথ্যসমূহ নিশ্চিত করে সেভ করুন।');
-    setScanErrorMessage(null);
-    setOpenSections({
-      academic: true,
-      personal: true,
-      parents: true,
-      guardian: true,
-      address: true,
-      priorSchool: false,
-      attachment: true
-    });
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
-
   // Select a local file for AI scanning
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -442,7 +485,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
 
       // If valid fields are extracted, populate the form
       if (extracted && (extracted.banglaName || extracted.name || extracted.className || extracted.fatherNameBn)) {
-        const detectedClass = normalizeClassName(extracted.className) || formData.className || 'Class 6';
+        const detectedClass = normalizeClassName(extracted.className) || formData.className || (filterClass !== 'All' ? filterClass : '');
 
         setFormData(prev => ({
           ...prev,
@@ -547,7 +590,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     // Provide sensible defaults if not filled, ensuring zero blocking
     const effectiveBanglaName = formData.banglaName?.trim() || formData.name?.trim() || 'নামবিহীন শিক্ষার্থী';
     const effectiveName = formData.name?.trim() || formData.banglaName?.trim() || 'Unnamed Student';
-    const effectiveClass = formData.className || 'Class 6';
+    const effectiveClass = formData.className || (filterClass !== 'All' ? filterClass : 'Class 5');
     const effectiveRoll = formData.roll?.trim() || String(students.filter(s => s.className === effectiveClass).length + 1).padStart(2, '0');
     const effectiveGuardianName = formData.guardianName?.trim() || formData.fatherNameBn?.trim() || formData.motherNameBn?.trim() || 'অভিভাবক';
     const effectiveGuardianPhone = formData.guardianPhone?.trim() || formData.fatherPhone?.trim() || '01700000000';
@@ -588,7 +631,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
     setFormData({
       name: '',
       banglaName: '',
-      className: 'Class 6',
+      className: filterClass !== 'All' ? filterClass : '',
       section: 'A',
       roll: '',
       sessionYear: '2026',
@@ -668,7 +711,9 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
       (st.birthRegNo || '').includes(searchQuery) ||
       (st.fatherNameBn || '').includes(searchQuery);
 
-    const matchesClass = filterClass === 'All' || st.className === filterClass;
+    const matchesClass = filterClass === 'All' || 
+      st.className === filterClass || 
+      normalizeClassKey(st.className) === normalizeClassKey(filterClass);
     const matchesStatus = filterStatus === 'All' || 
       (filterStatus === 'Complete' && st.entryStatus === 'Complete') ||
       (filterStatus === 'Partial' && (st.entryStatus === 'Partial' || !st.entryStatus)) ||
@@ -986,53 +1031,36 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
           </div>
         </div>
 
-        {/* Quick Helper Banner for Mahinur (Class 6) */}
-        <div className="mb-4 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 via-indigo-50/50 to-blue-50 p-3.5 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white text-xs font-black shadow-xs">
-                ★
-              </span>
-              <div>
-                <h4 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                  <span>ষষ্ঠ শ্রেণির শিক্ষার্থী "মাহিনুর"-এর ফরম সমাধান</span>
-                  <span className="rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">এক-ক্লিক সমাধান</span>
-                </h4>
-                <p className="text-[11px] text-slate-600">
-                  অপ্রাসঙ্গিক বা ভুয়া তথ্য সম্পূর্ণ মুছে দিয়ে ষষ্ঠ শ্রেণির মাহিনুরের সঠিক ডাটা ছকে সাজিয়ে নিন।
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleQuickFillMahinur}
-              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-98 text-white px-4 py-2 text-xs font-bold shadow-xs transition-all cursor-pointer"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-200" />
-              <span>মাহিনুর (৬ষ্ঠ শ্রেণি) ফরম লোড করুন</span>
-            </button>
+        {/* Quick Class Selection Bar (Play to Class 10 and SSC Examinee) */}
+        <div className="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-200/60">
+            <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+              <Layers className="h-4 w-4 text-blue-900" /> দ্রুত শ্রেণি নির্বাচন (প্লে থেকে দশম ও এসএসসি পর্যন্ত):
+            </span>
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${
+              formData.className 
+                ? 'text-blue-900 bg-blue-100/80 border-blue-300 font-black' 
+                : 'text-amber-800 bg-amber-50 border-amber-300 font-bold'
+            }`}>
+              নির্বাচিত শ্রেণি: <strong>{formData.className || 'শ্রেণি নির্বাচন করুন'}</strong>
+            </span>
           </div>
-        </div>
-
-        {/* Quick Class Selection Bar */}
-        <div className="mb-5 flex flex-wrap items-center gap-1.5 pb-3 border-b border-slate-100">
-          <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
-            <Layers className="h-3.5 w-3.5 text-blue-900" /> দ্রুত শ্রেণী নির্বাচন:
-          </span>
-          {['Class 6', 'Class 5', 'Class 4', 'Class 3', 'Class 2', 'Class 1', 'প্লে (Play)', 'নার্সারী (Nursery)', 'কেজি (KG)'].map(cls => (
-            <button
-              key={cls}
-              type="button"
-              onClick={() => handleInputChange('className', cls)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                formData.className === cls
-                  ? 'bg-blue-900 text-white shadow-xs scale-102 ring-2 ring-blue-900/30'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {cls}
-            </button>
-          ))}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {ALL_CLASSES.map(cls => (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => handleInputChange('className', cls)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formData.className === cls || normalizeClassKey(formData.className || '') === normalizeClassKey(cls)
+                    ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900/40 scale-105'
+                    : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-900 border border-slate-200'
+                }`}
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Document Split View (If image exists) */}
@@ -1107,11 +1135,12 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">শ্রেণী (Class)</label>
                 <select 
-                  value={formData.className || 'Class 6'}
+                  value={formData.className || ''}
                   onChange={e => handleInputChange('className', e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs focus:outline-blue-900"
+                  className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-800 focus:outline-blue-900"
                 >
-                  {['প্লে (Play)', 'নার্সারী (Nursery)', 'কেজি (KG)', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'].map(cls => (
+                  <option value="">-- শ্রেণি নির্বাচন করুন --</option>
+                  {ALL_CLASSES.map(cls => (
                     <option key={cls} value={cls}>{cls}</option>
                   ))}
                 </select>
@@ -2212,7 +2241,7 @@ export const StudentDataEntryManager: React.FC<StudentDataEntryManagerProps> = (
               className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs focus:outline-blue-900 font-semibold"
             >
               <option value="All">সকল শ্রেণী</option>
-              {['প্লে (Play)', 'নার্সারী (Nursery)', 'কেজি (KG)', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'].map(cls => (
+              {ALL_CLASSES.map(cls => (
                 <option key={cls} value={cls}>{cls}</option>
               ))}
             </select>

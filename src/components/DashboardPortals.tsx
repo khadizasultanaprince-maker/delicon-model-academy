@@ -2219,7 +2219,7 @@ export const DashboardPortals: React.FC<DashboardPortalsProps> = ({ role, onLogo
                           onChange={e => setAstStClass(e.target.value)}
                           className="w-full rounded border border-slate-200 bg-white p-2 text-xs text-slate-800 focus:outline-blue-900"
                         >
-                          {['Play', 'Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'].map(cls => (
+                          {['প্লে (Play)', 'নার্সারী (Nursery)', 'কেজি (KG)', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'অষ্টম শ্রেণি', 'নবম শ্রেণি', 'দশম শ্রেণি', 'এসএসসি পরীক্ষার্থী'].map(cls => (
                             <option key={cls} value={cls}>{cls}</option>
                           ))}
                         </select>
